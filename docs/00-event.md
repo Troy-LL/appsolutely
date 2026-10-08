@@ -70,12 +70,24 @@ Full checklist: [05-submission.md](05-submission.md).
 | AMD Award | 10,000 | AMD/ASUS peripherals, Devin credits |
 | Tutorials Dojo Award | 10,000 each, 4 winners | |
 
-Sponsor award criteria are not published. Our guesses: Devin award rewards real, documented Devin use; AMD may favor AI running on AMD hardware; People's Choice rewards a relatable, visual demo.
+### Prize targets
+
+- **Primary: Grand Champion (PHP 50,000).** The whole plan aims here.
+- **Fallback: Tutorials Dojo Award (PHP 10,000 x 4).** Teams have won it without reaching finals, so a strong submission still has a shot.
+- **Side awards are a bonus.** At the briefing, copy each one's criteria into [NOTES.md](NOTES.md). We tick their boxes only where it doesn't change the core app.
+
+| Award | Criteria |
+|---|---|
+| Tutorials Dojo | Revealed at briefing |
+| WhiteCloak | Revealed at briefing |
+| Cognition / Devin | Revealed at briefing |
+| AMD | Revealed at briefing |
+| People's Choice | Audience QR vote on Demo Day; other details revealed at briefing |
 
 ## Demo Day logistics (Sat Oct 10)
 
 - **Venue:** Cyberzone, SM Makati. Register by **12:00 PM**. Finalists (10 to 15 teams) come only from teams with at least one member on-site by noon.
-- **On-site anchors:** Troy + Viviene (confirm tonight). Ayen and Donita join if they can.
+- **On-site:** Troy, Viviene, and Ayen are going, even before finalists are announced. Donita TBD. Rule: at least one of us registered by **12:00 PM**, or we can't make finals.
 - **Pitch:** 5 min live, then 3 min Q&A. No remote pitching. Max 4 to 5 slides.
 - **Venue kit:** Wi-Fi, power, HDMI and USB-C. Bring your own laptop and charger. Coffee and sandwiches provided.
 - **Bring:** demo laptop with inputs pre-loaded, phone for the mobile demo, offline fallback (recorded full demo), HDMI/USB-C adapter.

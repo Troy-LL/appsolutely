@@ -4,7 +4,7 @@ All times PH. Owners per area are in [01-team.md](01-team.md).
 
 ## Thu Oct 8 (tonight): prep only, no project code
 
-- [ ] Everyone confirms Fri 12:30 PM to Sat, and who is on-site by 12 PM Sat (Troy + Viviene suggested)
+- [ ] Everyone confirms Fri 12:30 PM to Sat. On-site by 12 PM Sat: Troy, Viviene, Ayen (Donita TBD)
 - [ ] Everyone in the official Telegram group
 - [ ] Accounts: GitHub with 2FA, Vercel, Figma team file, X or LinkedIn that can post video, Cerebral Valley (once link is out)
 - [ ] Tooling: Node LTS, Python 3.11+, git, editor, screen recorder. Test `npm create vite` and `pip install fastapi` work
@@ -23,7 +23,7 @@ All times PH. Owners per area are in [01-team.md](01-team.md).
 | 1:10 to 1:25 | **Filter** ideas with the gates and scores in [04-idea-filter.md](04-idea-filter.md) | Troy facilitates |
 | 1:25 to 1:35 | **Pick one user + one moment.** Write the sentence | All, Troy breaks ties |
 | 1:35 to 1:50 | **One screen, one action:** input → one tap → AI result card → next step. Name the wow moment. Start the cut list. Kill rule check | Ayen leads, Troy checks AI feasibility |
-| 1:50 to 2:10 | **3 to 5 frames** (empty, input, loading, result, error). Show one non-team person: "what would you tap?" Viviene drafts brand kit | Ayen + Viviene; Donita notes components |
+| 1:50 to 2:10 | **3 to 5 frames** (empty, input, loading, result, error) in Figma. Show one non-team person: "what would you tap?" Viviene drafts brand kit. Split: [designer task split](01-team.md#designer-task-split-ayen--viviene) | Ayen (flow, key frames) + Viviene (states, brand); Donita notes components |
 | 2:10 to 2:20 | **AI contract:** JSON shape, model, prompt sketch, 3 known failure cases | Troy + Donita |
 | 2:20 to 2:30 | **Lock:** spec paragraph and click-by-click demo script in 04-idea-filter. Split files by owner | Troy |
 

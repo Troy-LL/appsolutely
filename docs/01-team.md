@@ -7,7 +7,13 @@
 | **Backend / AI** | Troy | `@Troy-LL` | AI core, API, eval script, architecture diagram, pitch lead, Q&A captain, **merge owner** |
 | | Donita | `@DonitaSalonga` | Backend and AI with Troy, guardrails and failure states, QA, **backup merge owner** |
 | **UI / UX** | Ayen | `@AyenMejorada` | **UX/UI lead**: flow, design system, hero screen, front-end screens, README |
-| | Viviene | `@jwiwooyang` | UI/UX with Ayen, plus brand kit, ~1 min video, social post, submission checklist, timekeeper |
+| | Viviene | `@jwiwooyang` | UI/UX with Ayen, plus state screens, icons and assets, brand kit, ~1 min video, post graphic, pitch visuals, submission checklist, timekeeper |
+
+Ayen is listed as "Yen" on the official participant list (confirmed). Use "Ayen" on the submission form and in `CONTRIBUTIONS.md`.
+
+## Availability
+
+- **Ayen:** free all day Friday, locked in from the 12:30 PM room open.
 
 ## What each person is strong at (lean on them for this)
 
@@ -21,25 +27,54 @@
 | Area | Owner | Backup |
 |---|---|---|
 | Idea filter facilitation (1:10 PM) | Troy | Ayen |
-| User flow, frames, design tokens | Ayen | Viviene |
+| User flow, key screen frames, design tokens | Ayen | Viviene |
+| State screens (empty, loading, error, success) | Viviene | Ayen |
+| Icons, illustration, assets | Viviene | Ayen |
 | Front-end screens | Ayen | Viviene, Donita |
+| Final visual QA, demo screen look | Ayen | Viviene |
 | Brand kit (name, logo, accent color) | Viviene | Ayen |
 | AI contract (JSON) | Troy + Donita | |
 | AI core, prompts, model calls | Troy | Donita |
 | API and backend glue | Donita | Troy |
-| Guardrails, error/empty/loading states | Donita | Ayen (UI side) |
+| Guardrails and failure logic | Donita | Troy |
 | Eval set and script | Troy | Donita |
 | Architecture diagram | Troy | Ayen (visuals) |
 | README and setup steps | Ayen | Viviene (clean-clone test) |
 | Deploy | Donita | Troy |
 | Real-user tests | Viviene | Ayen |
 | Briefing scribe, sync timekeeping, cut list | Viviene | |
-| Video, post, submission form | Viviene | Troy |
+| Video, post graphic, submission form | Viviene | Troy |
+| Pitch visuals / slides (if any) | Viviene | Ayen |
 | `CONTRIBUTIONS.md`, AI tools disclosure | Viviene (collects) | Troy (checks) |
 | Merges to `main`, repo goes public | Troy | Donita |
 | Pitch and Q&A | Troy | Viviene (problem/user section), Donita (limits/security) |
 
 **Everyone** can explain their own files and the core flow in 60 seconds, without notes.
+
+## Designer task split (Ayen + Viviene)
+
+A starting point. We adjust it after the 1 PM reveal, once we know the screens.
+
+| Phase (PH time) | Ayen (UI/UX lead) | Viviene (UI/UX + creatives) |
+|---|---|---|
+| Fri 1:35 to 2:10 PM: one screen + frames | User flow, 3 to 5 key screen frames | Brand kit draft (name, logo, accent), first state frames |
+| 2:10 to 3:00 PM: handoff to Troy + Donita | Design tokens (type, color, spacing) in Figma; walk devs through the frames | Empty, loading, error, success frames; icon and asset list |
+| 3:00 to 7:00 PM: devs build the ugly slice | Build front-end screens from frames; answer dev questions | Finish state screens and assets; video shot list; post graphic draft |
+| 7:00 PM checkpoint | Polish starts **only** if real AI works end to end | Same |
+| 7:30 PM to 1:00 AM: polish | Visual pass on working screens, wow-moment screen | Polish state screens and illustrations; pitch visuals; user test #2 |
+| 1:00 AM (Viviene sleeps) | | Before sleeping: everything exported in Figma, handoff note written |
+| 1:00 to 4:30 AM | Final visual QA, demo screen look. Before sleeping: handoff note | Asleep |
+| 4:30 to 7:00 AM | Asleep | Phone review of overnight fixes, video capture prep, post graphic final |
+| Sat 7:00 to 8:30 AM | Demo screen final check | Record and edit the 1-min video, publish post graphic |
+
+**Optional stretch: mascot (Ayen).** Only if the core works after the 7 PM checkpoint, and only if it does a job in the UI (for example an empty or loading state). Not decoration. First thing cut if time is tight.
+
+### Design handoff rules
+
+- All designs live in one Figma file. The link goes in [NOTES.md](NOTES.md#links).
+- Devs build from the frames, not from chat descriptions.
+- Designers review every merged screen on a real phone and send fixes as short notes.
+- Each designer hands off before their sleep window, so nothing is stuck waiting on someone asleep.
 
 ## Sleep shifts (cross-pair)
 

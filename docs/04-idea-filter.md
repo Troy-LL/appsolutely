@@ -104,5 +104,6 @@ Response:
 |---|---|---|
 | Login / accounts | Not in the demo | Default |
 | Settings, admin, landing page, payments | Not in the demo | Default |
+| Mascot (Ayen, optional stretch) | Only if the core works and it serves the UI, not decoration | Default; revisit after 7 PM |
 | Second platform | Phone-first web only | Default |
 | | | |
