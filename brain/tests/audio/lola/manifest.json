@@ -1,0 +1,333 @@
+[
+  {
+    "id": "c03",
+    "file": "c03.wav",
+    "text": "Nasaan si Nanay?",
+    "category": "comfort",
+    "expected_action": "comfort",
+    "expected_question_id": "nasaan-si-nanay",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "c01",
+    "file": "c01.wav",
+    "text": "Si Mama asan?",
+    "category": "comfort",
+    "expected_action": "comfort",
+    "expected_question_id": "nasaan-si-nanay",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "cf01",
+    "file": "cf01.wav",
+    "text": "Nasaan po si Nanay?",
+    "category": "comfort",
+    "expected_action": "comfort",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "c13",
+    "file": "c13.wav",
+    "text": "Where is Nanay?",
+    "category": "comfort",
+    "expected_action": "comfort",
+    "expected_question_id": "nasaan-si-nanay",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "c05",
+    "file": "c05.wav",
+    "text": "Nasaan si Joy?",
+    "category": "comfort",
+    "expected_action": "comfort",
+    "expected_question_id": "nasaan-si-joy",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "c18",
+    "file": "c18.wav",
+    "text": "Asan ka, Joy?",
+    "category": "comfort",
+    "expected_action": "comfort",
+    "expected_question_id": "nasaan-si-joy",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "c08",
+    "file": "c08.wav",
+    "text": "Sino ka?",
+    "category": "comfort",
+    "expected_action": "comfort",
+    "expected_question_id": "sino-ka",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "c24",
+    "file": "c24.wav",
+    "text": "Nasaan ako?",
+    "category": "comfort",
+    "expected_action": "comfort",
+    "expected_question_id": "nasaan-ako",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "c27",
+    "file": "c27.wav",
+    "text": "Where am I?",
+    "category": "comfort",
+    "expected_action": "comfort",
+    "expected_question_id": "nasaan-ako",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "c28",
+    "file": "c28.wav",
+    "text": "Gusto ko nang umuwi",
+    "category": "comfort",
+    "expected_action": "comfort",
+    "expected_question_id": "gusto-ko-nang-umuwi",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "c32",
+    "file": "c32.wav",
+    "text": "I want to go home",
+    "category": "comfort",
+    "expected_action": "comfort",
+    "expected_question_id": "gusto-ko-nang-umuwi",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "u02",
+    "file": "u02.wav",
+    "text": "Masakit ang dibdib ko",
+    "category": "urgent",
+    "expected_action": "urgent",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "u04",
+    "file": "u04.wav",
+    "text": "Nahulog ako",
+    "category": "urgent",
+    "expected_action": "urgent",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "u09",
+    "file": "u09.wav",
+    "text": "Hindi ako makahinga",
+    "category": "urgent",
+    "expected_action": "urgent",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "u07",
+    "file": "u07.wav",
+    "text": "Tulong naman",
+    "category": "urgent",
+    "expected_action": "urgent",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "us03",
+    "file": "us03.wav",
+    "text": "Nadulas ako sa banyo",
+    "category": "urgent",
+    "expected_action": "urgent",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "us14",
+    "file": "us14.wav",
+    "text": "Hirap huminga",
+    "category": "urgent",
+    "expected_action": "urgent",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "u11",
+    "file": "u11.wav",
+    "text": "Masakit ang dibdib ko, nasaan si Nanay?",
+    "category": "urgent",
+    "expected_action": "urgent",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "us18",
+    "file": "us18.wav",
+    "text": "Saklolo",
+    "category": "urgent",
+    "expected_action": "urgent",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "n01",
+    "file": "n01.wav",
+    "text": "Inumin ko na ba ang gamot?",
+    "category": "medication",
+    "expected_action": "caregiver",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "n02",
+    "file": "n02.wav",
+    "text": "Ilan ang dosis ng gamot ko?",
+    "category": "medication",
+    "expected_action": "caregiver",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "nf02",
+    "file": "nf02.wav",
+    "text": "Ilang tableta ang iinumin ko?",
+    "category": "medication",
+    "expected_action": "caregiver",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "n10",
+    "file": "n10.wav",
+    "text": "Who is this?",
+    "category": "out_of_seed",
+    "expected_action": "caregiver",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "l01",
+    "file": "l01.wav",
+    "text": "Masakit ang loob ko",
+    "category": "out_of_seed",
+    "expected_action": "caregiver",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "t01",
+    "file": "t01.wav",
+    "text": "Thank you for watching",
+    "category": "tv",
+    "expected_action": "silent",
+    "voice": "Daniel (premade, broadcaster male)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "t02",
+    "file": "t02.wav",
+    "text": "Salamat sa panonood",
+    "category": "tv",
+    "expected_action": "silent",
+    "voice": "Daniel (premade, broadcaster male)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "t03",
+    "file": "t03.wav",
+    "text": "Abangan ang susunod na kabanata",
+    "category": "tv",
+    "expected_action": "silent",
+    "voice": "Daniel (premade, broadcaster male)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "t06",
+    "file": "t06.wav",
+    "text": "Abangan ang susunod na kabanata. Nasaan si Nanay?",
+    "category": "tv",
+    "expected_action": "silent",
+    "voice": "Daniel (premade, broadcaster male)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "t07",
+    "file": "t07.wav",
+    "text": "Sa teleserye, sino ka ba talaga?",
+    "category": "tv",
+    "expected_action": "silent",
+    "voice": "Daniel (premade, broadcaster male)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "v01",
+    "file": "v01.wav",
+    "text": "Nasaan na ba si Nanay ko?",
+    "category": "comfort",
+    "expected_action": "comfort",
+    "expected_question_id": "nasaan-si-nanay",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "v02",
+    "file": "v02.wav",
+    "text": "Tulungan nyo ako, nadulas ako",
+    "category": "urgent",
+    "expected_action": "urgent",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  },
+  {
+    "id": "v03",
+    "file": "v03.wav",
+    "text": "Ininom ko na ba yung gamot ko?",
+    "category": "medication",
+    "expected_action": "caregiver",
+    "voice": "Lily (premade, mature female)",
+    "model": "eleven_v3",
+    "source": "elevenlabs-synthetic"
+  }
+]
