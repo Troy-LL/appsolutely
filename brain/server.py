@@ -43,6 +43,8 @@ sys.path.append(str(Path(__file__).resolve().parent.parent / "hub"))
 from questions import MAX_BYTES, BadInput, ensure_working_copy, media_dir, save_question  # noqa: E402
 # hub/listen.py (Donita, D4): listen now records the hub mic, runs Whisper and the junk filter.
 from listen import enable_mic, mic_ok, start_listen  # noqa: E402
+# hub/chime.py (Donita, D6): the urgent chime on the hub speaker.
+from chime import enable_chime, play_chime  # noqa: E402
 
 SCREENS = ("lola", "caregiver", "backstage")
 WHISPER_URL = "http://127.0.0.1:8080"
@@ -226,6 +228,7 @@ class Hub:
                 "photo": photo,
             })
         elif action == "urgent":
+            play_chime()  # hub speaker, returns at once (docs/sino/hub-chime.md); never /lola
             await self.send_to("caregiver", {"event": "alert", "transcript": text})
         elif action == "caregiver":
             await self.send_to("caregiver", {
@@ -592,6 +595,8 @@ def main():
     os.environ.setdefault("SINO_SEED", str(ensure_working_copy()))
     # Only the hub process opens the mic, so test_server.py (mic false, listen now silent) still holds.
     enable_mic()
+    # Same for the chime: only the hub process makes sound (CHIME=0 keeps it off).
+    enable_chime()
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", str(DEFAULT_PORT)))
     uvicorn.run(app, host=host, port=port, log_level="info", **_ssl_kwargs())
