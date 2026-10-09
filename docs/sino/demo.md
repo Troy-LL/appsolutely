@@ -63,6 +63,10 @@ Joy (a teammate enrolled as joy) stands in front of the camera. Lola asks "Sino 
 
 A registered person asks on `/caregiver`. "Kamusta si Lola?" and "Ano ang mga tanong niya?" pull the log: the counts and her words, not a diagnosis. "Nasaan si Lola?" gets the no-camera answer and never names a room, because the CCTV add-on is cut. Code: `brain/ask.py` (PR #11). Skip this beat if it is not wired.
 
+## Optional: meals check
+
+The caregiver taps "Kumain na". Lola asks "Kumain na ba ako?". The `ate` clip plays. Skip this beat if Joy's three meal clips are not recorded.
+
 ## Fallbacks (internet stays off)
 
 | If this fails on stage | Do this |

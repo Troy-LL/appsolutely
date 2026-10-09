@@ -109,5 +109,16 @@
   {"id": "t09", "bucket": "tv", "text": "Sateleserye si no kabatalaga.", "expected": "silent"},
   {"id": "nf06", "bucket": "new", "text": "A Thunkah Joy.", "expected": "caregiver"},
   {"id": "nf07", "bucket": "new", "text": "Gusto ko na mo mo wei.", "expected": "caregiver"},
-  {"id": "nf08", "bucket": "new", "text": "This is the best day", "expected": "caregiver"}
+  {"id": "nf08", "bucket": "new", "text": "This is the best day", "expected": "caregiver"},
+  {"id": "mc01", "bucket": "comfort", "text": "Kumain na ba ako?", "expected": "comfort", "reply_id": "meal-check"},
+  {"id": "mc02", "bucket": "comfort", "text": "Kumain na ako?", "expected": "comfort", "reply_id": "meal-check"},
+  {"id": "mc03", "bucket": "comfort", "text": "Nakakain na ba ako?", "expected": "comfort", "reply_id": "meal-check"},
+  {"id": "mc04", "bucket": "comfort", "text": "Kumain na ba ko", "expected": "comfort", "reply_id": "meal-check"},
+  {"id": "mc05", "bucket": "comfort", "text": "kumaen na ba ko", "expected": "comfort", "reply_id": "meal-check"},
+  {"id": "mc06", "bucket": "comfort", "text": "ku main na ba ako", "expected": "comfort", "reply_id": "meal-check"},
+  {"id": "mc07", "bucket": "comfort", "text": "kumayn na ba ako", "expected": "comfort", "reply_id": "meal-check"},
+  {"id": "mc08", "bucket": "comfort", "text": "Did I eat?", "expected": "comfort", "reply_id": "meal-check"},
+  {"id": "mc09", "bucket": "comfort", "text": "Have I eaten?", "expected": "comfort", "reply_id": "meal-check"},
+  {"id": "n11", "bucket": "new", "text": "Kumain na ba ako? Uminom na ba ako ng gamot?", "expected": "caregiver", "reply_id": "", "reason": "medication"},
+  {"id": "us29", "bucket": "urgent", "text": "Masakit dibdib ko, kumain na ba ako", "expected": "urgent", "reply_id": ""}
 ]

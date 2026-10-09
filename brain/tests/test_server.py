@@ -14,6 +14,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timedelta
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -318,6 +319,10 @@ async def _run():
             face_passed, face_total = await _face(port, clients)
             passed += face_passed
             total += face_total
+
+            meal_passed, meal_total = await _meals(port, clients, log_path)
+            passed += meal_passed
+            total += meal_total
     finally:
         server.hub.decide_call = decide
         runner.should_exit = True
@@ -557,6 +562,181 @@ async def _face(port, clients):
         server.identify_jpeg = real_identify
         server.grab_jpeg = real_grab
         server._camera_read = real_read
+    return passed, total
+
+
+UNKNOWN_MEAL = "Lola asked if she's eaten. No meal logged."
+MEAL_KEYS = DECIDED_KEYS | {"reply_variant", "last_meal_ts"}
+
+
+def _hours_ago(hours):
+    return (datetime.now().astimezone() - timedelta(hours=hours)).isoformat(timespec="seconds")
+
+
+def _append_log(log_path, line):
+    with log_path.open("a", encoding="utf-8") as handle:
+        handle.write(line if line.endswith("\n") else line + "\n")
+
+
+def _meal_seed(load):
+    entries = json.loads(json.dumps(load()))
+    for entry in entries:
+        if entry.get("id") != "meal-check":
+            continue
+        entry["replies"] = {
+            "ate": {"reply_audio": "ate-line", "photo": "ate.jpg", "speaker": "Joy"},
+            "ate_repeat": {"reply_audio": "ate-repeat-line", "photo": "ate-repeat.jpg", "speaker": "Joy"},
+            "unknown": {"reply_audio": "unknown-line", "photo": "unknown.jpg", "speaker": "Joy"},
+        }
+    return entries
+
+
+async def _expect_meal(clients, text, variant, audio, photo, last_meal_ts, card_count):
+    backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
+    heard = await _recv(backstage)
+    if heard != {"event": "heard", "transcript": text, "dropped": False, "drop_reason": ""}:
+        raise AssertionError(heard)
+    for ws in (backstage, lola, caregiver):
+        msg = await _recv(ws)
+        if set(msg) != MEAL_KEYS:
+            raise AssertionError(sorted(msg))
+        if msg["action"] != "comfort" or msg["reply_id"] != "meal-check":
+            raise AssertionError(msg)
+        if msg["reply_variant"] != variant or msg["last_meal_ts"] != last_meal_ts:
+            raise AssertionError(msg)
+        if msg["transcript"] != text:
+            raise AssertionError(msg)
+    play = await _recv(lola)
+    if set(play) != {"event", "reply_id", "reply_audio", "photo"}:
+        raise AssertionError(play)
+    if play["event"] != "play_reply" or play["reply_id"] != "meal-check":
+        raise AssertionError(play)
+    if play["reply_audio"] != audio or play["photo"] != photo:
+        raise AssertionError(play)
+    if card_count:
+        card = await _recv(caregiver)
+        if set(card) != {"event", "transcript", "count"}:
+            raise AssertionError(card)
+        if card["event"] != "ask_caregiver" or card["transcript"] != UNKNOWN_MEAL:
+            raise AssertionError(card)
+        if card["count"] != card_count:
+            raise AssertionError(card)
+        lowered = card["transcript"].lower()
+        if "not yet" in lowered or "hindi pa" in lowered or "hasn't eaten" in lowered:
+            raise AssertionError(card)
+    await _quiet(lola)
+    await _quiet(caregiver)
+    await _quiet(backstage)
+
+
+def _ask_meal(port, text="Kumain na ba ako?"):
+    status, body = _post(port, {"mode": "typed", "text": text})
+    if status != 202 or body != b"":
+        raise AssertionError((status, body))
+
+
+async def _one_meal(name, fn):
+    try:
+        await fn()
+        print(f"{name}: PASS")
+        return 1
+    except (AssertionError, asyncio.TimeoutError, OSError, ValueError, KeyError) as exc:
+        print(f"{name}: FAIL {exc}")
+        return 0
+
+
+async def _meals(port, clients, log_path):
+    passed = 0
+    total = 0
+    real_load = server.load_seed
+    server.load_seed = lambda: _meal_seed(real_load)
+    try:
+        total += 1
+        async def no_log():
+            _ask_meal(port)
+            await _expect_meal(clients, "Kumain na ba ako?", "unknown", "unknown-line", "unknown.jpg", "", 1)
+
+        passed += await _one_meal("no meal plays unknown", no_log)
+
+        total += 1
+        old_ts = _hours_ago(8)
+        async def old_meal():
+            _append_log(log_path, json.dumps({"event": "meal_logged", "ts": old_ts}))
+            _ask_meal(port)
+            await _expect_meal(clients, "Kumain na ba ako?", "unknown", "unknown-line", "unknown.jpg", old_ts, 2)
+
+        passed += await _one_meal("meal 8h ago plays unknown", old_meal)
+
+        total += 1
+        async def broken_skipped():
+            _append_log(log_path, "{broken\n")
+            _ask_meal(port)
+            await _expect_meal(clients, "Kumain na ba ako?", "unknown", "unknown-line", "unknown.jpg", old_ts, 3)
+
+        passed += await _one_meal("broken jsonl line is skipped", broken_skipped)
+
+        total += 1
+        recent_ts = _hours_ago(1)
+        async def recent_meal():
+            _append_log(log_path, json.dumps({"event": "meal_logged", "ts": recent_ts}))
+            _ask_meal(port)
+            await _expect_meal(clients, "Kumain na ba ako?", "ate", "ate-line", "ate.jpg", recent_ts, 0)
+
+        passed += await _one_meal("meal 1h ago plays ate", recent_meal)
+
+        total += 1
+        async def second_ask():
+            _ask_meal(port)
+            await _expect_meal(
+                clients, "Kumain na ba ako?", "ate_repeat", "ate-repeat-line", "ate-repeat.jpg", recent_ts, 0
+            )
+            rows = []
+            for line in log_path.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    rows.append(json.loads(line))
+                except ValueError:
+                    continue
+            food = [
+                row.get("food_asks_since_meal")
+                for row in rows
+                if row.get("reply_variant") == "ate_repeat"
+            ]
+            if food != [2]:
+                raise AssertionError(food)
+            how = server.answer_about_lola("Kamusta si Lola?", server.read_log())
+            if "Asked about food 2x" not in how["answer"]:
+                raise AssertionError(how["answer"])
+
+        passed += await _one_meal("second ask plays ate_repeat", second_ask)
+
+        total += 1
+        async def caregiver_tap():
+            before = log_path.read_text(encoding="utf-8").count('"meal_logged"')
+            await clients["caregiver"].send(json.dumps({"event": "meal_logged"}))
+            await _quiet(clients["backstage"])
+            await _quiet(clients["lola"])
+            await _quiet(clients["caregiver"])
+            lines = [
+                line for line in log_path.read_text(encoding="utf-8").splitlines() if line.strip()
+            ]
+            if lines[-1].startswith("{broken") or lines[-1].startswith("still-not"):
+                raise AssertionError(lines[-1])
+            last = json.loads(lines[-1])
+            if last.get("event") != "meal_logged" or not isinstance(last.get("ts"), str) or not last["ts"]:
+                raise AssertionError(last)
+            if set(last) != {"event", "ts"}:
+                raise AssertionError(sorted(last))
+            stamped = datetime.fromisoformat(last["ts"])
+            if abs((datetime.now().astimezone() - stamped).total_seconds()) > 30:
+                raise AssertionError(last["ts"])
+            if log_path.read_text(encoding="utf-8").count('"meal_logged"') != before + 1:
+                raise AssertionError("meal_logged was not appended")
+
+        passed += await _one_meal("meal_logged writes ts", caregiver_tap)
+    finally:
+        server.load_seed = real_load
     return passed, total
 
 
