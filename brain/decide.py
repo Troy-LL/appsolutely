@@ -222,6 +222,33 @@ def _has_body_word(text):
     return any(word in tokens for word in _BODY_WORDS)
 
 
+# QA D-02/D-03: Qwen was sure ("silent", confidence >= 0.9) about misheard lines that were Lola,
+# e.g. "A Thunkah Joy." (Asan ka, Joy?) and "Na hula ko" (Nahulog ako). These seed words are too
+# common to mean "this is Lola"; every other word from her questions does, plus these extras.
+_COMMON_SEED_WORDS = {"am", "are", "did", "go", "have", "is", "ka", "kayo", "ku", "main", "nang",
+                      "si", "take", "to", "want", "you"}
+_LOLA_EXTRA_WORDS = {"akin", "lola", "lolo"}
+_NEAR_QUESTION = 0.75  # TV and chatter lines in the QA run scored 0.56 or less
+
+
+def _sounds_like_lola(text):
+    """True if the line may be Lola: ako/ko/I/me/my, a word from her questions, or close to one."""
+    words = (_seed_words() - _COMMON_SEED_WORDS) | _LOLA_EXTRA_WORDS
+    if any(token in words for token in normalize(text).split()):
+        return True
+    near = max(_best_seed_match(_match_key(text))[1], _best_seed_match(_fuzzy_seed_key(text))[1])
+    return near >= _NEAR_QUESTION
+
+
+def urgent_words(text):
+    """The urgent words decide() would alarm on. Rules only, never the model, so it is instant.
+    brain/server.py uses it so the throttle never drops an emergency (QA D-01)."""
+    without_loob = normalize(text)
+    for _idiom, pattern in _LOOB_PATTERNS:
+        without_loob = pattern.sub(" | ", without_loob)
+    return _urgent_hits(without_loob)
+
+
 def _from_model(output, started, text=""):
     if not isinstance(output, dict) or output.get("action") not in ACTIONS:
         return _result("caregiver", "model unavailable", [], 0.0, started, source="model")
@@ -244,7 +271,10 @@ def _from_model(output, started, text=""):
         confidence = 0.0
     confidence = float(confidence)
 
-    if action == "silent" and (confidence < _SILENT_MIN_CONFIDENCE or _has_body_word(text)):
+    # The model may keep Sino silent only when it is sure AND the line doesn't sound like Lola.
+    if action == "silent" and (
+        confidence < _SILENT_MIN_CONFIDENCE or _has_body_word(text) or _sounds_like_lola(text)
+    ):
         action = "caregiver"
 
     return _result(action, reason, trigger_words, confidence, started, source="model")

@@ -10,6 +10,7 @@ import json
 import os
 import socket
 import sys
+import tempfile
 import threading
 import time
 import urllib.error
@@ -24,6 +25,7 @@ sys.path.insert(0, str(ROOT))
 os.environ["SINO_MODEL"] = "stub"
 os.environ["SINO_LOG"] = str(HERE / "_test_decisions.jsonl")
 os.environ["OFFLINE_PROBE"] = "http://127.0.0.1:9"
+os.environ["CAREGIVER_DIST"] = str(HERE / "_no_caregiver_dist")
 os.environ.pop("CERT", None)
 os.environ.pop("KEY", None)
 
@@ -44,6 +46,7 @@ DECIDED_KEYS = {
     "source",
     "ignored",
     "transcript",
+    "utterance_id",
 }
 HEALTH_KEYS = {
     "event",
@@ -105,9 +108,25 @@ async def _quiet(ws):
     raise AssertionError(f"unexpected {msg}")
 
 
-def _check_decided(msg, text, action, source, ignored):
+def _check_heard(heard, text):
+    rest = dict(heard)
+    utterance_id = rest.pop("utterance_id", None)
+    if not isinstance(utterance_id, str) or not utterance_id:
+        raise AssertionError(f"heard utterance_id {utterance_id!r}")
+    if rest != {"event": "heard", "transcript": text, "dropped": False, "drop_reason": ""}:
+        raise AssertionError(heard)
+    return utterance_id
+
+
+def _same_utterance(msg, utterance_id):
+    if msg.get("utterance_id") != utterance_id:
+        raise AssertionError(f"decided utterance_id {msg.get('utterance_id')!r} != heard {utterance_id!r}")
+
+
+def _check_decided(msg, text, action, source, ignored, utterance_id):
     if set(msg) != DECIDED_KEYS:
         raise AssertionError(f"decided keys {sorted(msg)}")
+    _same_utterance(msg, utterance_id)
     if msg["event"] != "decided" or msg["action"] != action:
         raise AssertionError(msg)
     if msg["transcript"] != text or msg["source"] != source or msg["ignored"] != ignored:
@@ -124,11 +143,9 @@ def _check_decided(msg, text, action, source, ignored):
 
 async def _expect_line(clients, text, action, source, ignored):
     backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
-    heard = await _recv(backstage)
-    if heard != {"event": "heard", "transcript": text, "dropped": False, "drop_reason": ""}:
-        raise AssertionError(heard)
+    utterance_id = _check_heard(await _recv(backstage), text)
     decided_b = await _recv(backstage)
-    _check_decided(decided_b, text, action, source, ignored)
+    _check_decided(decided_b, text, action, source, ignored, utterance_id)
     if action == "silent":
         await _quiet(lola)
         await _quiet(caregiver)
@@ -136,8 +153,8 @@ async def _expect_line(clients, text, action, source, ignored):
         return decided_b
     decided_l = await _recv(lola)
     decided_c = await _recv(caregiver)
-    _check_decided(decided_l, text, action, source, ignored)
-    _check_decided(decided_c, text, action, source, ignored)
+    _check_decided(decided_l, text, action, source, ignored, utterance_id)
+    _check_decided(decided_c, text, action, source, ignored, utterance_id)
     if action == "comfort":
         play = await _recv(lola)
         if set(play) != PLAY_KEYS:
@@ -172,6 +189,27 @@ async def _expect_line(clients, text, action, source, ignored):
     return decided_b
 
 
+def _caregiver_pages(port):
+    req = urllib.request.Request(f"http://127.0.0.1:{port}/caregiver/")
+    try:
+        urllib.request.urlopen(req, timeout=2)
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404:
+            raise AssertionError(exc.code) from exc
+    else:
+        raise AssertionError("caregiver was mounted with no dist")
+    folder = Path(tempfile.mkdtemp())
+    (folder / "index.html").write_text("<!doctype html><title>caregiver</title>phone", encoding="utf-8")
+    if not server.mount_caregiver(server.app, folder):
+        raise AssertionError("mount failed")
+    with urllib.request.urlopen(req, timeout=2) as res:
+        body = res.read().decode("utf-8")
+        if res.status != 200 or "phone" not in body:
+            raise AssertionError(body[:120])
+        if res.headers.get("Cache-Control") != "no-cache":
+            raise AssertionError(res.headers.get("Cache-Control"))
+
+
 async def _wait_up(port):
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
@@ -197,6 +235,13 @@ async def _run():
     total = 0
     try:
         await _wait_up(port)
+        total += 1
+        try:
+            await asyncio.to_thread(_caregiver_pages, port)
+            passed += 1
+            print("caregiver page: PASS")
+        except Exception as exc:
+            print(f"caregiver page: FAIL {exc}")
         async with websockets.connect(f"ws://127.0.0.1:{port}/ws?screen=backstage") as backstage, \
                 websockets.connect(f"ws://127.0.0.1:{port}/ws?screen=lola") as lola, \
                 websockets.connect(f"ws://127.0.0.1:{port}/ws?screen=caregiver") as caregiver:
@@ -313,9 +358,23 @@ async def _run():
             try:
                 await _stale(port, clients)
                 passed += 1
-                print("stale newest wins: PASS")
+                print("stale newest wins, urgent kept: PASS")
             except (AssertionError, asyncio.TimeoutError) as exc:
-                print(f"stale newest wins: FAIL {exc}")
+                print(f"stale newest wins, urgent kept: FAIL {exc}")
+
+            total += 1
+            try:
+                ids = []
+                for _ in range(2):
+                    _post(port, {"mode": "typed", "text": "Nasaan si Nanay?"})
+                    decided = await _expect_line(clients, "Nasaan si Nanay?", "comfort", "rule", "")
+                    ids.append(decided["utterance_id"])
+                if ids[0] == ids[1]:
+                    raise AssertionError(f"same utterance_id twice {ids[0]!r}")
+                passed += 1
+                print("utterance_id per line: PASS")
+            except (AssertionError, asyncio.TimeoutError) as exc:
+                print(f"utterance_id per line: FAIL {exc}")
 
             face_passed, face_total = await _face(port, clients)
             passed += face_passed
@@ -389,7 +448,23 @@ async def _stale(port, clients):
         _post(port, {"mode": "typed", "text": "Tulong"})
         _post(port, {"mode": "typed", "text": "Nasaan yung susi?"})
         gate.set()
-        await _expect_line(clients, "Nasaan yung susi?", "caregiver", "model", "")
+        # "Nasaan si Nanay?" is stale and dropped, but "Tulong" is urgent and is never dropped (QA D-01).
+        # The two lines left arrive back to back, so read each screen in order.
+        backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
+        seen_b = [await _recv(backstage) for _ in range(4)]
+        seen_c = [await _recv(caregiver) for _ in range(4)]
+        seen_l = [await _recv(lola) for _ in range(2)]
+        if [(m["event"], m["transcript"], m.get("action")) for m in seen_b] != [
+            ("heard", "Tulong", None), ("decided", "Tulong", "urgent"),
+            ("heard", "Nasaan yung susi?", None), ("decided", "Nasaan yung susi?", "caregiver"),
+        ]:
+            raise AssertionError(seen_b)
+        if [m["event"] for m in seen_c] != ["decided", "alert", "decided", "ask_caregiver"]:
+            raise AssertionError(seen_c)
+        if seen_c[1]["transcript"] != "Tulong" or [m["action"] for m in seen_l] != ["urgent", "caregiver"]:
+            raise AssertionError((seen_c, seen_l))
+        await _quiet(lola)
+        await _quiet(caregiver)
         await _quiet(clients["backstage"])
     finally:
         gate.set()
@@ -433,9 +508,10 @@ def _identify_as(who, score=0.91):
     return identify
 
 
-def _check_sino(msg, who):
+def _check_sino(msg, who, utterance_id):
     if set(msg) != DECIDED_KEYS | {"who"}:
         raise AssertionError(sorted(msg))
+    _same_utterance(msg, utterance_id)
     if msg["event"] != "decided" or msg["action"] != "comfort" or msg["reply_id"] != "sino-ka":
         raise AssertionError(msg)
     if msg["transcript"] != "Sino ka?" or msg["who"] != who:
@@ -445,10 +521,8 @@ def _check_sino(msg, who):
 async def _expect_sino(clients, audio, photo, who, seen_who, speaker):
     text = "Sino ka?"
     backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
-    heard = await _recv(backstage)
-    if heard != {"event": "heard", "transcript": text, "dropped": False, "drop_reason": ""}:
-        raise AssertionError(heard)
-    _check_sino(await _recv(backstage), who)
+    utterance_id = _check_heard(await _recv(backstage), text)
+    _check_sino(await _recv(backstage), who, utterance_id)
     seen = await _recv(backstage)
     if set(seen) != {"event", "who", "score"} or seen["event"] != "face_seen":
         raise AssertionError(seen)
@@ -456,8 +530,8 @@ async def _expect_sino(clients, audio, photo, who, seen_who, speaker):
         raise AssertionError(seen)
     if isinstance(seen["score"], bool) or not isinstance(seen["score"], (int, float)):
         raise AssertionError(seen["score"])
-    _check_sino(await _recv(lola), who)
-    _check_sino(await _recv(caregiver), who)
+    _check_sino(await _recv(lola), who, utterance_id)
+    _check_sino(await _recv(caregiver), who, utterance_id)
     play = await _recv(lola)
     if set(play) != PLAY_KEYS:
         raise AssertionError(play)
@@ -629,13 +703,12 @@ def _meal_seed(load):
 
 async def _expect_meal(clients, text, variant, audio, photo, last_meal_ts, card_count, speaker="Joy"):
     backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
-    heard = await _recv(backstage)
-    if heard != {"event": "heard", "transcript": text, "dropped": False, "drop_reason": ""}:
-        raise AssertionError(heard)
+    utterance_id = _check_heard(await _recv(backstage), text)
     for ws in (backstage, lola, caregiver):
         msg = await _recv(ws)
         if set(msg) != MEAL_KEYS:
             raise AssertionError(sorted(msg))
+        _same_utterance(msg, utterance_id)
         if msg["action"] != "comfort" or msg["reply_id"] != "meal-check":
             raise AssertionError(msg)
         if msg["reply_variant"] != variant or msg["last_meal_ts"] != last_meal_ts:

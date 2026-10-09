@@ -1,17 +1,17 @@
 import type { Screen } from '../types'
 import type { T } from '../i18n/i18n'
-import { Chat, Clock, Frames, Home, List } from './Icons'
+import { Chat, Clock, Home } from './Icons'
+import { Receipt } from './Icons2'
 
-// Order: Home, Family, Sino AI, Activity log, Sino knows.
-export const TAB_SCREENS: Screen[] = ['home', 'family', 'ask', 'activity', 'knows']
+// Home, Activity, Ask, Receipt. Family, Knows and Account stay in the top-bar menu.
+export const TAB_SCREENS: Screen[] = ['home', 'activity', 'ask', 'receipt']
 
 export function TabBar({ t, screen, go, badge }: { t: T; screen: Screen; go: (s: Screen) => void; badge: number }) {
   const tabs = [
     { id: 'home' as const, label: t.one('tabHome'), icon: <Home /> },
-    { id: 'family' as const, label: t.one('tabFamily'), icon: <Frames /> },
-    { id: 'ask' as const, label: t.one('tabAsk'), icon: <Chat /> },
     { id: 'activity' as const, label: t.one('tabActivity'), icon: <Clock /> },
-    { id: 'knows' as const, label: t.one('tabKnows'), icon: <List /> },
+    { id: 'ask' as const, label: t.one('tabAsk'), icon: <Chat /> },
+    { id: 'receipt' as const, label: t.one('tabReceipt'), icon: <Receipt size={24} /> },
   ]
   return (
     <nav className="sn-tabs" aria-label="Sino">

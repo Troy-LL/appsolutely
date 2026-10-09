@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 import urllib.request
+import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
@@ -23,7 +24,7 @@ from starlette.websockets import WebSocketDisconnect
 
 import clips as clipwhere
 from ask import answer_about_lola
-from decide import decide, load_seed
+from decide import decide, load_seed, urgent_words
 from model import DEFAULT_HUB_URL
 
 # brain/face ships on troy/face-engine and may be absent. Script launch also tries face.
@@ -274,27 +275,33 @@ class Hub:
             gen, text = await self.queue.get()
             while True:
                 try:
-                    gen, text = self.queue.get_nowait()
+                    newer = self.queue.get_nowait()
                 except asyncio.QueueEmpty:
                     break
-            try:
-                result = await asyncio.to_thread(self.decide_call, text)
-            except Exception:
-                if gen != self.generation:
-                    continue
-                result = {
-                    "action": "caregiver",
-                    "reply_id": "",
-                    "reason": "model unavailable",
-                    "trigger_words": [],
-                    "confidence": 0.0,
-                    "latency_ms": 0,
-                    "source": "model",
-                    "ignored": "",
-                }
-            if gen != self.generation:
+                # The throttle drops older lines, but never one with an urgent word (QA D-01).
+                if urgent_words(text):
+                    await self.publish(text, await self._decide(text))
+                gen, text = newer
+            result = await self._decide(text)
+            # A newer line came in while deciding: drop this one, unless it is urgent.
+            if gen != self.generation and result["action"] != "urgent":
                 continue
             await self.publish(text, result)
+
+    async def _decide(self, text):
+        try:
+            return await asyncio.to_thread(self.decide_call, text)
+        except Exception:
+            return {
+                "action": "caregiver",
+                "reply_id": "",
+                "reason": "model unavailable",
+                "trigger_words": [],
+                "confidence": 0.0,
+                "latency_ms": 0,
+                "source": "model",
+                "ignored": "",
+            }
 
     async def publish(self, text, result):
         meal = None
@@ -303,11 +310,13 @@ class Hub:
             result = {**result, **meal}
         append_decision(text, result)
         self.last_event_at = datetime.now().astimezone().isoformat(timespec="seconds")
+        utterance_id = uuid.uuid4().hex
         heard = {
             "event": "heard",
             "transcript": text,
             "dropped": False,
             "drop_reason": "",
+            "utterance_id": utterance_id,
         }
         decided = {
             "event": "decided",
@@ -320,6 +329,7 @@ class Hub:
             "source": result["source"],
             "ignored": result["ignored"],
             "transcript": text,
+            "utterance_id": utterance_id,
         }
         if meal is not None:
             decided["reply_variant"] = meal["reply_variant"]
@@ -886,10 +896,32 @@ WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 class ScreenFiles(StaticFiles):
     async def get_response(self, path, scope):
         response = await super().get_response(path, scope)
-        if path in ("", ".", "index.html"):
+        name = path.rsplit("/", 1)[-1]
+        if name in ("", ".", "index.html"):
             response.headers["Cache-Control"] = "no-cache"
         return response
 
+
+def caregiver_dist():
+    raw = os.environ.get("CAREGIVER_DIST", "")
+    if raw:
+        return Path(raw)
+    return WEB_DIR / "caregiver" / "dist"
+
+
+def mount_caregiver(application, folder):
+    folder = Path(folder)
+    if not folder.is_dir():
+        return False
+    application.mount(
+        "/caregiver",
+        ScreenFiles(directory=folder, html=True),
+        name="caregiver",
+    )
+    return True
+
+
+mount_caregiver(app, caregiver_dist())
 
 if (WEB_DIR / "lola").is_dir():
     @app.get("/lola", include_in_schema=False)
@@ -897,6 +929,14 @@ if (WEB_DIR / "lola").is_dir():
         return RedirectResponse("/lola/")
 
     app.mount("/lola", ScreenFiles(directory=WEB_DIR / "lola", html=True), name="lola")
+
+_backstage_dir = WEB_DIR / "backstage"
+if _backstage_dir.is_dir():
+    @app.get("/backstage", include_in_schema=False)
+    def _backstage_slash():
+        return RedirectResponse("/backstage/", status_code=307)
+
+    app.mount("/backstage", ScreenFiles(directory=_backstage_dir, html=True), name="backstage")
 
 if (WEB_DIR / "fake-feed").is_dir():
     app.mount("/fake-feed", StaticFiles(directory=WEB_DIR / "fake-feed"), name="fake-feed")

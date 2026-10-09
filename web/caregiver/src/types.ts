@@ -43,7 +43,11 @@ export interface Entry {
   count: number // ask_caregiver repeats of the same transcript
   replyId?: string // comfort: which reply played
   speaker?: string // comfort: whose voice played
+  who?: string // decided.who from face match
+  replyVariant?: 'ate' | 'ate_repeat' | 'unknown'
+  alertKind?: string // alert.kind, when the hub sends one
   savedByYou?: boolean // a reply recorded on this phone
+  sentToHub?: boolean // meal_logged already went out; Undo does not unsend
   label?: [string, string] // note: what Lola did, [Tagalog, English]
   preset?: string // note: which quick pick, e.g. 'ate'
 }
@@ -66,4 +70,6 @@ export interface ChatMsg {
   error?: boolean
   source?: string // "rule" / "model" from the hub, "fake" on the fake feed
   latencyMs?: number
+  snapshot?: string // about_lola, caregiver only, "/clips/snapshot"
+  label?: string // about_lola, e.g. "RECORDED CLIP · DEMO"
 }
