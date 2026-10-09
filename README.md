@@ -1,5 +1,7 @@
 # Appsolutely
 
+<img src="assets/brand/sino-logo.png" alt="Sino" width="280">
+
 Team repo for the **AppBuildersPH Hackathon 2026** (Team Appsolutely: Troy, Ayen, Donita, Viviene). It holds the planning docs (event facts, roles, philosophy, playbook, idea filter, submission checklist) and the Sino spec in `docs/sino/`. Per the rules, the project is built from scratch after the challenge reveal at 1:00 PM Fri Oct 9.
 
 ## Our project: Sino
@@ -17,8 +19,8 @@ Sino is a small home hub that answers a lola's repeated questions in her family'
   - `curl` and `openssl` (macOS built-ins) and `mkcert` (local HTTPS certificates), used by `hub/start.sh` for the health light and the certificate check.
   - TODO, add the rest as each is introduced.
 - **APIs and cloud services:** none at runtime. Test clips in brain/tests/audio/lola/ were generated before the event with ElevenLabs (synthetic, test input only; Sino itself runs offline).
-- **Existing code and assets:** open-source libraries only. Demo data (`brain/seed.json` and the teammate-recorded replies and photos) is labeled as demo data. The default replies in `brain/media/` are real human recordings by Joy (no ElevenLabs, no text-to-speech). `/backstage` serves the Fontsource OFL files already in `web/backstage/fonts/` (Fredoka 500/600, DM Sans 400/500/700). No new runtime dependency.
-- **AI development tools:** Claude Code, Cursor, Grok Bot, Kiro (plus the Figma MCP if used). Kiro built Lola's iPad screen (`web/lola/`).
+- **Existing code and assets:** open-source libraries only. Demo data (`brain/seed.json` and the teammate-recorded replies and photos) is labeled as demo data. The default replies in `brain/media/` are real human recordings by Joy (no ElevenLabs, no text-to-speech). `/backstage` serves the Fontsource OFL files already in `web/backstage/fonts/` (Fredoka 500/600, DM Sans 400/500/700). Official mark: `assets/brand/sino-logo.png` (house roofline, green word, amber dot on the i), plus the trimmed web copies next to it. No new runtime dependency.
+- **AI development tools:** Claude Code, Cursor, Grok Bot, Kiro (plus the Figma MCP if used). Kiro built Lola's iPad screen (`web/lola/`). Cursor placed the official mark in the READMEs, the favicons, the caregiver top bar, the backstage header, and the Lola idle corner.
 
 ## Key dates (PH time, UTC+8)
 

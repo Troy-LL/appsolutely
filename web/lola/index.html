@@ -5,6 +5,8 @@
   <!-- iPad landscape, one wall of the sala. user-scalable=no: Lola never pinches. -->
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sino</title>
+  <link rel="icon" href="favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="stylesheet" href="lola.css" />
 </head>
 <body>
@@ -15,6 +17,8 @@
 
     <!-- Waiting · Naghihintay: wall clock, time, day-part, reassurance. -->
     <section id="waiting" class="state" aria-hidden="true">
+      <!-- Idle only. Listening and Answer stay one object (docs/sino/design-system.md). -->
+      <img class="mark" src="sino-logo.webp" alt="" width="64" height="36" />
       <!-- The clock face is drawn as flat ink SVG by lola.js (hour + minute
            hands only, no second hand, redrawn once a minute). -->
       <svg class="clock" viewBox="0 0 100 100" aria-hidden="true"></svg>

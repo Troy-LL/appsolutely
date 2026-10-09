@@ -2,9 +2,10 @@
  *
  * Design system: docs/sino/design-system.md (look) + the task spec (behavior).
  * Only two colours ever appear here: paper #F4EDE0 and ink #2B2420.
- * The one exception is the Start sheet's button, which may be green.
- * No green/amber/red, gradients, shadows, blur, glow, icons or buttons
- * anywhere else. One object on the wall at a time, 48px margins.
+ * The Start sheet's button may be green. Waiting also carries a small
+ * official mark (green and amber); Listening and Answer do not.
+ * No gradients, shadows, blur, glow, or buttons anywhere else.
+ * One object on the wall at a time, 48px margins.
  */
 
 /* ---- Local fonts (offline). Files live in fonts/. If a file is missing,
@@ -107,6 +108,13 @@ html, body {
 }
 
 /* ---- Waiting: wall clock, time, day-part, reassurance ---- */
+#waiting .mark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 36px;
+  width: auto;
+}
 #waiting .clock {
   width: min(34vh, 300px);
   height: min(34vh, 300px);
