@@ -864,5 +864,36 @@ def clips_snapshot():
     )
 
 
+class _CaregiverFiles(StaticFiles):
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        name = path.rsplit("/", 1)[-1]
+        if name in ("", ".", "index.html"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
+def caregiver_dist():
+    raw = os.environ.get("CAREGIVER_DIST", "")
+    if raw:
+        return Path(raw)
+    return Path(__file__).resolve().parent.parent / "web" / "caregiver" / "dist"
+
+
+def mount_caregiver(application, folder):
+    folder = Path(folder)
+    if not folder.is_dir():
+        return False
+    application.mount(
+        "/caregiver",
+        _CaregiverFiles(directory=folder, html=True),
+        name="caregiver",
+    )
+    return True
+
+
+mount_caregiver(app, caregiver_dist())
+
+
 if __name__ == "__main__":
     main()

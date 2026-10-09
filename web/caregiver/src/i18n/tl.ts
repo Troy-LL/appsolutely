@@ -183,4 +183,13 @@ export const tl = {
   moments: '{n} sandali',
   noDateMoments: 'Walang naitala sa petsang ito. Ang huling pitong araw lang ang itinatago ng talaan.',
   demoDays: 'Fake feed: halimbawa lang ang mga nakaraang araw.',
+  tabReceipt: 'Resibo',
+  more: 'Higit',
+  reconnecting: 'Kumokonekta ulit…',
+  startMonitor: 'Simulan',
+  kumainNa: 'Kumain na',
+  loggedHub: 'Naitala sa hub. Hindi ito binabawi ng Bawiin.',
+  mealAte: 'Sabi kumain na siya',
+  mealRepeat: 'Tinanong ulit, inalok ng tubig',
+  mealUnknown: 'Hindi alam kung kumain',
 }

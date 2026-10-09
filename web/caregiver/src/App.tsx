@@ -3,6 +3,9 @@ import type { AskIntent, ChatMsg, Entry, Lang, MemberColor, Person, Question, Sc
 import { makeT } from './i18n/i18n'
 import { initialLog, logReducer } from './data/log'
 import { loadQuestions, useFeed, USING_HUB } from './data/hub'
+import { readAbout } from './feed/events'
+import { startMonitoring } from './feed/monitor'
+import type { LinkStatus } from './feed/connect'
 import { useUrgentSound } from './data/urgentSound'
 import { TopBar } from './components/TopBar'
 import { TAB_SCREENS, TabBar } from './components/TabBar'
@@ -40,6 +43,8 @@ export default function App() {
   const [loadError, setLoadError] = useState('')
   const [now, setNow] = useState(Date.now())
   const [log, dispatch] = useReducer(logReducer, initialLog)
+  const [link, setLink] = useState<LinkStatus>('open')
+  const [monitoring, setMonitoring] = useState(false)
   const t = useMemo(() => makeT(lang), [lang])
 
   // Sino AI thread. One question at a time; pendingId is the Sino bubble waiting for about_lola.
@@ -54,21 +59,22 @@ export default function App() {
     setMessages((ms) => ms.map((m) => (m.id === id ? { ...m, pending: false, ...patch } : m)))
   }
 
+  const refreshQuestions = () => {
+    loadQuestions().then(setQuestions).catch((e: unknown) => setLoadError(e instanceof Error ? e.message : String(e)))
+  }
   // live events from /ws (fake feed unless ?feed=hub)
   const send = useFeed((event) => {
-    if (event.event === 'about_lola') {
-      answer({
-        text: typeof event.answer === 'string' ? event.answer : '',
-        source: typeof event.source === 'string' ? event.source : '',
-        latencyMs: typeof event.latency_ms === 'number' ? event.latency_ms : undefined,
-      })
+    const about = readAbout(event)
+    if (about) {
+      answer(about)
       return
     }
     dispatch({ type: 'event', event, at: Date.now() })
+  }, {
+    onStatus: setLink,
+    onVisible: refreshQuestions,
   })
-  useEffect(() => {
-    loadQuestions().then(setQuestions).catch((e: unknown) => setLoadError(e instanceof Error ? e.message : String(e)))
-  }, [])
+  useEffect(() => { refreshQuestions() }, [])
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 60_000); return () => window.clearInterval(id) }, [])
   useUrgentSound(log.entries.some((e) => e.kind === 'urgent'))
 
@@ -77,7 +83,9 @@ export default function App() {
   useEffect(() => { if (USING_HUB) save(log.entries) }, [log.entries])
   const [lastNote, setLastNote] = useState<Entry | null>(null)
   const addNote = (label: [string, string], preset: string) => {
-    const entry: Entry = { id: `note-${Date.now()}`, kind: 'note', transcript: label[0], label, preset, at: Date.now(), count: 1 }
+    const sentToHub = preset === 'ate' && USING_HUB
+    if (sentToHub) send({ event: 'meal_logged' })
+    const entry: Entry = { id: `note-${Date.now()}`, kind: 'note', transcript: label[0], label, preset, at: Date.now(), count: 1, sentToHub }
     dispatch({ type: 'addNote', entry })
     setLastNote(entry)
   }
@@ -137,7 +145,16 @@ export default function App() {
       {onTab ? (
         <TopBar t={t} lang={lang} langOpen={langOpen} fake={!USING_HUB} me={ME}
           onToggleLang={() => setLangOpen(!langOpen)} onPickLang={(l) => { setLang(l); setLangOpen(false) }}
-          onAccount={() => go('account')} />
+          onAccount={() => go('account')} onFamily={() => go('family')} onKnows={() => go('knows')} />
+      ) : null}
+
+      {link === 'reconnecting' ? <p className="sn-reconnect" role="status">{t.one('reconnecting')}</p> : null}
+      {!monitoring ? (
+        <div className="sn-monitor">
+          <button type="button" className="sn-btn sn-btn--wide" onClick={() => { void startMonitoring(); setMonitoring(true) }}>
+            {t.btn('startMonitor')}
+          </button>
+        </div>
       ) : null}
 
       {screen === 'home' ? (
@@ -146,7 +163,10 @@ export default function App() {
           onRead={(id) => dispatch({ type: 'markRead', id })}
           onUnread={(id) => dispatch({ type: 'unmarkRead', id })}
           onPerson={(name) => { setPersonName(name); go('person') }}
-          onFamily={() => go('family')} />
+          onFamily={() => go('family')}
+          lastNote={lastNote}
+          onAte={() => addNote(['Kumain', 'Ate a meal'], 'ate')}
+          onUndoNote={() => { if (lastNote) dispatch({ type: 'removeNote', id: lastNote.id }); setLastNote(null) }} />
       ) : null}
 
       {screen === 'family' ? (
@@ -166,9 +186,7 @@ export default function App() {
           onReceipt={() => go('receipt')} />
       ) : null}
 
-      {screen === 'receipt' ? (
-        <ReceiptScreen t={t} today={today} onBack={() => go('activity')} />
-      ) : null}
+      {screen === 'receipt' ? <ReceiptScreen t={t} today={today} /> : null}
 
       {screen === 'knows' ? (
         <KnowsScreen t={t} questions={questions} loadError={loadError} people={people} todayCount={today.length}
