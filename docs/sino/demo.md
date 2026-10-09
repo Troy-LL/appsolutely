@@ -7,7 +7,7 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 - Hub (M1, 8 GB) running from `start.sh`, seed loaded, health light green.
 - iPad on `/lola`, "Simulan" already tapped. iPhone on `/caregiver`, open on the hub's network (no push without internet). Backstage on the projected screen.
 - The hub's LAN-only firewall is on and the OFFLINE badge is visible (it comes from a real outbound check failing). On rung 1 the house network is Troy's iPhone hotspot, which has cellular, so the claim is "the hub is firewalled to the house network", not "every device is offline". The iPhone cannot go to airplane mode, because that turns the hotspot off ([architecture.md](architecture.md#network)).
-- Clips ready: the 20 s teleserye clip (TODO below). No CCTV clip and no voice ID: both are cut.
+- Clips ready: the 20 s teleserye clip (TODO below). No voice ID (cut). Camera beats are optional add-ons (below), only if built after the freeze.
 - Recordings loaded: Joy's four replies and Troy's "Sino ka?" line (TODO: not recorded yet as of Sat 2:00 AM).
 - Hub volume up for the urgent chime.
 
@@ -23,7 +23,7 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 | 3:30–4:00 | "Masakit dibdib ko" → the hub chimes ([hub-chime.md](hub-chime.md)) and a red card appears on the phone. `/lola` stays calm and never red. A medication question goes to the caregiver | Hub + iPhone |
 | 4:00–5:00 | Why local + close + scan-to-vote | Slide |
 
-Face match, the "Nasaan si Lola?" camera view, voice ID, and the live call are cut. They go on the "next steps" slide. If Ask Sino about Lola is wired after the freeze, show "Kamusta si Lola?" on `/caregiver` in 15 s at the 3:30 mark (TODO: only if wired).
+Voice ID and the live call are cut and go on the "next steps" slide. Face match and the CCTV view are optional beats below, only if built after the freeze and after T5 passes on the hub. If Ask Sino about Lola is wired after the freeze, show "Kamusta si Lola?" on `/caregiver` in 15 s at the 3:30 mark (TODO: only if wired).
 
 **Pitch order:** lead with the always-on mic privacy line and the four differentiators in [README.md](README.md#what-makes-it-different) (real family voices, silence as a decision, family-written replies, visible decisions). The offline/brownout angle is supporting proof, not the hook.
 
@@ -51,13 +51,21 @@ On stage: the clip plays, Sino stays silent, and `TV lines ignored: N` ticks. TO
 
 ## "Sino ka?" (photo + recorded line)
 
-A co-presenter playing Lola asks "Sino ka?". It matches the seeded question `sino-ka`, so the iPad shows the photo of Troy with Lola and plays the line he recorded in setup: "Lola, ako 'to, si Troy. Pamangkin mo. Ito tayo nung pasko." Then Troy talks to "Lola" in person, on stage. There is no face match and no call: both are next steps ([features.md](features.md#cut-tonight-moved-to-next-steps)).
+A co-presenter playing Lola asks "Sino ka?". It matches the seeded question `sino-ka`, so the iPad shows the photo of Troy with Lola and plays the line he recorded in setup: "Lola, ako 'to, si Troy. Pamangkin mo. Ito tayo nung pasko." Then Troy talks to "Lola" in person, on stage. There is no call (a next step, [features.md](features.md#cut-tonight-moved-to-next-steps)). Face match is an optional after-freeze beat below.
 
-The screen never quizzes Lola. Without face match, "Sino ka?" always plays Troy's line, whoever is in the room (TODO: Troy, confirm that is fine for the pitch).
+The screen never quizzes Lola. Without face match, "Sino ka?" always plays Troy's line, whoever is in the room. With face match (optional beat below), it plays the recognised person's line, and still Troy's if nobody is matched.
+
+## Optional add-on beats (only if built after the freeze)
+
+Pitch line: "Siri for dementia care, fully offline." Skip any beat that is not built and working on the hub.
+
+1. **Face match.** Joy (a teammate enrolled as joy) stands in front of the camera. Lola asks "Sino ka?". The iPad shows Joy's photo and plays Joy's line. `/backstage` shows `face_seen` and `decided.who`. If nobody is matched, Troy's line plays.
+2. **Where is Lola.** An old phone in the "sala" runs `/camera?room=sala`. Joy asks "Nasaan si Lola?" on the caregiver phone → "Nasa sala, N minuto na." plus a snapshot only she sees. `/backstage` shows `cctv_seen`.
+3. **Door alert.** "Lola" walks past the `pinto` camera → a door alert card on the caregiver phone (wandering). At most one per 2 minutes. Single person in frame for the demo.
 
 ## Ask Sino about Lola (Should, only if wired after the freeze)
 
-A registered person asks on `/caregiver`. "Kamusta si Lola?" and "Ano ang mga tanong niya?" pull the log: the counts and her words, not a diagnosis. "Nasaan si Lola?" gets the no-camera answer and never names a room, because the CCTV add-on is cut. Code: `brain/ask.py` (PR #11). Skip this beat if it is not wired.
+A registered person asks on `/caregiver`. "Kamusta si Lola?" and "Ano ang mga tanong niya?" pull the log: the counts and her words, not a diagnosis. "Nasaan si Lola?" gets the no-camera answer and never names a room, unless the CCTV add-on is built and has a sighting (optional beat 2 above). Code: `brain/ask.py` (PR #11). Skip this beat if it is not wired.
 
 ## Fallbacks (internet stays off)
 
