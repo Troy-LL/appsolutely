@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sino's log · Backstage</title>
+<style>
+/* Fonts load locally from fonts/ (offline by construction). Falls back to system fonts if missing. */
+@font-face { font-family: "Fredoka"; src: url("fonts/Fredoka-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Fredoka"; src: url("fonts/Fredoka-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("fonts/DMSans-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("fonts/DMSans-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("fonts/DMSans-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+:root {
+  --paper: #f4ede0; --ink: #2b2420; --green: #2f5e4e; --amber: #e9a83a; --red: #c23232; --white: #ffffff;
+  --tap-min: 48px;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px;
+  --r-card: 18px; --r-button: 14px; --r-round: 999px;
+  --outline: 2px; --focus-width: 3px; --focus-offset: 2px;
+  --shadow-flat: 0 4px 0 #2b2420; --shadow-flat-s: 0 2px 0 #2b2420;
+  --font-heading: "Fredoka", "DM Sans", system-ui, sans-serif;
+  --font-text: "DM Sans", system-ui, sans-serif;
+  --breathe: 4s;
+}
+@media (prefers-reduced-motion: reduce) { :root { --breathe: 0s; } }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-text); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+:focus-visible { outline: var(--focus-width) solid var(--ink); outline-offset: var(--focus-offset); }
+
+/* Page shell: picture rail on top, two columns below */
+.rail { border-top: var(--outline) solid var(--ink); margin: 0; }
+.page { max-width: 1240px; margin: 0 auto; padding: var(--space-8) var(--space-8) var(--space-12); }
+.top { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-6); margin-bottom: var(--space-8); }
+.eyebrow { font: 500 14px/1.3 var(--font-heading); margin: 0 0 var(--space-1); }
+.wordmark { font: 600 56px/1.05 var(--font-heading); margin: 0; }
+.top__lead { font: 400 22px/1.45 var(--font-text); margin: var(--space-3) 0 0; max-width: 640px; }
+.top__sub { font-size: 16px; margin: var(--space-2) 0 0; }
+.top__tags { display: flex; gap: var(--space-3); flex-wrap: wrap; justify-content: flex-end; max-width: 420px; }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--space-8); align-items: start; }
+@media (max-width: 960px) { .cols { grid-template-columns: 1fr; } .top { flex-direction: column; align-items: flex-start; } .top__tags { justify-content: flex-start; } }
+
+/* Tags and chips */
+.tag { display: inline-flex; align-items: center; gap: var(--space-2); font: 600 14px/1 var(--font-heading); border: var(--outline) solid var(--ink); border-radius: var(--r-button); padding: 8px 12px; background: var(--paper); box-shadow: var(--shadow-flat-s); }
+.tag--ink { background: var(--ink); color: var(--paper); box-shadow: none; }
+.dot { width: 10px; height: 10px; border-radius: var(--r-round); background: var(--green); border: 1.5px solid var(--paper); }
+.dot--ring { border-color: var(--ink); }
+.chip { display: inline-flex; align-items: center; gap: var(--space-1); font: 600 14px/1 var(--font-heading); border: var(--outline) solid var(--ink); border-radius: var(--r-button); padding: 6px 10px; background: var(--paper); box-shadow: var(--shadow-flat-s); }
+.chip--ok { background: var(--green); color: var(--white); }
+.chip--needs { background: var(--amber); color: var(--ink); }
+.chip--urgent { background: var(--red); color: var(--white); }
+.chip--ignored { border-style: dashed; box-shadow: none; }
+
+/* The receipt: Sino's log */
+.tear { display: block; width: 100%; height: 12px; }
+.tear path { fill: var(--paper); stroke: var(--ink); stroke-width: var(--outline); stroke-linejoin: round; }
+.receipt { background: var(--paper); border-left: var(--outline) solid var(--ink); border-right: var(--outline) solid var(--ink); padding: var(--space-6); }
+.receipt__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); padding-bottom: var(--space-4); border-bottom: var(--outline) dashed var(--ink); }
+.receipt__title { font: 600 22px/1.25 var(--font-heading); margin: 0; }
+.receipt__note { font-size: 16px; margin: var(--space-1) 0 0; }
+
+.tl { list-style: none; margin: 0; padding: var(--space-6) 0 0; }
+.row { display: grid; grid-template-columns: 72px 28px minmax(0, 1fr); gap: 0 var(--space-3); padding-bottom: var(--space-8); position: relative; }
+.row::before { content: ""; position: absolute; left: calc(72px + var(--space-3) + 13px); top: 28px; bottom: 0; border-left: var(--outline) solid var(--ink); }
+.row:last-child { padding-bottom: var(--space-4); }
+.row:last-child::before { display: none; }
+.row__time { font: 600 22px/1.1 var(--font-heading); font-variant-numeric: tabular-nums; }
+.row__sec { display: block; font: 500 14px/1.3 var(--font-heading); }
+.node { width: 28px; height: 28px; border-radius: var(--r-round); border: var(--outline) solid var(--ink); display: flex; align-items: center; justify-content: center; font: 700 13px/1 var(--font-text); background: var(--paper); position: relative; z-index: 1; }
+.node--ok { background: var(--green); color: var(--white); }
+.node--needs { background: var(--amber); color: var(--ink); }
+.node--urgent { background: var(--red); color: var(--white); }
+.node--ignored { border-style: dashed; }
+.row__kicker { font: 600 16px/1.25 var(--font-heading); margin: 2px 0 var(--space-1); }
+.row__heard { font: 700 22px/1.3 var(--font-text); margin: 0 0 var(--space-2); }
+.row__heard mark { background: transparent; color: inherit; box-shadow: inset 0 -8px 0 var(--amber); }
+.row--ignored .row__heard { font-weight: 400; }
+.row__why { font: 400 15px/1.6 var(--font-text); margin: 0 0 var(--space-3); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.meter { display: inline-flex; align-items: center; gap: var(--space-2); font: 600 14px/1 var(--font-heading); }
+.meter__bar { display: inline-flex; gap: 2px; }
+.meter__bar i { width: 8px; height: 14px; border: 1.5px solid var(--ink); border-radius: 2px; background: var(--paper); }
+.meter__bar i.on { background: var(--ink); }
+.empty { padding: var(--space-8) 0; font-size: 22px; line-height: 1.45; }
+
+.totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); padding-top: var(--space-4); border-top: var(--outline) dashed var(--ink); text-align: center; }
+.total__n { display: block; font: 600 35px/1 var(--font-heading); }
+.total__l { display: block; font: 500 14px/1.3 var(--font-heading); margin-top: var(--space-1); }
+.total--ok .total__n { color: var(--green); }
+
+/* Side cards */
+.side { display: grid; gap: var(--space-6); position: sticky; top: var(--space-6); }
+@media (max-width: 960px) { .side { position: static; } }
+.card { background: var(--paper); border: var(--outline) solid var(--ink); border-radius: var(--r-card); box-shadow: var(--shadow-flat); padding: var(--space-6); }
+.card__title { font: 600 22px/1.25 var(--font-heading); margin: 0 0 var(--space-3); }
+.card p { margin: 0 0 var(--space-3); font-size: 16px; }
+.status { display: flex; align-items: center; gap: var(--space-3); font: 600 22px/1.25 var(--font-heading); margin: 0 0 var(--space-3); }
+.status .node { flex: none; }
+
+.kv { list-style: none; margin: 0; padding: 0; }
+.kv li { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-2) 0; border-bottom: var(--outline) solid var(--ink); font-size: 16px; }
+.kv li:last-child { border-bottom: 0; }
+.kv b { font: 600 16px/1.5 var(--font-heading); }
+.kv .todo { font: 600 16px/1.5 var(--font-heading); }
+
+/* Buttons and field */
+.btn { min-height: var(--tap-min); padding: 0 var(--space-6); border: var(--outline) solid var(--ink); border-radius: var(--r-button); background: var(--green); color: var(--white); font: 700 16px/1.25 var(--font-text); box-shadow: var(--shadow-flat); cursor: pointer; }
+.btn--quiet { background: var(--paper); color: var(--ink); }
+.btn:active { box-shadow: none; transform: translateY(4px); }
+@media (prefers-reduced-motion: reduce) { .btn:active { transform: none; } }
+.listen { display: flex; align-items: center; gap: var(--space-4); }
+.ring { flex: none; width: 56px; height: 56px; border-radius: var(--r-round); border: 8px solid var(--ink); }
+.is-listening .ring { animation: breathe var(--breathe) ease-in-out infinite; }
+@keyframes breathe { 50% { transform: scale(1.05); } }
+.field { display: grid; gap: var(--space-2); }
+.field label { font: 600 16px/1.25 var(--font-heading); }
+.field input { min-height: var(--tap-min); padding: 0 var(--space-4); border: var(--outline) solid var(--ink); border-radius: var(--r-button); background: var(--white); color: var(--ink); font: 400 16px/1.5 var(--font-text); }
+.field .btn { justify-self: start; }
+</style>
+</head>
+<body>
+<hr class="rail">
+<main class="page">
+
+  <header class="top">
+    <div>
+      <p class="eyebrow" id="date"></p>
+      <h1 class="wordmark">Sino's log</h1>
+      <p class="top__lead" id="summary"></p>
+      <p class="top__sub">How Sino decided, line by line. Families never see this screen.</p>
+    </div>
+    <div class="top__tags">
+      <span class="tag tag--ink"><span class="dot"></span>Offline all day</span>
+      <span class="tag" id="hub-tag"><span class="dot dot--ring"></span>Hub ready</span>
+      <span class="tag" id="last-tag">Last heard: none yet</span>
+      <span class="tag" id="ignored-tag">TV lines ignored: 0</span>
+    </div>
+  </header>
+
+  <div class="cols">
+
+    <!-- Decision log -->
+    <section aria-label="Decisions">
+      <svg class="tear" viewBox="0 0 600 12" preserveAspectRatio="none" aria-hidden="true"><path d="M0 12 L0 6 L10 0 L20 6 L30 0 L40 6 L50 0 L60 6 L70 0 L80 6 L90 0 L100 6 L110 0 L120 6 L130 0 L140 6 L150 0 L160 6 L170 0 L180 6 L190 0 L200 6 L210 0 L220 6 L230 0 L240 6 L250 0 L260 6 L270 0 L280 6 L290 0 L300 6 L310 0 L320 6 L330 0 L340 6 L350 0 L360 6 L370 0 L380 6 L390 0 L400 6 L410 0 L420 6 L430 0 L440 6 L450 0 L460 6 L470 0 L480 6 L490 0 L500 6 L510 0 L520 6 L530 0 L540 6 L550 0 L560 6 L570 0 L580 6 L590 0 L600 6 L600 12 Z"/></svg>
+      <div class="receipt">
+        <div class="receipt__head">
+          <div>
+            <h2 class="receipt__title">Heard, then decided</h2>
+            <p class="receipt__note">Newest first. Each row: words heard, the route taken, how sure, how long.</p>
+          </div>
+        </div>
+        <ol class="tl" id="log"></ol>
+        <div class="totals" id="totals"></div>
+      </div>
+      <svg class="tear" viewBox="0 0 600 12" preserveAspectRatio="none" aria-hidden="true" style="transform: scaleY(-1)"><path d="M0 12 L0 6 L10 0 L20 6 L30 0 L40 6 L50 0 L60 6 L70 0 L80 6 L90 0 L100 6 L110 0 L120 6 L130 0 L140 6 L150 0 L160 6 L170 0 L180 6 L190 0 L200 6 L210 0 L220 6 L230 0 L240 6 L250 0 L260 6 L270 0 L280 6 L290 0 L300 6 L310 0 L320 6 L330 0 L340 6 L350 0 L360 6 L370 0 L380 6 L390 0 L400 6 L410 0 L420 6 L430 0 L440 6 L450 0 L460 6 L470 0 L480 6 L490 0 L500 6 L510 0 L520 6 L530 0 L540 6 L550 0 L560 6 L570 0 L580 6 L590 0 L600 6 L600 12 Z"/></svg>
+    </section>
+
+    <!-- Controls and proof -->
+    <aside class="side" aria-label="Hub and tests">
+
+      <div class="card">
+        <h2 class="card__title">Hub</h2>
+        <p class="status" id="health"><span class="node node--ok">✓</span><span>Hub ready</span></p>
+        <ul class="kv">
+          <li><span>Model mode</span><b id="mode">ollama</b></li>
+          <li><span>Network</span><b>Offline, LAN only</b></li>
+        </ul>
+      </div>
+
+      <div class="card" id="test-card">
+        <h2 class="card__title">Test</h2>
+        <p class="status"><span class="node node--needs">●</span><span id="test-badge">Not passed yet</span></p>
+        <p>Passes only after a real hub run is logged in the notes. A text-only run never counts.</p>
+        <ul class="kv">
+          <li><span>Urgent</span><span class="todo" id="t-urgent">TODO</span></li>
+          <li><span>Comfort</span><span class="todo" id="t-comfort">TODO</span></li>
+          <li><span>TV false triggers</span><span class="todo" id="t-tv">TODO</span></li>
+          <li><span>Speech to reply</span><span class="todo" id="t-lat">TODO</span></li>
+        </ul>
+      </div>
+
+      <div class="card" id="listen-card">
+        <h2 class="card__title">Listen now</h2>
+        <div class="listen">
+          <span class="ring" aria-hidden="true"></span>
+          <button class="btn" id="listen-btn" type="button" aria-pressed="false">Listen now</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card__title">Type a question</h2>
+        <div class="field">
+          <label for="q">What would Lola say?</label>
+          <input id="q" type="text" autocomplete="off" placeholder="Nasaan yung aso?">
+          <button class="btn" id="ask-btn" type="button">Send to Sino</button>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+</main>
+
+<script>
+/* ---------- Data ----------
+   Swap SAMPLE for the hub feed. Event shape (adjust to architecture.md):
+   { time:"5:15", sec:"07", kind:"ok|needs|urgent|ignored", kicker, heard, trigger?, why, route, source, conf (0..1), secs }
+   Live hookup: const ws = new WebSocket("wss://<hub-ip>/events"); ws.onmessage = e => addRow(JSON.parse(e.data));
+*/
+const SAMPLE = [
+  { time:"5:31", sec:"40", kind:"needs", kicker:"Heard", heard:"Nasaan yung aso?", why:"No matching question. Model unsure, sent to caregiver.", route:"Sent to caregiver", source:"Model", conf:0.62, secs:4.6 },
+  { time:"5:28", sec:"12", kind:"needs", kicker:"Heard", heard:"Uminom na ba ako ng gamot?", why:"Medication is never answered by Sino.", route:"Sent to caregiver", source:"Rule", conf:0.9, secs:0.6 },
+  { time:"5:22", sec:"55", kind:"urgent", kicker:"Safety word", heard:"Ay, masakit dibdib ko", trigger:"masakit dibdib", why:"Urgent rule fired. Hub chime played, red card sent to phone.", route:"Urgent", source:"Rule", conf:0.99, secs:0.4 },
+  { time:"5:19", sec:"03", kind:"ignored", kicker:"Ignored", heard:"...at ito ang balita ngayong gabi", why:"TV sign-off line dropped by the junk filter.", route:"Ignored", source:"Filter", conf:null, secs:0.1 },
+  { time:"5:15", sec:"07", kind:"ok", kicker:"Heard", heard:"Si Mama asan?", why:"Matched a known question. Ate Joy's recorded voice played.", route:"Comfort reply", source:"Matcher", conf:0.95, secs:1.8 }
+];
+const rows = SAMPLE.slice();
+
+/* ---------- Render ---------- */
+const MARK = { ok:"✓", needs:"●", urgent:"▲", ignored:"–" };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+
+function heardHtml(r) {
+  const t = esc(r.heard);
+  if (!r.trigger) return t;
+  const w = esc(r.trigger);
+  return t.replace(w, "<mark>" + w + "</mark>");
+}
+function meter(c) {
+  if (c == null) return "";
+  const on = Math.round(c * 10);
+  let bars = "";
+  for (let i = 0; i < 10; i++) bars += '<i class="' + (i < on ? "on" : "") + '"></i>';
+  return '<span class="meter"><span class="meter__bar" aria-hidden="true">' + bars + "</span>" + Math.round(c * 100) + "% sure</span>";
+}
+function rowHtml(r) {
+  const word = { ok:"Comfort reply", needs:"Needs you", urgent:"Urgent", ignored:"Ignored" }[r.kind];
+  return '<li class="row row--' + r.kind + '">' +
+    '<div class="row__time">' + esc(r.time) + '<span class="row__sec">:' + esc(r.sec) + "</span></div>" +
+    '<div class="node node--' + r.kind + '" aria-hidden="true">' + MARK[r.kind] + "</div>" +
+    "<div>" +
+      '<p class="row__kicker">' + esc(r.kicker) + "</p>" +
+      '<p class="row__heard">' + heardHtml(r) + "</p>" +
+      '<p class="row__why">' + esc(r.why) + "</p>" +
+      '<div class="chips">' +
+        '<span class="chip chip--' + r.kind + '">' + MARK[r.kind] + " " + esc(r.route || word) + "</span>" +
+        '<span class="chip">' + esc(r.source) + "</span>" +
+        meter(r.conf) +
+        '<span class="meter">' + r.secs.toFixed(1) + " seconds</span>" +
+      "</div>" +
+    "</div></li>";
+}
+function render() {
+  const log = document.getElementById("log");
+  log.innerHTML = rows.length ? rows.map(rowHtml).join("") :
+    '<li class="empty">No moments yet today. Sino is listening.</li>';
+  const n = k => rows.filter(r => r.kind === k).length;
+  document.getElementById("totals").innerHTML =
+    '<div class="total total--ok"><span class="total__n">' + n("ok") + '</span><span class="total__l">Answered</span></div>' +
+    '<div class="total"><span class="total__n">' + n("needs") + '</span><span class="total__l">Needs you</span></div>' +
+    '<div class="total"><span class="total__n">' + n("urgent") + '</span><span class="total__l">Urgent</span></div>' +
+    '<div class="total"><span class="total__n">' + n("ignored") + '</span><span class="total__l">TV ignored</span></div>';
+  document.getElementById("ignored-tag").textContent = "TV lines ignored: " + n("ignored");
+  const heard = rows.filter(r => r.kind !== "ignored");
+  const word = (c, one, many) => c + " " + (c === 1 ? one : many);
+  document.getElementById("summary").textContent = heard.length
+    ? "Sino heard " + word(heard.length, "line", "lines") + " today: " + n("ok") + " answered, " + n("needs") + " sent to the caregiver, " + word(n("urgent"), "urgent alert", "urgent alerts") + "."
+    : "Nothing heard yet today. Sino is listening.";
+  document.getElementById("last-tag").textContent = heard.length
+    ? "Last heard: " + heard[0].time + ":" + heard[0].sec : "Last heard: none yet";
+  document.getElementById("date").textContent = new Date().toLocaleDateString("en-PH", { weekday:"long", month:"long", day:"numeric" });
+}
+function addRow(r) { rows.unshift(r); render(); }
+
+/* ---------- Test badge: passes only from a logged hub run ---------- */
+function setTest(hub) { // hub = { time, urgent, comfort, tv, latency } from docs/NOTES.md
+  if (!hub) return;
+  document.getElementById("test-badge").textContent = "Passed " + hub.time;
+  document.getElementById("t-urgent").textContent = hub.urgent;
+  document.getElementById("t-comfort").textContent = hub.comfort;
+  document.getElementById("t-tv").textContent = hub.tv;
+  document.getElementById("t-lat").textContent = hub.latency;
+}
+
+/* ---------- Controls ---------- */
+const listenCard = document.getElementById("listen-card");
+const listenBtn = document.getElementById("listen-btn");
+listenBtn.addEventListener("click", () => {
+  const on = listenCard.classList.toggle("is-listening");
+  listenBtn.setAttribute("aria-pressed", on);
+  listenBtn.textContent = on ? "Stop listening" : "Listen now";
+  listenBtn.classList.toggle("btn--quiet", on);
+  // TODO: tell the hub (POST /listen) to record one line now.
+});
+function ask() {
+  const input = document.getElementById("q");
+  const text = input.value.trim();
+  if (!text) return;
+  const now = new Date();
+  addRow({ time: ((now.getHours() % 12) || 12) + ":" + String(now.getMinutes()).padStart(2, "0"), sec: String(now.getSeconds()).padStart(2, "0"),
+    kind:"needs", kicker:"Typed", heard:text, why:"Typed from backstage. Hook this to decide() on the hub.", route:"Sent to caregiver", source:"Typed", conf:null, secs:0 });
+  input.value = "";
+}
+document.getElementById("ask-btn").addEventListener("click", ask);
+document.getElementById("q").addEventListener("keydown", e => { if (e.key === "Enter") ask(); });
+
+render();
+</script>
+</body>
+</html>

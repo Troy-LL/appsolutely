@@ -75,10 +75,10 @@ What `brain/decide.py` does today: the TV-word rule (`TV_PHRASES` and `TV_TOKENS
 | Speech to text | Whisper small (default); medium only as the fallback below | whisper.cpp (`-l tl`) | See the selection rule below |
 | Decision for unclear lines | Qwen2.5-3B (`qwen2.5:3b`) (default); Qwen2.5-1.5B (`qwen2.5:1.5b`) only with the medium fallback | Ollama | Must return JSON matching the decision interface. No AI phrasing for the recap |
 | Add-on a: face match (T6) | OpenCV YuNet (detect) + SFace (recognise), a few MB | OpenCV, hub CPU | **Un-cut Sat 3:23 AM.** After the core runs on the hub and T5 passes; hard stop 5 AM. One frame per "Sino ka?". Not built yet ([features.md](features.md#should-after-the-330-am-freeze)) |
-| Add-on b: person detection | n/a | n/a | **Cut, Sat 2:00 AM. Next step** |
+| Add-on b: recorded clip | OpenCV HOG people detector | OpenCV, hub CPU | **Sat ~4:30 AM.** Files on the hub, scanned before the question. Not a live camera. Live CCTV stays a next step ([features.md](features.md)) |
 | Add-on c: speaker match | n/a | n/a | **Cut. Not built** ([mvp-plan.md](mvp-plan.md)) |
 
-No text-to-speech or voice-cloning model is used anywhere: Lola only hears the family's own recordings (safety rule in [README.md](README.md#safety-rules)). CCTV and voice ID are cut, and there is no live call. "Sino ka?" is a seeded known question: the iPad shows the registered person's photo and plays the line they recorded. With add-on (a) after the freeze, a high-confidence match plays that family member's line; anything else plays Troy's ([features.md](features.md#should-after-the-330-am-freeze)).
+No text-to-speech or voice-cloning model is used anywhere: Lola only hears the family's own recordings (safety rule in [README.md](README.md#safety-rules)). Live CCTV and voice ID are cut, and there is no live call. The recorded-clip demo reads files on the hub and does not open a camera. "Sino ka?" is a seeded known question: the iPad shows the registered person's photo and plays the line they recorded. With add-on (a) after the freeze, a high-confidence match plays that family member's line; anything else plays Troy's ([features.md](features.md#should-after-the-330-am-freeze)).
 
 ### Speech model selection (by 11:30 PM)
 
@@ -105,7 +105,7 @@ Web stack is the repo default in [../../AGENTS.md](../../AGENTS.md): React + Vit
    - `play_reply`: `{"event":"play_reply","reply_id":"","reply_audio":"","photo":""}` to `/lola` on comfort. `reply_audio` and `photo` come from the questions file. Lola's screen shows the photo and plays the recording, and nothing else.
    - `alert`: `{"event":"alert","transcript":""}` to `/caregiver` on urgent. The red card shows `transcript` and is the only card that plays a sound. The hub chime is separate, from the hub speaker.
    - `ask_caregiver`: `{"event":"ask_caregiver","transcript":"","count":1}` to `/caregiver` when the action is caregiver. Quiet. Repeats of the same `transcript` share one yellow card, and `count` is how many times. One tap records a reply through `POST /questions`.
-   - `meal_logged`: `{"event":"meal_logged"}`. No extra fields. This is the Should meals check, after the 3:30 AM freeze. Clients ignore it until then. The name means the caregiver tapped "Kumain na".
+   - `meal_logged`: `{"event":"meal_logged"}`. No extra fields on the wire. The caregiver socket sends this when they tap "Kumain na". The hub does not send it back out. It appends `{"event":"meal_logged","ts":""}` to the decisions log and stamps `ts` itself (ISO 8601).
    - `health`: `{"event":"health","whisper":true,"ollama":true,"server":true,"mic":true,"offline":true}`. `whisper`, `ollama`, `server`, and `mic` are the health light. `true` means that part is up. `offline` true means the OFFLINE badge is showing. Sent when a client connects and again when a part changes.
 3. **Questions file:** `{id, question, phrasings[], reply_audio, photo, speaker}`. Troy's seed file is `brain/seed.json`. Donita's loader (D5) reads it, and quick setup appends to the same list.
    - `GET /questions` returns the array.
@@ -133,7 +133,7 @@ Changing an interface needs a post in the team chat, because every screen depend
 
 ## Running the hub server
 
-`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `GET /questions`, `POST /questions`, and `/media`, and it calls `decide()` and `answer_about_lola()`. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
+`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `GET /questions`, `POST /questions`, `POST /clips`, `GET /clips/snapshot`, and `/media`, and it calls `decide()` and `answer_about_lola()`. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
 
 TODO: contract gap — the interfaces do not name a listen port. `PORT` defaults to 8000. `HOST` defaults to `0.0.0.0`.
 
@@ -150,6 +150,16 @@ TODO: contract gap — junk filter thresholds. `too quiet`: the loudest sample i
 TODO: contract gap — `mic` in `health`. It is true at start when ffmpeg's device list has `MIC_DEVICE`, then true after each good recording, and false after a failed recording or an all-zero clip (no real room is exactly zero). Only `python3 brain/server.py` opens the mic; a test that imports `app` keeps `mic` false and listen now does nothing. macOS asks once for microphone permission for the app that starts the server (Terminal, iTerm, or the editor). Allow it. TODO: check on the hub whether a denied permission shows as a failed recording or as an all-zero `too quiet` clip.
 
 TODO: contract gap — no route or event for Ask Sino about Lola. Inbound on `/ws` from the caregiver socket: `{"event":"ask_about_lola","question":""}`. Reply to that socket only: `{"event":"about_lola","intent":"","answer":"","source":"","latency_ms":0}`.
+
+TODO: contract gap — meals check (T4m), for Viviene's V4. Post in the team chat. The wire `meal_logged` stays `{"event":"meal_logged"}`; the hub stamps `ts` on the log line only. On comfort for `meal-check`, `decided` gains additive `reply_variant` (`ate`, `ate_repeat`, or `unknown`) and `last_meal_ts` (that hub `ts`, or `""` when no meal is logged). `play_reply` uses the matching object in seed `replies` (`reply_audio`, `photo`, `speaker`); the question's top-level `reply_audio` and `photo` are the fallback. `unknown` also sends a quiet `ask_caregiver` whose `transcript` is "Lola asked if she's eaten. No meal logged." The same log counts food asks since that meal for the recap.
+
+TODO: contract gap — recorded-clip demo, all additive, nothing renamed. Post them in the team chat. Footage stays on the hub (`brain/clips/media/`, gitignored). Frames stay in memory. The snapshot goes to the caregiver only, never to Lola's screen.
+
+- `POST /clips`: optional multipart file `clip` (`.mp4`, `.mov`, `.webm`). Saving a file, or a POST with no file, scans the folder again. The scan also runs at startup, in the background when clips are present, and never when the question is asked.
+- `GET /clips/snapshot`: the latest in-memory JPEG, or 404 when nothing was detected.
+- `about_lola` gains `snapshot` (`"/clips/snapshot"`) and `label` (`"RECORDED CLIP · DEMO"`) only when the answer comes from a recording.
+- `clip_card` (caregiver socket only, when nothing was detected): `{"event":"clip_card","text":"Hindi ko sigurado kung nasaan si Lola. Pakitingnan."}`.
+- `clip_scan` (backstage, one per scan): `{"event":"clip_scan","rooms":[],"frames":0,"detections":0,"ms":0}`.
 
 **Add-on a, face match (after the freeze, not built yet; Sat 3:23 AM).** TODO: contract gaps, all additive, nothing renamed. Post them in the team chat when built:
 
@@ -178,6 +188,20 @@ Hub (M1, Ollama, mkcert `wss://`):
 ```bash
 HOST=0.0.0.0 PORT=8000 SINO_MODEL=ollama HUB_URL=http://127.0.0.1:11434 CERT=/absolute/path/cert.pem KEY=/absolute/path/key.pem python3 brain/server.py
 ```
+
+**One command (D6): `hub/start.sh`.** Run it from the repo on the hub. Anyone on the team can.
+
+```bash
+hub/start.sh          # start what is not answering, warm qwen2.5:3b, print the health light
+hub/start.sh status   # health light only: Whisper, AI model, server, mic, offline, plus the hub URL
+hub/start.sh stop     # stop only what hub/start.sh started
+```
+
+- A part that already answers is left alone: Ollama (`127.0.0.1:11434`), whisper-server (`127.0.0.1:8080`), the hub server (`https://localhost:8000/health`). A part that does not is started in the background: `ollama serve` with `OLLAMA_KEEP_ALIVE=-1`, whisper-server with `-l tl` (plus `--vad` when the Silero model file is there), and `brain/server.py` with the hub line above and the certificates in `~/sino/certs/`. It waits up to 60 s in total. If a part did not come up, it names it and its log and exits non-zero. Don't press Ctrl+C while it starts things.
+- Logs are `~/sino/logs/<part>.log` and PID files are `~/sino/run/<part>.pid`. `stop` only stops the PIDs in those files, and leaves processes started by hand alone. Every setting at the top of the script can be overridden with an environment variable.
+- Keep-warm: start loads `qwen2.5:3b` (`keep_alive` -1), then a loop sends a one-token request every 60 s. Reason: after ~35 min idle the first request took 9.00 s because macOS swapped the model out (`docs/NOTES.md`, model smoke test).
+- It does not touch the firewall. It prints the enable command (`sudo pfctl -f /etc/pf.sino.conf -e`), and warns when the certificate does not include the hub's current IP.
+- Urgent chime: `hub/chime.py` runs `afplay -v 1 /System/Library/Sounds/Glass.aiff` 5 times, back to back (about 8.25 s, never two alarms at once), at the moment `alert` goes to `/caregiver` ([hub-chime.md](hub-chime.md)). Only `brain/server.py` `main()` turns it on, so tests make no sound. `CHIME=0` keeps it off. Audible across a room: to verify at smoke test.
 
 ## Offline guarantees
 

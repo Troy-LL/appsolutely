@@ -1,0 +1,37 @@
+/* Sino design tokens (docs/sino/design-system.md, Appendix A). Five colours plus white. */
+@font-face { font-family: "Fredoka"; src: url("../assets/fonts/Fredoka-Medium.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Fredoka"; src: url("../assets/fonts/Fredoka-SemiBold.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("../assets/fonts/DMSans-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("../assets/fonts/DMSans-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+
+:root {
+  --paper: #f4ede0;
+  --ink: #2b2420;
+  --green: #2f5e4e;
+  --amber: #e9a83a;
+  --red: #c23232;
+  --white: #ffffff;
+  --tap-min: 48px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --r-frame: 6px;
+  --r-photo: 2px;
+  --r-card: 18px;
+  --r-button: 14px;
+  --r-round: 999px;
+  --outline: 2px;
+  --frame: 8px;
+  --frame-l: 12px;
+  --mat: 8px;
+  --focus-width: 3px;
+  --focus-offset: 2px;
+  --shadow-flat: 0 4px 0 #2b2420;
+  --shadow-flat-s: 0 2px 0 #2b2420;
+  --font-heading: "Fredoka", "DM Sans", system-ui, sans-serif;
+  --font-text: "DM Sans", system-ui, sans-serif;
+}

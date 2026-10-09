@@ -31,8 +31,11 @@ The iPad shows their photo and plays the "Sino ka?" line they recorded in setup.
 **"What if she wanders out?"**
 Not in the build. A door alert (the hub notices her leaving and chimes) is a next step; finding her outside is a GPS tracker's job, and Sino could work next to one.
 
+**"Is she in the sala right now?"**
+No, this reads a recording. Live cameras are a next step, with consent.
+
 **"What does the AI actually do?"**
-Silero VAD detects speech; whisper.cpp transcribes it on the hub; a filter drops junk; rules and a matcher handle urgent words and known questions; Qwen2.5 in Ollama decides the unclear lines as JSON. Backstage shows every step with its latency. A registered person can ask Sino about Lola. "How is she" and "what has she been saying" are the local log, counts and her words, not a diagnosis. "Where is she" is "no camera answer, no room guessed", because the camera add-on is cut. Ask Sino about Lola (`brain/ask.py`) and the daily recap are Should items after the freeze; the recap is those same counts computed by code.
+Silero VAD detects speech; whisper.cpp transcribes it on the hub; a filter drops junk; rules and a matcher handle urgent words and known questions; Qwen2.5 in Ollama decides the unclear lines as JSON. Backstage shows every step with its latency. A registered person can ask Sino about Lola. "How is she" and "what has she been saying" are the local log, counts and her words, not a diagnosis. "Where is she" reads a recording when one was scanned: it says where the clip last showed her, in the past tense, and the caregiver sees that frame labeled "RECORDED CLIP · DEMO". It never says where she is right now. Live cameras are a next step. Ask Sino about Lola (`brain/ask.py`) and the daily recap are Should items after the freeze; the recap is those same counts computed by code.
 
 **"Why not the cloud?"**
 An always-on mic in Lola's sala must never stream anywhere. It also has to keep working when the internet is down.
@@ -65,7 +68,7 @@ See the owners table in [mvp-plan.md](mvp-plan.md#owners). Everyone explains the
 | Hub owner asleep when the hub breaks | `start.sh` + health light, so anyone can restart it; handoff notes | Donita |
 | Alert fatigue for the caregiver | Yellow cards are quiet and grouped; only red makes sound | Viviene |
 | Lola is distressed by the system | Lola's iPad stays calm and never red; it never quizzes her or announces names as a test | Ayen |
-| Overnight scope creep | MVP frozen at 3:30 AM (moved from 2:00 AM); all add-ons (a) face match, (b) CCTV, (c) voice ID and the live call are cut to next steps | Troy |
+| Overnight scope creep | MVP frozen at 3:30 AM (moved from 2:00 AM). (a) face match and (b) the recorded-clip demo are after-freeze add-ons with a 5:00 AM stop. Live CCTV, the door alert, (c) voice ID, and the live call stay next steps | Troy |
 | "Sino ka?" names the wrong person | Without face match, "Sino ka?" plays Troy's seeded line. With face match (after-freeze add-on), a family member's line plays only on a high-confidence match of the 3 enrolled people; anything else plays Troy's line, never the wrong relative. The beat is skipped if it misfires in rehearsal | Troy |
 | Overclaiming in the pitch | Unmeasured numbers labeled "to verify"; no "faster than cloud"; battery only if shown unplugged; stub-mode numbers labeled as stub; seed data disclosed | Everyone |
 | Privacy of voices, faces, and transcripts | Everything stays on the hub; no audio stored by default; family can delete the log | Donita |

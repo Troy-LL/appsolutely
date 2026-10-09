@@ -7,7 +7,7 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 - Hub (M1, 8 GB) running from `start.sh`, seed loaded, health light green.
 - iPad on `/lola`, "Simulan" already tapped. iPhone on `/caregiver`, open on the hub's network (no push without internet). Backstage on the projected screen.
 - The hub's LAN-only firewall is on and the OFFLINE badge is visible (it comes from a real outbound check failing). On rung 1 the house network is Troy's iPhone hotspot, which has cellular, so the claim is "the hub is firewalled to the house network", not "every device is offline". The iPhone cannot go to airplane mode, because that turns the hotspot off ([architecture.md](architecture.md#network)).
-- Clips ready: the 20 s teleserye clip (TODO below). No CCTV clip and no voice ID: both are cut.
+- Clips ready: the 20 s teleserye clip (TODO below). No live CCTV and no voice ID: both stay cut. The recorded-clip demo is optional, below.
 - Recordings loaded: Joy's four replies and Troy's "Sino ka?" line (TODO: not recorded yet as of Sat 2:00 AM).
 - Hub volume up for the urgent chime.
 
@@ -23,7 +23,7 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 | 3:30–4:00 | "Masakit dibdib ko" → the hub chimes ([hub-chime.md](hub-chime.md)) and a red card appears on the phone. `/lola` stays calm and never red. A medication question goes to the caregiver | Hub + iPhone |
 | 4:00–5:00 | Why local + close + scan-to-vote | Slide |
 
-The "Nasaan si Lola?" camera view, the door alert, voice ID, and the live call are cut. They go on the "next steps" slide. Face match is one optional beat below, only if built after the freeze. If Ask Sino about Lola is wired after the freeze, show "Kamusta si Lola?" on `/caregiver` in 15 s at the 3:30 mark (TODO: only if wired).
+The live "Nasaan si Lola?" camera view, the door alert, voice ID, and the live call are cut. They go on the "next steps" slide. Face match is one optional beat below, only if built after the freeze. The recorded-clip demo is the other optional beat. If Ask Sino about Lola is wired after the freeze, show "Kamusta si Lola?" on `/caregiver` in 15 s at the 3:30 mark (TODO: only if wired).
 
 **Pitch order:** lead with the always-on mic privacy line and the four differentiators in [README.md](README.md#what-makes-it-different) (real family voices, silence as a decision, family-written replies, visible decisions). The offline/brownout angle is supporting proof, not the hook.
 
@@ -61,7 +61,15 @@ Joy (a teammate enrolled as joy) stands in front of the camera. Lola asks "Sino 
 
 ## Ask Sino about Lola (Should, only if wired after the freeze)
 
-A registered person asks on `/caregiver`. "Kamusta si Lola?" and "Ano ang mga tanong niya?" pull the log: the counts and her words, not a diagnosis. "Nasaan si Lola?" gets the no-camera answer and never names a room, because the CCTV add-on is cut. Code: `brain/ask.py` (PR #11). Skip this beat if it is not wired.
+A registered person asks on `/caregiver`. "Kamusta si Lola?" and "Ano ang mga tanong niya?" pull the log: the counts and her words, not a diagnosis. Code: `brain/ask.py` (PR #11). Skip this beat if it is not wired.
+
+### Optional: recorded clip (only if it is reliable on the demo clips)
+
+Joy asks "Nasaan si Lola?" on the caregiver phone. Sino answers "Huling nakita sa recording: sala (clip 0:42)" and shows that frame, labeled "RECORDED CLIP · DEMO". Troy says out loud that it is a recorded clip, not where she is right now. Live cameras stay on the next-steps slide. Skip this beat if no clip was scanned, or if it is not reliable: it goes back to the next-steps slide.
+
+## Optional: meals check
+
+The caregiver taps "Kumain na". Lola asks "Kumain na ba ako?". The `ate` clip plays. Skip this beat if Joy's three meal clips are not recorded.
 
 ## Fallbacks (internet stays off)
 

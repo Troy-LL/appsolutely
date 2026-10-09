@@ -208,8 +208,17 @@ def run_text():
     def bucket(name):
         return [(row, d) for row, d in checked if row["bucket"] == name]
 
+    def matches(row, decision):
+        if decision["action"] != row["expected"]:
+            return False
+        if "reply_id" in row and decision["reply_id"] != row["reply_id"]:
+            return False
+        if "reason" in row and decision["reason"] != row["reason"]:
+            return False
+        return True
+
     def passed(pairs):
-        return sum(1 for row, d in pairs if d["action"] == row["expected"])
+        return sum(1 for row, decision in pairs if matches(row, decision))
 
     def ratio(pairs):
         return f"{passed(pairs)}/{len(pairs)}"
@@ -217,7 +226,7 @@ def run_text():
     urgent, comfort, tv, new = bucket("urgent"), bucket("comfort"), bucket("tv"), bucket("new")
     tv_false = [row["id"] for row, d in tv if d["action"] != "silent"]
     model_ids = [row["id"] for row, d in checked if is_model_path(d)]
-    failed_ids = [row["id"] for row, d in checked if d["action"] != row["expected"]]
+    failed_ids = [row["id"] for row, decision in checked if not matches(row, decision)]
 
     urgent_met = passed(urgent) == len(urgent)
     comfort_met = passed(comfort) >= COMFORT_MIN_RATIO * len(comfort)
