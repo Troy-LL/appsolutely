@@ -60,8 +60,17 @@ Hub: M1 MacBook Air, 8 GB (MacBookAir10,1), macOS 26.5.1. whisper.cpp built with
 | same, **B: `language=auto`** | same | same 32 clips | Exact 7/32, WER 0.63. Decision right 18/32, urgent missed 4 (u09, us03, us14, us18) | median 0.88 s, max 3.16 s | No |
 | same, **C: `language=tl` + a generic Taglish style prompt** ("Uy, kumain ka na ba? Okay lang ako, medyo tired lang. Saan na yung remote? Wait lang, tatawag ako mamaya.") | same | same 32 clips | Exact 10/32, WER 0.54. Decision right 25/32, urgent missed 2 (u04, us14) | median 0.52 s, max 0.88 s | No |
 | same, **D: `language=tl` + known-questions prompt** (`WHISPER_HINT=1` style) | same | same 32 clips | Exact 14/32, WER 0.31. Decision right 28/32, urgent missed 1 (u04 "Nahulog ako" heard "Na hula ko"). Also "Where am I?" heard "Sa kong isang?" | median 0.57 s, max 0.91 s | No: missed an urgent clip. Keep `WHISPER_HINT` off |
+| Whisper small, `whisper-server`, VAD on, temperature 0. **real Taglish A: `language=tl`** (current) | Hub, Wi-Fi on (Sat ~5:00 AM) | Donita's own voice, 10 mixed Taglish sentences, one take each, 4.5 s clips recorded on the hub mic (same length `hub/listen.py` records now). Each transcript then went through `hub/listen.py`'s junk filter and `decide()` in stub mode. Expected actions only for 4 lines: t03 "Masakit yung tummy ko.", t06 "Nahulog ako sa CR, help!", t10 "Tulong, I can't breathe!" (urgent) and t09 "Uminom na ba ako ng medicine ko?" (caregiver, medication) | Exact 2/10, WER 0.36. Urgent + medication right 4/4, urgent missed none | median 0.53 s | Keep |
+| same, **real Taglish B: `language=auto`** | same | same 10 clips | Exact 2/10, WER 0.33. Urgent + medication right 4/4, urgent missed none | median 0.89 s | No: slower, and missed 4 urgent synthetic clips in the A–D run above |
+| same, **real Taglish C: `language=tl` + the generic Taglish prompt from C above** | same | same 10 clips | Exact 0/10, WER 0.41. Urgent + medication right 4/4, urgent missed none | median 0.54 s | No |
+| same, **real Taglish D: `language=tl` + known-questions prompt** | same | same 10 clips | Exact 0/10, WER 0.47. Urgent + medication right 3/4, **urgent missed t10** ("Tulong, I can't breathe!" heard "Ang ko nangalaga, nangalaga mo na.") | median 0.54 s | No: missed an urgent line. Keep `WHISPER_HINT` off |
 
-The A–D clips are synthetic voices (one take each). They have whole-English or whole-Tagalog lines but no mixed Taglish sentences, so TODO: real mixed Taglish recordings from teammates.
+The A–D clips are synthetic voices (one take each). They have whole-English or whole-Tagalog lines but no mixed Taglish sentences. Real mixed Taglish (Donita's voice) is in the "real Taglish" A–D rows:
+
+- With A, English words in mixed sentences stayed English: "Where's Joy? Nasa work pa ba siya?", "Sino yung guy sa picture?", "Uminom na ba ako ng medicin ko?". Urgent lines were caught even when misheard: "Masakit yung tamiko." → urgent; "Lahulu ko sa CR Help!" → urgent; "I can't breathe." → urgent.
+- Whisper (A) invented a sentence once: "Nasaan yung phone ko?" came out "I'm falling for you." (3.66 s, the first request of the run). Sino sent it to the caregiver (safe), but the caregiver card would show that text.
+- Limits: one voice (Donita), one take each. TODO: more voices (e.g. an older speaker).
+- Recordings and per-clip output stay on the hub (`~/sino/taglish-clips/`, `~/sino/taglish-real.txt`), not in the repo, because they are a real person's voice.
 
 The `t02` miss in A is fixed by adding Whisper's spelling "salamat sa panunod" to `JUNK_LINES` in `hub/listen.py` (same PR as these rows).
 
