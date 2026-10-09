@@ -3,8 +3,11 @@
 brain/seed.json is never changed. The hub works on hub/data/questions.json (copied from
 the seed the first time) and keeps uploaded replies and photos in hub/data/media/,
 served at /media/<file>. HUB_DATA overrides the data folder (tests use a temp folder).
+Default recordings ship in brain/media/ and are copied into hub/data/media/ when missing;
+empty reply_audio/photo fields in an existing working copy are filled from the seed.
 """
 
+import copy
 import json
 import os
 import re
@@ -13,6 +16,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SEED = ROOT / "brain" / "seed.json"
+SEED_MEDIA = ROOT / "brain" / "media"
+MEDIA_FIELDS = ("reply_audio", "photo")
+NESTED_GROUPS = ("replies", "by_person")
 ID_PATTERN = re.compile(r"[a-z0-9-]{1,64}")
 AUDIO_EXTS = (".webm", ".m4a", ".mp4", ".wav", ".mp3", ".ogg", ".aac")
 PHOTO_EXTS = (".jpg", ".jpeg", ".png", ".webp", ".heic")
@@ -46,12 +52,71 @@ def _write_atomic(path, data):
     os.replace(tmp, path)
 
 
-def ensure_working_copy():
-    """Create the data folders and copy brain/seed.json the first time. Returns the list path."""
+def install_seed_media():
+    """Copy each default recording in brain/media/ into the media folder when it is missing."""
     media_dir().mkdir(parents=True, exist_ok=True)
+    for src in sorted(SEED_MEDIA.glob("*")):
+        dest = media_dir() / src.name
+        if src.suffix.lower() in AUDIO_EXTS + PHOTO_EXTS and not dest.exists():
+            _write_atomic(dest, src.read_bytes())
+
+
+def _fill_empty(entry, seed_entry):
+    # Only empty fields take the seed's value, so a caregiver's own recording always wins.
+    changed = False
+    for key in MEDIA_FIELDS:
+        if not entry.get(key) and isinstance(seed_entry.get(key), str) and seed_entry[key]:
+            entry[key] = seed_entry[key]
+            changed = True
+    for group in NESTED_GROUPS:
+        seed_group = seed_entry.get(group)
+        if not isinstance(seed_group, dict):
+            continue
+        if not isinstance(entry.get(group), dict):
+            entry[group] = copy.deepcopy(seed_group)
+            changed = True
+            continue
+        for name, seed_sub in seed_group.items():
+            if not isinstance(seed_sub, dict):
+                continue
+            sub = entry[group].get(name)
+            if not isinstance(sub, dict):
+                entry[group][name] = dict(seed_sub)
+                changed = True
+            elif _fill_empty(sub, seed_sub):
+                changed = True
+    return changed
+
+
+def _fill_from_seed(path):
+    try:
+        entries = json.loads(path.read_text(encoding="utf-8"))
+        seed = json.loads(SEED.read_text(encoding="utf-8"))
+    except ValueError:
+        return
+    if not isinstance(entries, list) or not isinstance(seed, list):
+        return
+    by_id = {e.get("id"): e for e in seed if isinstance(e, dict)}
+    changed = False
+    for entry in entries:
+        if isinstance(entry, dict) and isinstance(by_id.get(entry.get("id")), dict):
+            changed = _fill_empty(entry, by_id[entry["id"]]) or changed
+    if changed:
+        text = json.dumps(entries, ensure_ascii=False, indent=2) + "\n"
+        _write_atomic(path, text.encode("utf-8"))
+
+
+def ensure_working_copy():
+    """Copy brain/seed.json the first time, fill empty media fields from it, install default media.
+
+    Returns the list path.
+    """
+    install_seed_media()
     path = questions_path()
     if not path.is_file():
         _write_atomic(path, SEED.read_bytes())
+    else:
+        _fill_from_seed(path)
     return path
 
 

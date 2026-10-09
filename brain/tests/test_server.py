@@ -160,7 +160,7 @@ async def _expect_line(clients, text, action, source, ignored):
             raise AssertionError(play)
         if play["event"] != "play_reply" or play["reply_id"] != decided_l["reply_id"]:
             raise AssertionError(play)
-        if play["reply_audio"] != "" or play["photo"] != "":
+        if play["reply_audio"] != "/media/nasaan-si-nanay-reply.m4a" or play["photo"] != "":
             raise AssertionError(play)
         if decided_l["reply_id"] != "nasaan-si-nanay":
             raise AssertionError(decided_l["reply_id"])

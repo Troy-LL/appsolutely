@@ -174,7 +174,7 @@ TODO: contract gap — the local log is not named as SQLite or JSONL. This serve
 
 TODO: contract gap — `POST /questions` field encoding was not named. Multipart form: `id` (optional, 1–64 of `a-z 0-9 -`), `question` (1–300 chars, needed for a new id), `speaker` (up to 60 chars), and `phrasings` as repeated fields (`phrasings=a&phrasings=b`, up to 10, each 1–300 chars). File parts `reply_audio` (needed for a new id: `.webm .m4a .mp4 .wav .mp3 .ogg .aac`) and `photo` (`.jpg .jpeg .png .webp .heic`), not empty, up to 10 MB, with a filename that has one of those extensions. Returns the stored object; bad input is 400 `{"error":""}`. On an existing id a non-empty `speaker` is also replaced.
 
-TODO: contract gap — where new questions and files live. The hub keeps its own copy of the list in `hub/data/questions.json` (gitignored, copied from `brain/seed.json` the first time; the seed is never changed) and the files in `hub/data/media/`, served at `/media/<file>`. `reply_audio` and `photo` hold `"/media/<file>"` or `""`; the hub names the files `<id>-reply.<ext>` and `<id>-photo.<ext>`. `HUB_DATA` overrides the data folder. `python3 brain/server.py` sets `SINO_SEED` to the working copy, and `load_seed()` reads `SINO_SEED` when that file exists, else `brain/seed.json`.
+TODO: contract gap — where new questions and files live. The hub keeps its own copy of the list in `hub/data/questions.json` (gitignored, copied from `brain/seed.json` the first time; the seed is never changed) and the files in `hub/data/media/`, served at `/media/<file>`. `reply_audio` and `photo` hold `"/media/<file>"` or `""`; the hub names the files `<id>-reply.<ext>` and `<id>-photo.<ext>`. `HUB_DATA` overrides the data folder. `python3 brain/server.py` sets `SINO_SEED` to the working copy, and `load_seed()` reads `SINO_SEED` when that file exists, else `brain/seed.json`. Default recordings ship in git in `brain/media/` (Joy's four comfort replies and three meal clips) and the seed points at them as `/media/<id>-reply.m4a` (`meal-check-ate-reply.m4a`, `meal-check-ate-repeat-reply.m4a`, `meal-check-unknown-reply.m4a`; the unknown clip is also `meal-check`'s top-level fallback). On start the hub copies any of these files missing from `hub/data/media/`, and fills only empty `reply_audio`/`photo` fields (including `replies` and `by_person`) of an existing working copy from the seed, so a caregiver's own recording is never overwritten. `/media` serves `.m4a` as `audio/mp4`.
 
 Mac (stub, plain `ws://`):
 
@@ -183,6 +183,7 @@ python3 -m venv .venv && .venv/bin/pip install fastapi 'uvicorn[standard]' pytho
 SINO_MODEL=stub .venv/bin/python brain/server.py
 SINO_MODEL=stub .venv/bin/python brain/tests/fake_hub.py
 SINO_MODEL=stub .venv/bin/python brain/tests/test_server.py
+SINO_MODEL=stub .venv/bin/python brain/tests/test_media.py
 ```
 
 Hub (M1, Ollama, mkcert `wss://`):

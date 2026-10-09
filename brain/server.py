@@ -5,6 +5,7 @@ Wire shapes live in docs/sino/architecture.md. Gaps are marked there.
 
 import asyncio
 import json
+import mimetypes
 import os
 import sys
 import threading
@@ -42,7 +43,9 @@ except ImportError:
 
 # hub/questions.py (Donita, D5) stores new questions and their files. Appended last so brain/ wins.
 sys.path.append(str(Path(__file__).resolve().parent.parent / "hub"))
-from questions import MAX_BYTES, BadInput, ensure_working_copy, media_dir, save_question  # noqa: E402
+from questions import (  # noqa: E402
+    MAX_BYTES, BadInput, ensure_working_copy, install_seed_media, media_dir, save_question,
+)
 # hub/listen.py (Donita, D4): listen now records the hub mic, runs Whisper and the junk filter.
 from listen import enable_mic, mic_ok, start_listen  # noqa: E402
 # hub/chime.py (Donita, D6): the urgent chime on the hub speaker.
@@ -455,7 +458,9 @@ async def lifespan(_app):
 
 app = FastAPI(lifespan=lifespan)
 # Recorded replies and photos. StaticFiles refuses paths that leave this folder.
-media_dir().mkdir(parents=True, exist_ok=True)
+# Some Python builds have no .m4a mimetype; without it /media would not send an audio type.
+mimetypes.add_type("audio/mp4", ".m4a")
+install_seed_media()
 app.mount("/media", StaticFiles(directory=media_dir()), name="media")
 
 
