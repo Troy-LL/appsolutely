@@ -80,6 +80,17 @@ def _post(port, payload):
         return res.status, res.read()
 
 
+def _post_jpeg(port, body):
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}/face/frame",
+        data=body,
+        headers={"Content-Type": "image/jpeg"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=2) as res:
+        return res.status, json.loads(res.read().decode("utf-8"))
+
+
 async def _recv(ws, timeout=3):
     return json.loads(await asyncio.wait_for(ws.recv(), timeout))
 
@@ -303,6 +314,10 @@ async def _run():
                 print("stale newest wins: PASS")
             except (AssertionError, asyncio.TimeoutError) as exc:
                 print(f"stale newest wins: FAIL {exc}")
+
+            face_passed, face_total = await _face(port, clients)
+            passed += face_passed
+            total += face_total
     finally:
         server.hub.decide_call = decide
         runner.should_exit = True
@@ -340,6 +355,209 @@ async def _stale(port, clients):
     finally:
         gate.set()
         server.hub.decide_call = decide
+
+
+def _check_seed_people():
+    entries = json.loads((ROOT / "seed.json").read_text(encoding="utf-8"))
+    sino = next(entry for entry in entries if entry.get("id") == "sino-ka")
+    people = sino.get("by_person")
+    if not isinstance(people, dict) or set(people) != {"troy", "joy", "donita"}:
+        raise AssertionError(people)
+    for name, person in people.items():
+        if person.get("reply_audio") != "" or person.get("photo") != "":
+            raise AssertionError(name)
+        if not isinstance(person.get("speaker"), str) or not person["speaker"]:
+            raise AssertionError(person)
+    if sino.get("reply_audio") != "" or sino.get("photo") != "" or sino.get("speaker") != "Troy":
+        raise AssertionError("fallback")
+
+
+def _face_seed(load):
+    entries = json.loads(json.dumps(load()))
+    for entry in entries:
+        if entry.get("id") != "sino-ka":
+            continue
+        entry["reply_audio"] = "troy-line"
+        entry["photo"] = "troy.jpg"
+        entry["by_person"] = {
+            "troy": {"reply_audio": "troy-line", "photo": "troy.jpg", "speaker": "Troy"},
+            "joy": {"reply_audio": "joy-line", "photo": "joy.jpg", "speaker": "Joy"},
+            "donita": {"reply_audio": "donita-line", "photo": "donita.jpg", "speaker": "Donita"},
+        }
+    return entries
+
+
+def _identify_as(who, score=0.91):
+    def identify(_gallery, _jpeg):
+        return {"who": who, "score": score, "faces": 0 if who is None else 1, "ms": 4}
+
+    return identify
+
+
+def _check_sino(msg, who):
+    if set(msg) != DECIDED_KEYS | {"who"}:
+        raise AssertionError(sorted(msg))
+    if msg["event"] != "decided" or msg["action"] != "comfort" or msg["reply_id"] != "sino-ka":
+        raise AssertionError(msg)
+    if msg["transcript"] != "Sino ka?" or msg["who"] != who:
+        raise AssertionError(msg)
+
+
+async def _expect_sino(clients, audio, photo, who, seen_who):
+    text = "Sino ka?"
+    backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
+    heard = await _recv(backstage)
+    if heard != {"event": "heard", "transcript": text, "dropped": False, "drop_reason": ""}:
+        raise AssertionError(heard)
+    _check_sino(await _recv(backstage), who)
+    seen = await _recv(backstage)
+    if set(seen) != {"event", "who", "score"} or seen["event"] != "face_seen":
+        raise AssertionError(seen)
+    if seen["who"] != seen_who:
+        raise AssertionError(seen)
+    if isinstance(seen["score"], bool) or not isinstance(seen["score"], (int, float)):
+        raise AssertionError(seen["score"])
+    _check_sino(await _recv(lola), who)
+    _check_sino(await _recv(caregiver), who)
+    play = await _recv(lola)
+    if set(play) != {"event", "reply_id", "reply_audio", "photo"}:
+        raise AssertionError(play)
+    if play["reply_id"] != "sino-ka" or play["reply_audio"] != audio or play["photo"] != photo:
+        raise AssertionError(play)
+    await _quiet(lola)
+    await _quiet(caregiver)
+    await _quiet(backstage)
+
+
+async def _face_seen(backstage, who):
+    msg = await _recv(backstage)
+    if set(msg) != {"event", "who", "score"} or msg["event"] != "face_seen":
+        raise AssertionError(msg)
+    if msg["who"] != who:
+        raise AssertionError(msg)
+
+
+async def _one_face(name, fn):
+    try:
+        await fn()
+        print(f"{name}: PASS")
+        return 1
+    except (AssertionError, asyncio.TimeoutError, urllib.error.URLError, KeyError) as exc:
+        print(f"{name}: FAIL {exc}")
+        return 0
+
+
+def _ask_sino(port):
+    status, body = _post(port, {"mode": "typed", "text": "Sino ka?"})
+    if status != 202 or body != b"":
+        raise AssertionError((status, body))
+
+
+async def _face(port, clients):
+    passed = 0
+    total = 0
+    real_load = server.load_seed
+    real_identify = server.identify_jpeg
+    real_grab = server.grab_jpeg
+    real_read = server._camera_read
+    backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
+
+    total += 1
+    try:
+        _check_seed_people()
+        passed += 1
+        print("seed by_person: PASS")
+    except (AssertionError, OSError, ValueError, StopIteration) as exc:
+        print(f"seed by_person: FAIL {exc}")
+
+    server.load_seed = lambda: _face_seed(real_load)
+    server.grab_jpeg = lambda: b"\xff\xd8\xff\xd9"
+    try:
+        total += 1
+        async def no_module():
+            status, result = _post_jpeg(port, b"\xff\xd8\xff\xd9")
+            if status != 200 or result.get("who") is not None:
+                raise AssertionError(result)
+            await _face_seen(backstage, None)
+            await _quiet(lola)
+            await _quiet(caregiver)
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2) as res:
+                if res.status != 200:
+                    raise AssertionError(res.status)
+            server.identify_jpeg = _identify_as("joy", 0.99)
+            _post_jpeg(port, b"\xff\xd8\xff\xd9")
+            await _face_seen(backstage, "joy")
+            await _quiet(lola)
+            server.grab_jpeg = lambda: None
+            server.identify_jpeg = _identify_as("joy", 0.99)
+            _ask_sino(port)
+            await _expect_sino(clients, "troy-line", "troy.jpg", "", None)
+
+        passed += await _one_face("face frame without module", no_module)
+
+        total += 1
+        async def joy_line():
+            server.grab_jpeg = lambda: b"\xff\xd8\xff\xd9"
+            server.identify_jpeg = _identify_as("joy", 0.91)
+            _ask_sino(port)
+            await _expect_sino(clients, "joy-line", "joy.jpg", "joy", "joy")
+
+        passed += await _one_face("sino ka joy", joy_line)
+
+        total += 1
+        async def low_score():
+            server.identify_jpeg = _identify_as("joy", 0.54)
+            _ask_sino(port)
+            await _expect_sino(clients, "troy-line", "troy.jpg", "", None)
+
+        passed += await _one_face("sino ka below threshold", low_score)
+
+        total += 1
+        async def at_threshold():
+            server.identify_jpeg = _identify_as("joy", 0.55)
+            _ask_sino(port)
+            await _expect_sino(clients, "joy-line", "joy.jpg", "joy", "joy")
+
+        passed += await _one_face("sino ka at threshold", at_threshold)
+
+        total += 1
+        async def unknown():
+            server.identify_jpeg = _identify_as("visitor", 0.99)
+            _ask_sino(port)
+            await _expect_sino(clients, "troy-line", "troy.jpg", "", None)
+
+        passed += await _one_face("sino ka unknown", unknown)
+
+        total += 1
+        async def camera_down():
+            server.grab_jpeg = lambda: None
+            server.identify_jpeg = _identify_as("joy", 0.99)
+            _ask_sino(port)
+            await _expect_sino(clients, "troy-line", "troy.jpg", "", None)
+
+        passed += await _one_face("sino ka camera fail", camera_down)
+
+        total += 1
+        async def camera_timeout():
+            def hang():
+                time.sleep(3)
+                return b"\xff\xd8\xff\xd9"
+
+            server._camera_read = hang
+            server.grab_jpeg = real_grab
+            started = time.monotonic()
+            jpeg = await asyncio.to_thread(server.grab_jpeg)
+            elapsed = time.monotonic() - started
+            if jpeg is not None or elapsed >= 2.5:
+                raise AssertionError((jpeg, elapsed))
+
+        passed += await _one_face("camera timeout", camera_timeout)
+    finally:
+        server.load_seed = real_load
+        server.identify_jpeg = real_identify
+        server.grab_jpeg = real_grab
+        server._camera_read = real_read
+    return passed, total
 
 
 if __name__ == "__main__":
