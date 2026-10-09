@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 brain/decisions.jsonl
 brain/tests/_test_decisions.jsonl
+hub/data/

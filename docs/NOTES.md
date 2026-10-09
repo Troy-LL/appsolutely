@@ -54,6 +54,8 @@ Hub: M1 MacBook Air, 8 GB (MacBookAir10,1), macOS 26.5.1. whisper.cpp built with
 | `qwen2.5:3b` on "Masakit ang dibdib ko" | Hub, Wi-Fi state not logged | 5 runs (3 Fri evening, 2 Sat 12:43 AM) | 0/5: `caregiver`, not `urgent` | not logged | No. Urgent words stay hard-coded before the model (`brain/decide.py`) |
 | Whisper small + `qwen2.5:3b` offline | Hub, **Wi-Fi off** (Fri Oct 9 evening) | not logged | both ran | not logged | Yes (ran offline) |
 | Ollama under the LAN-only firewall | Hub, firewall on, internet blocked (Sat 2:00 AM) | `curl http://127.0.0.1:11434/api/version` | `{"version":"0.40.2"}` | n/a | Yes. Whisper not run under the firewall yet |
+| Whisper small, `whisper-server` (D2), `-l tl`, `127.0.0.1:8080`. Model 487.01 MB, server memory 560 MB | Hub, Wi-Fi on (Sat ~2:20 AM). System memory 15% free with Ollama `qwen2.5:3b` also loaded | `test.wav`: Donita saying "Nasaan si Nanay?", 3.55 s (1 clip, 1 voice). Plain request, temperature 0, 3 runs | No: "nasa ang zina na iy." | 0.596 s, 0.505 s, 0.559 s (curl total) | No: wrong transcript |
+| same, with hint prompt "Nasaan si Nanay? Nasaan si Joy? Sino ka?" | same | same `test.wav`, 2 runs | Yes: "Nasaan si Nanay?" | run 1: 1.053 s; run 2: 0.540 s (curl total) | Correct on 1 clip, 1 voice. The hint may make TV lines sound like known questions, so T5's TV rows must check it |
 
 Raw outputs of the JSON check are on the hub at `~/sino/d3-json-check.txt` (not in the repo). Troy's `brain/model.py` on main already sends `format: "json"`.
 

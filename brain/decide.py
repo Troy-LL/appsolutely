@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import time
 from difflib import SequenceMatcher
@@ -55,6 +56,10 @@ def _match_key(text):
 
 
 def load_seed(path=SEED_PATH):
+    # The hub's working copy (SINO_SEED, set by brain/server.py) wins when that file exists.
+    override = os.environ.get("SINO_SEED", "")
+    if path == SEED_PATH and override and Path(override).is_file():
+        path = override
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if isinstance(data, dict):
         data = data.get("questions")

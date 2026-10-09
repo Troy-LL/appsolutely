@@ -133,7 +133,7 @@ Changing an interface needs a post in the team chat, because every screen depend
 
 ## Running the hub server
 
-`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, and `GET /questions`, and it calls `decide()` and `answer_about_lola()`. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
+`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `GET /questions`, `POST /questions`, and `/media`, and it calls `decide()` and `answer_about_lola()`. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
 
 TODO: contract gap — the interfaces do not name a listen port. `PORT` defaults to 8000. `HOST` defaults to `0.0.0.0`.
 
@@ -154,10 +154,14 @@ TODO: contract gap — no route or event for Ask Sino about Lola. Inbound on `/w
 
 TODO: contract gap — the local log is not named as SQLite or JSONL. This server appends one JSON object per decision to `brain/decisions.jsonl` (`SINO_LOG` overrides the path). `answer_about_lola` reads those rows.
 
+TODO: contract gap — `POST /questions` field encoding was not named. Multipart form: `id` (optional, 1–64 of `a-z 0-9 -`), `question` (1–300 chars, needed for a new id), `speaker` (up to 60 chars), and `phrasings` as repeated fields (`phrasings=a&phrasings=b`, up to 10, each 1–300 chars). File parts `reply_audio` (needed for a new id: `.webm .m4a .mp4 .wav .mp3 .ogg .aac`) and `photo` (`.jpg .jpeg .png .webp .heic`), not empty, up to 10 MB, with a filename that has one of those extensions. Returns the stored object; bad input is 400 `{"error":""}`. On an existing id a non-empty `speaker` is also replaced.
+
+TODO: contract gap — where new questions and files live. The hub keeps its own copy of the list in `hub/data/questions.json` (gitignored, copied from `brain/seed.json` the first time; the seed is never changed) and the files in `hub/data/media/`, served at `/media/<file>`. `reply_audio` and `photo` hold `"/media/<file>"` or `""`; the hub names the files `<id>-reply.<ext>` and `<id>-photo.<ext>`. `HUB_DATA` overrides the data folder. `python3 brain/server.py` sets `SINO_SEED` to the working copy, and `load_seed()` reads `SINO_SEED` when that file exists, else `brain/seed.json`.
+
 Mac (stub, plain `ws://`):
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install fastapi 'uvicorn[standard]'
+python3 -m venv .venv && .venv/bin/pip install fastapi 'uvicorn[standard]' python-multipart
 SINO_MODEL=stub .venv/bin/python brain/server.py
 SINO_MODEL=stub .venv/bin/python brain/tests/fake_hub.py
 SINO_MODEL=stub .venv/bin/python brain/tests/test_server.py

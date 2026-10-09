@@ -6,6 +6,7 @@ Wire shapes live in docs/sino/architecture.md. Gaps are marked there.
 import asyncio
 import json
 import os
+import sys
 import time
 import urllib.request
 from contextlib import asynccontextmanager
@@ -14,12 +15,18 @@ from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request, WebSocket
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
+from starlette.datastructures import UploadFile
 from starlette.websockets import WebSocketDisconnect
 
 from ask import answer_about_lola
 from decide import decide, load_seed
 from model import DEFAULT_HUB_URL
+
+# hub/questions.py (Donita, D5) stores new questions and their files. Appended last so brain/ wins.
+sys.path.append(str(Path(__file__).resolve().parent.parent / "hub"))
+from questions import MAX_BYTES, BadInput, ensure_working_copy, media_dir, save_question  # noqa: E402
 
 SCREENS = ("lola", "caregiver", "backstage")
 WHISPER_URL = "http://127.0.0.1:8080"
@@ -280,6 +287,9 @@ async def lifespan(_app):
 
 
 app = FastAPI(lifespan=lifespan)
+# Recorded replies and photos. StaticFiles refuses paths that leave this folder.
+media_dir().mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=media_dir()), name="media")
 
 
 @app.get("/health")
@@ -290,6 +300,32 @@ def health():
 @app.get("/questions")
 def questions():
     return load_seed()
+
+
+async def _upload(part):
+    # A file part becomes (filename, bytes). No part, a text value, or no file chosen -> None.
+    if not isinstance(part, UploadFile) or not part.filename:
+        return None
+    return part.filename, await part.read(MAX_BYTES + 1)
+
+
+@app.post("/questions")
+async def add_question(request: Request):
+    # Multipart form: id, question, speaker, phrasings (repeated); files reply_audio, photo.
+    try:
+        async with request.form() as form:
+            fields = {
+                "id": form.get("id"),
+                "question": form.get("question"),
+                "speaker": form.get("speaker"),
+                "phrasings": form.getlist("phrasings"),
+            }
+            audio = await _upload(form.get("reply_audio"))
+            photo = await _upload(form.get("photo"))
+        # No await inside save_question, so two uploads cannot interleave their writes.
+        return save_question(fields, audio, photo)
+    except BadInput as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
 
 
 @app.post("/listen")
@@ -345,6 +381,9 @@ def _ssl_kwargs():
 
 
 def main():
+    # Point load_seed() at the hub's working copy. Done here, not at import, so
+    # brain/tests/test_server.py (which imports app) keeps reading brain/seed.json.
+    os.environ.setdefault("SINO_SEED", str(ensure_working_copy()))
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", str(DEFAULT_PORT)))
     uvicorn.run(app, host=host, port=port, log_level="info", **_ssl_kwargs())
