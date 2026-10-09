@@ -4,3 +4,6 @@ __pycache__/
 brain/decisions.jsonl
 brain/tests/_test_decisions.jsonl
 hub/data/
+brain/face/models/
+brain/face/gallery/*
+!brain/face/gallery/README.md
