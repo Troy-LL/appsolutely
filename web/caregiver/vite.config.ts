@@ -8,7 +8,7 @@ const HUB = process.env.HUB || 'http://localhost:8000'
 
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  base: '/caregiver/',
   server: {
     host: true,
     port: 5173,
