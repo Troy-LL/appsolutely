@@ -23,9 +23,9 @@
     "photo": "",
     "speaker": "Troy",
     "by_person": {
-      "troy": {"reply_audio": "", "photo": "", "speaker": "Troy"},
-      "joy": {"reply_audio": "", "photo": "", "speaker": "Joy"},
-      "donita": {"reply_audio": "", "photo": "", "speaker": "Donita"}
+      "troy": {"reply_audio": "/media/sino-ka-troy-reply.m4a", "photo": "", "speaker": "Troy"},
+      "joy": {"reply_audio": "/media/sino-ka-joy-reply.m4a", "photo": "", "speaker": "Joy"},
+      "donita": {"reply_audio": "/media/sino-ka-donita-reply.m4a", "photo": "", "speaker": "Donita"}
     }
   },
   {

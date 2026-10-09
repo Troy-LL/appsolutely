@@ -155,7 +155,8 @@ async def _cases(port, done):
         _check("e", _request(port, "/listen", body, "application/json")[0] == 202)
         play = await _recv_event(lola, "play_reply")
     _check("e", play == {"event": "play_reply", "reply_id": "nasaan-yung-aso",
-                         "reply_audio": new["reply_audio"], "photo": new["photo"]}, play)
+                         "reply_audio": new["reply_audio"], "photo": new["photo"],
+                         "speaker": "Joy"}, play)
     _passed(done, "e /listen matches the new question")
 
     # (f) Bad input is refused with 400 and changes nothing.
