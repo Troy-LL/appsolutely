@@ -67,7 +67,7 @@ Format: each person says **done / next / blocked**. Viviene keeps time and updat
 - **Vertical slices.** Each slice is user-visible, input to result.
 - **`main` is always demoable and deployed.** If `main` breaks, fixing it beats everything else.
 - **Small PRs** (under ~200 lines), one owner per file area, so "who built what" is true in git.
-- **Branches:** `troy/agent`, `donita/api`, `ayen/result-card`, `viviene/brand`. No `cursor/` or tool-named branches.
+- **Branches:** `troy/local-ai`, `donita/api`, `ayen/result-card`, `viviene/brand`. No `cursor/` or tool-named branches.
 - **AI-assisted coding is fine.** Log the tools as you go for the disclosure.
 
 ## Merge rules

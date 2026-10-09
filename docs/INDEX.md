@@ -53,6 +53,5 @@ Read this first. It tells you which file owns what and when to open it.
 | **Local AI** | The event theme: meaningful AI computation runs on the user's own device, not only in the cloud. Not "AI for a local audience". |
 | **Airplane-mode test** | Running the app with the network off on the demo device. Every timed demo run, every user test from 7 PM, and the first 10 s of the video. |
 | **Smoke test** | Right after idea lock: the exact model on the actual demo device, airplane mode, ~5 real inputs, speed and accuracy logged in NOTES. Fail by ~4 PM means pivot. |
-| **Baseline list** | Generic answers to the challenge from a plain AI and fresh Gemini chats. Ideas on it are dropped unless they have a twist those can't reach. |
 | **Why-local answer** | One sentence on why the product needs local AI, using one of the five official reasons: difficult, expensive, slow, private, impossible. Required at submission. |
 | **Explainable** | You can walk a judge through any file you merged, without notes. |

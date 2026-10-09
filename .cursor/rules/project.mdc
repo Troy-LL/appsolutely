@@ -5,7 +5,7 @@ alwaysApply: true
 
 # AGENTS.md: rules for AI coding assistants
 
-These rules apply to every AI tool used in this repo (Claude Code, Cursor, Copilot, Gemini, Devin, and others). `CLAUDE.md` and `.cursor/rules/project.mdc` are copies of this file; keep all three identical.
+These rules apply to every AI tool used in this repo (Claude Code, Cursor, Copilot, Devin, and others). `CLAUDE.md` and `.cursor/rules/project.mdc` are copies of this file; keep all three identical.
 
 ## Read first, every session
 
@@ -48,7 +48,7 @@ If the spec sections in `04-idea-filter.md` are still empty, do not write applic
 ## Git and attribution
 
 - **Commit as the human** who owns the work, with their own git name and email.
-- **No `Co-authored-by` lines, no Cursor/agent trailers, no "Generated with" footers**, and no tool watermarks in commit messages or PR bodies.
+- **No `Co-authored-by` lines, no Cursor or other tool trailers, no "Generated with" footers**, and no tool watermarks in commit messages or PR bodies.
 - Branch names use the owner's name: `troy/...`, `donita/...`, `ayen/...`, `viviene/...`. Never `cursor/...` or other tool-named branches.
 - Don't push to `main` directly unless the human says so. Don't force-push.
 - After 7:00 AM Sat (feature freeze): bug fixes only.

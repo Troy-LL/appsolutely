@@ -18,8 +18,8 @@ Meaningful AI computation must happen **on the user's device**. Full rules and c
 4. Fits the challenge statement **word for word**
 5. **Runs on the user's real device, network off.** The core AI runs on the user's actual device (their phone or their laptop) in airplane mode. A team laptop serving a phone does **not** count as the user's device unless that is the real-world setup
 6. **One-sentence "why local?"** using one of the five official reasons: difficult, expensive, slow, private, or impossible with cloud-only
-7. **Not on the generic baseline list** (plain-AI answers plus fresh Gemini chat answers) unless it has a twist those answers can't reach
-8. **Satan pressure test passed** (the idea survives a written attack on its weakest point)
+7. **Not an obvious or common idea.** It must have a twist other teams won't think of
+8. **Survives a hard critique of its weakest point** (written down, answered before lock)
 
 ### Scores (official weights; score 1 to 5, multiply by weight, max 500)
 
@@ -28,7 +28,7 @@ Meaningful AI computation must happen **on the user's device**. Full rules and c
 | Problem & Usefulness | ×25 | A clear target user with a genuine, frequent problem; felt the same day (life-improving) |
 | Local AI Implementation | ×25 | Local inference is fundamental: move it to the cloud and the product loses something real |
 | Technical Execution | ×20 | The exact model runs on the demo device reliably enough for a live demo; buildable in ~14 h by 4 people |
-| Innovation | ×15 | Meaningfully different from the baseline list; local AI enables something new |
+| Innovation | ×15 | Meaningfully different from the obvious ideas; local AI enables something new |
 | Product & Demo Quality | ×15 | A stranger uses it right in 10 seconds on a phone; one clear wow moment in airplane mode |
 
 Tie-breakers (not scored): simple and visual (our UI-first bet), free sponsor angle (Devin, AMD hardware) without bending the idea.
