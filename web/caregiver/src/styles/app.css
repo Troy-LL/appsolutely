@@ -12,6 +12,7 @@
 /* Top bar */
 .sn-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px 12px; border-bottom: 2px solid var(--ink); }
 .sn-word { font: 600 calc(30px * var(--s))/1 var(--font-heading); margin: 0; }
+.sn-word img { height: calc(30px * var(--s)); width: auto; vertical-align: middle; }
 .sn-top__tools { display: flex; gap: 10px; align-items: center; }
 .sn-pill { box-sizing: border-box; min-height: 48px; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); color: var(--ink); font: 600 calc(15px * var(--s))/1 var(--font-heading); padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 0 var(--ink); cursor: pointer; }
 .sn-pill.is-on { background: var(--ink); color: var(--paper); box-shadow: none; transform: translateY(2px); }

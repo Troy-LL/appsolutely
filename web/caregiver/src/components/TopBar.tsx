@@ -19,7 +19,10 @@ export function TopBar({ t, lang, langOpen, fake, me, onToggleLang, onPickLang, 
   return (
     <>
       <header className="sn-top">
-        <p className="sn-word">Sino{fake ? <span className="sn-fake">{t.one('fakeFeed')}</span> : null}</p>
+        <p className="sn-word">
+          <img src={`${import.meta.env.BASE_URL}sino-logo.webp`} alt="Sino" />
+          {fake ? <span className="sn-fake">{t.one('fakeFeed')}</span> : null}
+        </p>
         <div className="sn-top__tools">
           <button type="button" className={`sn-pill${langOpen ? ' is-on' : ''}`} onClick={onToggleLang}
             aria-expanded={langOpen} aria-label={t.one('a11yLang')}>

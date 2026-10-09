@@ -1,5 +1,7 @@
 # Sino: overview
 
+<img src="../../assets/brand/sino-logo.png" alt="Sino" width="280">
+
 > *Kapag nagtanong ulit si Lola, boses ng pamilya ang sasagot.*
 > *When Lola asks again, her family's voice answers.*
 

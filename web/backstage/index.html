@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sino's log · Backstage</title>
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 @font-face { font-family: "Fredoka"; src: url("fonts/Fredoka-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
 @font-face { font-family: "Fredoka"; src: url("fonts/Fredoka-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
@@ -31,6 +33,7 @@ html, body { margin: 0; background: var(--paper); color: var(--ink); font-family
 .fold { min-height: 100vh; padding: var(--space-6) 0 var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
 
 .top { display: flex; align-items: center; gap: var(--space-6); flex-wrap: wrap; padding-right: 180px; }
+.brand { height: 48px; width: auto; display: block; }
 .wordmark { font: 600 40px/1 var(--font-heading); margin: 0; }
 .tags { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
 .tag { display: inline-flex; align-items: center; gap: var(--space-2); font: 600 18px/1 var(--font-heading); border: var(--outline) solid var(--ink); border-radius: var(--r-button); padding: 6px 12px; background: var(--paper); color: var(--ink); }
@@ -90,6 +93,7 @@ html, body { margin: 0; background: var(--paper); color: var(--ink); font-family
 <main class="page">
   <div class="fold">
     <header class="top">
+      <img class="brand" src="sino-logo.webp" alt="Sino" width="87" height="48">
       <h1 class="wordmark">Sino's log</h1>
       <div class="tags" id="tags">
         <span class="tag" id="mode-tag">Model: …</span>
