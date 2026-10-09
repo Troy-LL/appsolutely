@@ -75,10 +75,10 @@ What `brain/decide.py` does today: the TV-word rule (`TV_PHRASES` and `TV_TOKENS
 | Speech to text | Whisper small (default); medium only as the fallback below | whisper.cpp (`-l tl`) | See the selection rule below |
 | Decision for unclear lines | Qwen2.5-3B (`qwen2.5:3b`) (default); Qwen2.5-1.5B (`qwen2.5:1.5b`) only with the medium fallback | Ollama | Must return JSON matching the decision interface. No AI phrasing for the recap |
 | Add-on a: face match (T6) | OpenCV YuNet (detect) + SFace (recognise), a few MB | OpenCV, hub CPU | **Un-cut Sat 3:23 AM.** After the core runs on the hub and T5 passes; hard stop 5 AM. One frame per "Sino ka?". Not built yet ([features.md](features.md#should-after-the-330-am-freeze)) |
-| Add-on b: person detection | n/a | n/a | **Cut, Sat 2:00 AM. Next step** |
+| Add-on b: recorded clip | OpenCV HOG people detector | OpenCV, hub CPU | **Sat ~4:30 AM.** Files on the hub, scanned before the question. Not a live camera. Live CCTV stays a next step ([features.md](features.md)) |
 | Add-on c: speaker match | n/a | n/a | **Cut. Not built** ([mvp-plan.md](mvp-plan.md)) |
 
-No text-to-speech or voice-cloning model is used anywhere: Lola only hears the family's own recordings (safety rule in [README.md](README.md#safety-rules)). CCTV and voice ID are cut, and there is no live call. "Sino ka?" is a seeded known question: the iPad shows the registered person's photo and plays the line they recorded. With add-on (a) after the freeze, a high-confidence match plays that family member's line; anything else plays Troy's ([features.md](features.md#should-after-the-330-am-freeze)).
+No text-to-speech or voice-cloning model is used anywhere: Lola only hears the family's own recordings (safety rule in [README.md](README.md#safety-rules)). Live CCTV and voice ID are cut, and there is no live call. The recorded-clip demo reads files on the hub and does not open a camera. "Sino ka?" is a seeded known question: the iPad shows the registered person's photo and plays the line they recorded. With add-on (a) after the freeze, a high-confidence match plays that family member's line; anything else plays Troy's ([features.md](features.md#should-after-the-330-am-freeze)).
 
 ### Speech model selection (by 11:30 PM)
 
@@ -133,7 +133,7 @@ Changing an interface needs a post in the team chat, because every screen depend
 
 ## Running the hub server
 
-`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `GET /questions`, `POST /questions`, and `/media`, and it calls `decide()` and `answer_about_lola()`. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
+`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `GET /questions`, `POST /questions`, `POST /clips`, `GET /clips/snapshot`, and `/media`, and it calls `decide()` and `answer_about_lola()`. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
 
 TODO: contract gap — the interfaces do not name a listen port. `PORT` defaults to 8000. `HOST` defaults to `0.0.0.0`.
 
@@ -152,6 +152,14 @@ TODO: contract gap — `mic` in `health`. It is true at start when ffmpeg's devi
 TODO: contract gap — no route or event for Ask Sino about Lola. Inbound on `/ws` from the caregiver socket: `{"event":"ask_about_lola","question":""}`. Reply to that socket only: `{"event":"about_lola","intent":"","answer":"","source":"","latency_ms":0}`.
 
 TODO: contract gap — meals check (T4m), for Viviene's V4. Post in the team chat. The wire `meal_logged` stays `{"event":"meal_logged"}`; the hub stamps `ts` on the log line only. On comfort for `meal-check`, `decided` gains additive `reply_variant` (`ate`, `ate_repeat`, or `unknown`) and `last_meal_ts` (that hub `ts`, or `""` when no meal is logged). `play_reply` uses the matching object in seed `replies` (`reply_audio`, `photo`, `speaker`); the question's top-level `reply_audio` and `photo` are the fallback. `unknown` also sends a quiet `ask_caregiver` whose `transcript` is "Lola asked if she's eaten. No meal logged." The same log counts food asks since that meal for the recap.
+
+TODO: contract gap — recorded-clip demo, all additive, nothing renamed. Post them in the team chat. Footage stays on the hub (`brain/clips/media/`, gitignored). Frames stay in memory. The snapshot goes to the caregiver only, never to Lola's screen.
+
+- `POST /clips`: optional multipart file `clip` (`.mp4`, `.mov`, `.webm`). Saving a file, or a POST with no file, scans the folder again. The scan also runs at startup, in the background when clips are present, and never when the question is asked.
+- `GET /clips/snapshot`: the latest in-memory JPEG, or 404 when nothing was detected.
+- `about_lola` gains `snapshot` (`"/clips/snapshot"`) and `label` (`"RECORDED CLIP · DEMO"`) only when the answer comes from a recording.
+- `clip_card` (caregiver socket only, when nothing was detected): `{"event":"clip_card","text":"Hindi ko sigurado kung nasaan si Lola. Pakitingnan."}`.
+- `clip_scan` (backstage, one per scan): `{"event":"clip_scan","rooms":[],"frames":0,"detections":0,"ms":0}`.
 
 **Add-on a, face match (after the freeze, not built yet; Sat 3:23 AM).** TODO: contract gaps, all additive, nothing renamed. Post them in the team chat when built:
 
