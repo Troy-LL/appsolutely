@@ -244,7 +244,47 @@ html, body {
   opacity: 0;
   pointer-events: none;
 }
-#start-sheet button {
+/* The family's choice column: language buttons, help line, Start. */
+#start-sheet .start-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+#start-sheet .lang-row {
+  display: flex;
+  gap: 16px;
+}
+/* Language buttons: chunky like Start, but ink-on-paper (no green here).
+   The chosen one is pressed flat and filled ink with paper text. */
+#start-sheet .lang-btn {
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 28px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 14px;         /* r-button */
+  padding: 16px 40px;
+  min-height: 48px;            /* tap-min */
+  cursor: pointer;
+}
+#start-sheet .lang-btn[aria-pressed='true'] {
+  color: var(--paper);
+  background: var(--ink);
+}
+/* The help line under the language choice. */
+#start-sheet #start-help {
+  font-family: var(--text);
+  font-weight: 400;
+  font-size: 22px;             /* text-m */
+  color: var(--ink);
+  margin: 0;
+  text-align: center;
+  max-width: 32ch;
+}
+/* Start: the chunky green button, same as before. */
+#start-sheet #start-btn {
   font-family: var(--heading);
   font-weight: 600;
   font-size: 28px;

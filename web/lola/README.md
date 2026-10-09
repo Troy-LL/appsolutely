@@ -31,6 +31,34 @@ Add these to the URL:
 - `?big` — bigger text for Lola (text 44, second lines 28, names 28/44, time 72).
 - `?time=17:15` — freeze the clock at a fixed time (for tests). Without it the
   clock follows the device time and redraws once a minute.
+- `?lang=tl|en` — force the language. Without it the screen uses the family's
+  saved choice (from the Start sheet), falling back to Tagalog (`tl`).
+
+## Language
+
+The screen shows **one** language at a time, never a "Tagalog / English" pair.
+The language is chosen in this order: `?lang` in the URL, else the choice the
+family saved on the Start sheet (stored in `localStorage`, with a try/catch so
+it still works where storage is blocked), else Tagalog (`tl`). `<html lang>` is
+set to match. Speaker names and reply lines are the family's own words and are
+never translated.
+
+Before Guided Access, the Start sheet shows two plain buttons ("Tagalog" and
+"English", each written in its own language) and then Start. Picking a language
+saves it and switches the Start and help text at once. After Start, no language
+choice is on screen.
+
+### Adding a language
+
+Everything is in `strings.js`:
+
+1. Add the two-letter code to `LANGS` (e.g. `['tl', 'en', 'ceb']`).
+2. Add that key with its value to every entry in `STRINGS` (the day-parts, the
+   reassurance line, the listening caption, `start`, `startHelp`, `fake`).
+3. Add the language's own name to `LANG_NAMES` (e.g. `ceb: 'Bisaya'`).
+
+No other file changes. A new language in `LANGS` automatically gets a button on
+the Start sheet, and a missing value for the chosen language falls back to `tl`.
 
 ## Contract gaps for the team
 
@@ -51,8 +79,8 @@ this screen; they need a team decision, not a change here.
 
 ## Files
 
-- `index.html` — the three state layers, the Start sheet, the FAKE label.
-- `lola.css` — the look (ink-on-paper tokens, the picture frame, motion).
-- `lola.js` — clock, state switching, feed wiring, speaker-name lookup, audio queue.
-- `strings.js` — every UI word, in Tagalog + English. Nothing is hardcoded in the HTML.
+- `index.html` — the three state layers, the Start sheet (language choice + Start), the FAKE label.
+- `lola.css` — the look (ink-on-paper tokens, the picture frame, motion, Start-sheet buttons).
+- `lola.js` — language choice, clock, state switching, feed wiring, speaker-name lookup, audio queue.
+- `strings.js` — every UI word, one key per word with a value per language. Nothing is hardcoded in the HTML.
 - `fonts/` — local woff2 files (see `fonts/README.md`); falls back to system-ui.
