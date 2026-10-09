@@ -67,11 +67,11 @@ Judges see the local AI decide. Each utterance is one row: transcript → rule h
 
 ### M8. Demo seed data, `seed.json` (Troy + team)
 
-What `brain/seed.json` holds today: **5 questions** (`nasaan-si-nanay`, `nasaan-si-joy`, `sino-ka`, `nasaan-ako`, `gusto-ko-nang-umuwi`), each with Tagalog and English phrasings and a `speaker`. `reply_audio` and `photo` are empty strings until the recordings and photos exist. Disclosed in the README as demo data.
+What `brain/seed.json` holds today: **6 questions** (`nasaan-si-nanay`, `nasaan-si-joy`, `sino-ka`, `nasaan-ako`, `gusto-ko-nang-umuwi`, `meal-check`), each with Tagalog and English phrasings and a `speaker`. `reply_audio` and `photo` are empty strings until the recordings and photos exist. `meal-check` also has `dynamic` `meal` and `replies` for `ate`, `ate_repeat`, and `unknown`; the top-level `reply_audio` and `photo` stay the fallback. Disclosed in the README as demo data.
 
-Not in `seed.json` yet: the household name (Lola Cora), earlier log entries, and a meal log (TODO: unknown whether they are still needed; the T7 fake log lives in `brain/tests/ask_cases.json`). The urgent, medication, and TV words live in `brain/decide.py`, not in the seed.
+Not in `seed.json` yet: the household name (Lola Cora) and earlier log entries (the T7 fake log lives in `brain/tests/ask_cases.json`). A meal is not a seed row. The caregiver's tap is a `meal_logged` line in the decisions log. The urgent, medication, and TV words live in `brain/decide.py`, not in the seed.
 
-**Recordings still needed (TODO):** Joy's four replies and Troy's "Sino ka?" line. Until they exist, a comfort decision has no audio to play.
+**Recordings still needed (TODO):** Joy's four replies, Troy's "Sino ka?" line, and Joy's three meal clips (`ate`, `ate_repeat`, `unknown`). Until they exist, a comfort decision has no audio to play.
 
 | Question | Reply (recorded by a teammate) | Speaker | Why |
 |---|---|---|---|
@@ -84,7 +84,12 @@ Not in `seed.json` yet: the household name (Lola Cora), earlier log entries, and
 ## Should (after the 3:30 AM freeze)
 
 - **Ask Sino about Lola (T7).** A registered person asks on the caregiver phone, in their own words. `answer_about_lola(question, log)` in `brain/ask.py` (merged, PR #11) picks one intent: `how`, `saying`, or `where` (rules first; Qwen only picks the intent when `SINO_MODEL=ollama`). Code builds the answer from the log: counts, her exact words, and the last urgent alert, ending with "Not a diagnosis." "Where is she" gets the no-camera answer ("Walang camera sagot; hindi ko hulaan ang kwarto.") and never names a room, because add-on (b) is cut. Medication questions get no answer. It never invents a mood or a medical read. Lola's iPad is not this conversation. Still to do after the freeze: wire it to `/caregiver` (TODO: contract gap, no event or route for it in [architecture.md](architecture.md#the-3-interfaces-locked-in-the-first-15-minutes) yet).
-- **Meals check:** the caregiver taps "Kumain na" → "Kumain na ba ako?" gets a true answer from the local log.
+- **Meals check (T4m, in review).** The caregiver taps "Kumain na". That tap is the only source for whether she ate. `decide()` stays stateless and returns comfort `meal-check` for "Kumain na ba ako?" and the other phrasings in the seed. Medication still wins: a line with "gamot" plus "kumain" goes to the caregiver as medication, as before. Urgent still wins over everything. `server.py` reads the latest `meal_logged` line (broken jsonl lines are skipped) and picks the clip. The window is `MEAL_WINDOW_H`, default 3 hours.
+  - **Meal logged within 3 hours, and she has not asked about food since that meal:** play `ate`. Joy: "Oo Ma, kumain ka na kanina. Busog ka pa ba? Gusto mo ng tubig?" No time and no dish.
+  - **Same window, and she already asked about food since that meal:** play `ate_repeat`. Joy turns to how she feels and does not correct her again: "Busog ka pa ba, Ma? Gusto mo ng tubig o meryenda?"
+  - **No meal logged, or the last one is older than 3 hours:** play `unknown`. Joy: "Gutom ka ba, Ma? Sasabihan ko si Ate, sandali lang ha." The caregiver gets a quiet yellow card: "Lola asked if she's eaten. No meal logged."
+  - **Never say she has not eaten** ("hindi pa" / "not yet"). A missing log means we don't know, not that she didn't eat.
+  - Food asks since that meal are on the same log, so "how is she" can count them ("asked about food 4× after lunch").
 - **Clock answer:** recorded time clips for "Anong oras na?" (the big clock is already on Lola's screen).
 - **Add-on (a) face match (T6, Troy; not built yet).** Starts only after the core runs end to end on the hub (W1) and T5 passes there, after the 3:30 AM freeze, with a hard stop at 5 AM. One frame on demand: when "Sino ka?" fires, Sino grabs **one** frame (no continuous stream, no polling loop; `POST /face/frame` is called once per trigger). OpenCV YuNet detects and SFace recognises (a few MB, hub CPU) against 3 family members enrolled on the hub (troy, joy, donita). A family member's line plays **only on a high-confidence match**; otherwise Troy's seeded line plays, never the wrong relative. Enrollment photos are gitignored; frames stay in memory only. If the hub starts swapping, fall back to `qwen2.5:1.5b`. The iPad still never quizzes Lola, and the reply plays through the normal reply screen (no face-match frame, A4 stays cut).
 - **Daily recap:** counts and times computed by code only, no AI phrasing ("Asked about Nanay 6×, mostly 4 to 6 PM. 1 urgent alert at 5:15 PM."). Marked "not a diagnosis." The caregiver can ask "Kamusta si Lola?" or "Ano ang mga tanong niya?" and Sino pulls that same log up. "How is she" is the log. It is not a diagnosis.

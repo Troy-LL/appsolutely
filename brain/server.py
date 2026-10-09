@@ -47,6 +47,7 @@ from listen import enable_mic, mic_ok, start_listen  # noqa: E402
 from chime import enable_chime, play_chime  # noqa: E402
 
 SCREENS = ("lola", "caregiver", "backstage")
+UNKNOWN_MEAL_NOTE = "Lola asked if she's eaten. No meal logged."
 WHISPER_URL = "http://127.0.0.1:8080"
 DEFAULT_PORT = 8000
 
@@ -88,10 +89,112 @@ def append_decision(text, result):
         "source": result.get("source", ""),
         "ignored": result.get("ignored", ""),
     }
+    for key in ("reply_variant", "last_meal_ts", "food_asks_since_meal"):
+        if key in result:
+            entry[key] = result[key]
     path = log_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def append_meal():
+    entry = {
+        "event": "meal_logged",
+        "ts": datetime.now().astimezone().isoformat(timespec="seconds"),
+    }
+    path = log_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def meal_window_hours():
+    raw = os.environ.get("MEAL_WINDOW_H", "3")
+    try:
+        value = float(raw)
+    except ValueError:
+        return 3.0
+    if value < 0:
+        return 3.0
+    return value
+
+
+def _parse_ts(value):
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.strip())
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=datetime.now().astimezone().tzinfo)
+    return parsed
+
+
+def latest_meal(entries):
+    found = None
+    for index, entry in enumerate(entries):
+        if entry.get("event") != "meal_logged":
+            continue
+        parsed = _parse_ts(entry.get("ts"))
+        if parsed is None:
+            continue
+        if found is None or parsed >= found[0]:
+            found = (parsed, entry.get("ts"), index)
+    return found
+
+
+def _food_asks(entries):
+    return sum(
+        1
+        for entry in entries
+        if entry.get("reply_id") == "meal-check" and entry.get("action") == "comfort"
+    )
+
+
+def meal_choice(entries, now=None):
+    found = latest_meal(entries)
+    if found is None:
+        prior = _food_asks(entries)
+        return {
+            "reply_variant": "unknown",
+            "last_meal_ts": "",
+            "food_asks_since_meal": prior + 1,
+        }
+    parsed, ts, index = found
+    prior = _food_asks(entries[index + 1 :])
+    now = now or datetime.now().astimezone()
+    age_h = (now - parsed).total_seconds() / 3600
+    if age_h <= meal_window_hours():
+        variant = "ate_repeat" if prior else "ate"
+    else:
+        variant = "unknown"
+    return {
+        "reply_variant": variant,
+        "last_meal_ts": ts if isinstance(ts, str) else "",
+        "food_asks_since_meal": prior + 1,
+    }
+
+
+def meal_clip(variant):
+    try:
+        entries = load_seed()
+    except (OSError, ValueError):
+        return "", ""
+    for entry in entries:
+        if not isinstance(entry, dict) or entry.get("id") != "meal-check":
+            continue
+        replies = entry.get("replies")
+        chosen = replies.get(variant) if isinstance(replies, dict) else None
+        if isinstance(chosen, dict):
+            audio = chosen.get("reply_audio")
+            photo = chosen.get("photo")
+            return audio if isinstance(audio, str) else "", photo if isinstance(photo, str) else ""
+        audio = entry.get("reply_audio")
+        photo = entry.get("photo")
+        return audio if isinstance(audio, str) else "", photo if isinstance(photo, str) else ""
+    return "", ""
 
 
 def media_for(reply_id):
@@ -181,6 +284,10 @@ class Hub:
             await self.publish(text, result)
 
     async def publish(self, text, result):
+        meal = None
+        if result.get("action") == "comfort" and result.get("reply_id") == "meal-check":
+            meal = meal_choice(read_log()["entries"])
+            result = {**result, **meal}
         append_decision(text, result)
         self.last_event_at = datetime.now().astimezone().isoformat(timespec="seconds")
         heard = {
@@ -201,6 +308,9 @@ class Hub:
             "ignored": result["ignored"],
             "transcript": text,
         }
+        if meal is not None:
+            decided["reply_variant"] = meal["reply_variant"]
+            decided["last_meal_ts"] = meal["last_meal_ts"]
         matched = None
         if result["action"] == "comfort" and result.get("reply_id") == "sino-ka":
             matched = await asyncio.to_thread(look_at_camera)
@@ -219,6 +329,8 @@ class Hub:
         if action == "comfort":
             if matched is not None and matched["use_person"]:
                 audio, photo = matched["audio"], matched["photo"]
+            elif meal is not None:
+                audio, photo = meal_clip(meal["reply_variant"])
             else:
                 audio, photo = media_for(result["reply_id"])
             await self.send_to("lola", {
@@ -227,6 +339,12 @@ class Hub:
                 "reply_audio": audio,
                 "photo": photo,
             })
+            if meal is not None and meal["reply_variant"] == "unknown":
+                await self.send_to("caregiver", {
+                    "event": "ask_caregiver",
+                    "transcript": UNKNOWN_MEAL_NOTE,
+                    "count": self._unknown_meal_count(),
+                })
         elif action == "urgent":
             play_chime()  # hub speaker, returns at once (docs/sino/hub-chime.md); never /lola
             await self.send_to("caregiver", {"event": "alert", "transcript": text})
@@ -248,6 +366,13 @@ class Hub:
             if entry.get("transcript") == transcript and entry.get("action") == "caregiver"
         )
 
+    def _unknown_meal_count(self):
+        return sum(
+            1
+            for entry in read_log()["entries"]
+            if entry.get("reply_id") == "meal-check" and entry.get("reply_variant") == "unknown"
+        )
+
     async def send_to(self, screen, payload):
         raw = json.dumps(payload, ensure_ascii=False)
         for ws, role in list(self.clients.items()):
@@ -263,9 +388,14 @@ class Hub:
             data = json.loads(raw)
         except ValueError:
             return
-        if not isinstance(data, dict) or data.get("event") != "ask_about_lola":
+        if not isinstance(data, dict):
             return
-        if screen != "caregiver":
+        event = data.get("event")
+        if event == "meal_logged":
+            if screen == "caregiver":
+                append_meal()
+            return
+        if event != "ask_about_lola" or screen != "caregiver":
             return
         question = data.get("question", "")
         if not isinstance(question, str) or not question.strip() or len(question) > 2000:

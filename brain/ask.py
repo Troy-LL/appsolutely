@@ -66,14 +66,24 @@ def _question_labels():
 
 def _counts(entries):
     labels = _question_labels()
+    meal_at = -1
+    latest_ts = ""
+    for index, entry in enumerate(entries):
+        ts = entry.get("ts")
+        if entry.get("event") == "meal_logged" and isinstance(ts, str) and ts >= latest_ts:
+            latest_ts = ts
+            meal_at = index
     groups = {}
-    for entry in entries:
-        if entry.get("action") in ("urgent", "silent"):
+    for index, entry in enumerate(entries):
+        if entry.get("action") in ("urgent", "silent") or entry.get("event") == "meal_logged":
             continue
         reply_id = entry.get("reply_id", "")
+        if reply_id == "meal-check" and meal_at >= 0 and index <= meal_at:
+            continue
         transcript = entry.get("transcript", "")
         key = reply_id or transcript
-        group = groups.setdefault(key, {"label": labels.get(reply_id, transcript), "count": 0})
+        label = "food" if reply_id == "meal-check" else labels.get(reply_id, transcript)
+        group = groups.setdefault(key, {"label": label, "count": 0})
         group["count"] += 1
     return groups
 
