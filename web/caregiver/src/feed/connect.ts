@@ -22,9 +22,19 @@ export function openCaregiverSocket(
 
   const connect = () => {
     if (closed) return
+    const prev = socket
+    socket = null
+    if (prev && prev.readyState !== WebSocket.CLOSED) {
+      prev.onmessage = null
+      prev.onopen = null
+      prev.onclose = null
+      prev.onerror = null
+      prev.close()
+    }
     const next = new WebSocket(socketUrl())
     socket = next
     next.onmessage = (e) => {
+      if (socket !== next) return
       try {
         onEvent(JSON.parse(String(e.data)) as HubEvent)
       } catch {
