@@ -21,6 +21,13 @@ TV_TOKENS = ("abangan", "kabanata", "palabas", "teleserye", "dula", "bes")
 MATCH_FILLER = {"po", "opo", "lola", "ma", "na", "ba"}
 MATCH_ALIASES = {"asan": "nasaan"}
 MATCH_THRESHOLD = 0.85
+URGENT_TYPOS = {"masaket": "masakit", "didip": "dibdib", "dibdip": "dibdib"}
+FUZZY_SOLO = (
+    "natumba", "nadulas", "nadapa", "nahulog", "bumagsak",
+    "masakit", "sumasakit", "dibdib",
+    "tulungan", "tulong", "saklolo",
+)
+GLUE_WORDS = ("ang", "ng", "ako", "ko", "si", "na", "sa", "po", "mo")
 ACTIONS = ("comfort", "caregiver", "urgent", "silent")
 
 _PUNCTUATION = re.compile(r"[^\w\s]|_")
@@ -62,8 +69,7 @@ def load_seed(path=SEED_PATH):
 load_seed()
 
 
-def _match_known_question(text):
-    key = _match_key(text)
+def _best_seed_match(key):
     if not key:
         return None, 0.0
     best_id, best_ratio = None, 0.0
@@ -78,6 +84,104 @@ def _match_known_question(text):
     if best_ratio >= MATCH_THRESHOLD:
         return best_id, best_ratio
     return None, best_ratio
+
+
+def _seed_words():
+    words = set()
+    for entry in load_seed():
+        for candidate in [entry.get("question", "")] + list(entry.get("phrasings", [])):
+            words.update(word for word in _match_key(candidate).split() if word)
+    return words
+
+
+def _closest_seed_word(combo, seed_words):
+    best = None
+    best_key = None
+    for word in seed_words:
+        if len(word) < 4:
+            continue
+        limit = 2 if len(word) >= 5 else 1
+        if abs(len(combo) - len(word)) > limit:
+            continue
+        distance = _levenshtein(combo, word, limit)
+        if distance <= limit:
+            key = (distance, -len(word))
+            if best_key is None or key < best_key:
+                best, best_key = word, key
+    return best
+
+
+def _split_stuck_seed(token, seed_words):
+    if token in seed_words or len(token) < 6:
+        return None
+    found = []
+    for index in range(1, len(token)):
+        left, right = token[:index], token[index:]
+        left_anchor = left in seed_words and len(left) >= 4
+        right_anchor = right in seed_words and len(right) >= 4
+        left_word = _seed_part(left, seed_words, allow_near=right_anchor)
+        right_word = _seed_part(right, seed_words, allow_near=left_anchor)
+        if left_word and right_word:
+            found.append((left_word, right_word))
+    unique = list(dict.fromkeys(found))
+    if len(unique) == 1:
+        return list(unique[0])
+    return None
+
+
+def _seed_part(part, seed_words, allow_near):
+    if part in seed_words:
+        return part
+    if not allow_near or len(part) < 2:
+        return None
+    best = None
+    best_key = None
+    for word in seed_words:
+        if abs(len(part) - len(word)) > 1:
+            continue
+        if _levenshtein(part, word, 1) != 1:
+            continue
+        key = (abs(len(part) - len(word)), -len(word))
+        if best_key is None or key < best_key:
+            best, best_key = word, key
+    return best
+
+
+def _join_seed_fragments(tokens, seed_words):
+    joined = []
+    index = 0
+    while index < len(tokens):
+        if index + 1 < len(tokens) and tokens[index] not in seed_words and tokens[index + 1] not in seed_words:
+            word = _closest_seed_word(tokens[index] + tokens[index + 1], seed_words)
+            if word is not None:
+                joined.append(word)
+                index += 2
+                continue
+        joined.append(tokens[index])
+        index += 1
+    return joined
+
+
+def _fuzzy_seed_key(text):
+    lowered = _WHERES.sub("where is", str(text).lower())
+    tokens = normalize(lowered).split()
+    seed_words = _seed_words()
+    parts = []
+    for token in tokens:
+        split = _split_stuck_seed(token, seed_words)
+        parts.extend(split if split else [token])
+    parts = _join_seed_fragments(parts, seed_words)
+    return " ".join(MATCH_ALIASES.get(token, token) for token in parts if token not in MATCH_FILLER)
+
+
+def _match_known_question(text):
+    reply_id, ratio = _best_seed_match(_match_key(text))
+    if reply_id is not None:
+        return reply_id, ratio
+    fuzzy_id, fuzzy_ratio = _best_seed_match(_fuzzy_seed_key(text))
+    if fuzzy_id is not None:
+        return fuzzy_id, fuzzy_ratio
+    return None, ratio
 
 
 def _result(action, reason, trigger_words, confidence, started, reply_id="", source="rule", ignored=""):
@@ -117,11 +221,114 @@ def _from_model(output, started):
     return _result(action, reason, trigger_words, float(confidence), started, source="model")
 
 
+def _levenshtein(left, right, limit):
+    if left == right:
+        return 0
+    if abs(len(left) - len(right)) > limit:
+        return limit + 1
+    if len(left) > len(right):
+        left, right = right, left
+    previous = list(range(len(right) + 1))
+    for char in left:
+        current = [previous[0] + 1]
+        smallest = current[0]
+        for index, other in enumerate(right, 1):
+            value = min(current[-1] + 1, previous[index] + 1, previous[index - 1] + (char != other))
+            current.append(value)
+            smallest = min(smallest, value)
+        if smallest > limit:
+            return limit + 1
+        previous = current
+    return previous[-1]
+
+
+def _urgent_limit(left, right):
+    short = min(len(left), len(right))
+    if short < 4:
+        return 0
+    if short <= 6:
+        return 1
+    return 2
+
+
+def _unglued(token):
+    pieces = []
+    for glue in GLUE_WORDS:
+        if len(token) - len(glue) < 4:
+            continue
+        if token.endswith(glue):
+            pieces.append(token[: -len(glue)])
+        if token.startswith(glue):
+            pieces.append(token[len(glue) :])
+    return pieces
+
+
+def _solo_hits(piece):
+    if piece in URGENT_TYPOS:
+        return [URGENT_TYPOS[piece]]
+    if piece in FUZZY_SOLO:
+        return [piece]
+    if len(piece) < 4:
+        return []
+    ranked = []
+    for canon in FUZZY_SOLO:
+        limit = _urgent_limit(piece, canon)
+        if not limit:
+            continue
+        distance = _levenshtein(piece, canon, limit)
+        if distance <= limit:
+            ranked.append((distance, abs(len(piece) - len(canon)), canon))
+    if not ranked:
+        return []
+    ranked.sort()
+    best = ranked[0][:2]
+    return [canon for distance, difference, canon in ranked if (distance, difference) == best]
+
+
+def _near_canon(piece, canon):
+    if piece == canon or URGENT_TYPOS.get(piece) == canon:
+        return True
+    if len(piece) < 4:
+        return False
+    limit = _urgent_limit(piece, canon)
+    return bool(limit) and _levenshtein(piece, canon, limit) <= limit
+
+
+def _mentions_urgent(tokens, canons):
+    for token in tokens:
+        for piece in (token, *_unglued(token)):
+            if any(_near_canon(piece, canon) for canon in canons):
+                return True
+    return False
+
+
+def _fuzzy_urgent_hits(tokens):
+    hits = []
+    for token in tokens:
+        stems = _solo_hits(token)
+        if not stems:
+            for piece in _unglued(token):
+                for stem in _solo_hits(piece):
+                    if stem not in stems:
+                        stems.append(stem)
+        for stem in stems:
+            if stem not in hits:
+                hits.append(stem)
+    if _mentions_urgent(tokens, ("makahinga",)) and (
+        _mentions_urgent(tokens, ("hindi",)) or "di" in tokens
+    ):
+        hits.append("hindi makahinga")
+    return hits
+
+
 def _urgent_hits(normalized):
     hits = [stem for stem, pattern in _URGENT_PATTERNS if pattern.search(normalized)]
     tokens = normalized.split()
     if "makahinga" in tokens and any(neg in tokens for neg in _BREATHING_NEGATIONS):
         hits.append("hindi makahinga")
+    for stem in _fuzzy_urgent_hits(normalize(normalized).split()):
+        if stem not in hits:
+            hits.append(stem)
     return hits
 
 
