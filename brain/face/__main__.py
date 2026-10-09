@@ -328,7 +328,7 @@ def test_one_frame():
         missed = face.capture_frame(timeout_s=0.05)
         elapsed = time.perf_counter() - started
         assert missed is None and elapsed < 0.3, elapsed
-        time.sleep(0.5)
+        assert "slow" in released, "timed-out capture must release the camera"
         face.cv2 = Cv(Opened())
         got = face.capture_frame(timeout_s=0.5)
         assert got is not None

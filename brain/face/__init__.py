@@ -243,11 +243,26 @@ def line_who(result):
     return who
 
 
+_capture_lock = threading.Lock()
+
+
 def capture_frame(timeout_s=1.5):
     loaded = _load_cv()
     if loaded is None:
         return None
+    if not _capture_lock.acquire(timeout=max(float(timeout_s), 0.05)):
+        return None
     held = {"cap": None, "frame": None}
+    released = threading.Event()
+
+    def release_cap(cap):
+        if cap is None or released.is_set():
+            return
+        released.set()
+        try:
+            cap.release()
+        except Exception:
+            pass
 
     def grab():
         cap = None
@@ -262,16 +277,18 @@ def capture_frame(timeout_s=1.5):
         except Exception:
             return
         finally:
-            if cap is not None:
-                try:
-                    cap.release()
-                except Exception:
-                    pass
+            release_cap(cap)
 
-    worker = threading.Thread(target=grab, daemon=True)
-    worker.start()
-    worker.join(timeout_s)
-    return held["frame"]
+    try:
+        worker = threading.Thread(target=grab, daemon=True)
+        worker.start()
+        worker.join(timeout_s)
+        if worker.is_alive():
+            # Unblock exclusive camera access for the next call; do not wait on read().
+            release_cap(held.get("cap"))
+        return held["frame"]
+    finally:
+        _capture_lock.release()
 
 
 def crop_face(image, face, margin=0.2):
