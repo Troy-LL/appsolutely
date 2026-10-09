@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+  <meta charset="utf-8" />
+  <!-- iPad landscape, one wall of the sala. user-scalable=no: Lola never pinches. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sino</title>
+  <link rel="stylesheet" href="lola.css" />
+</head>
+<body>
+  <!-- One wall. Each .state is a layer; lola.js shows exactly one at a time
+       and fades (400ms) between them. All visible words are filled from
+       strings.js by lola.js — never hardcoded here. -->
+  <main id="stage">
+
+    <!-- Waiting · Naghihintay: wall clock, time, day-part, reassurance. -->
+    <section id="waiting" class="state" aria-hidden="true">
+      <!-- The clock face is drawn as flat ink SVG by lola.js (hour + minute
+           hands only, no second hand, redrawn once a minute). -->
+      <svg class="clock" viewBox="0 0 100 100" aria-hidden="true"></svg>
+      <div class="time"></div>
+      <div class="daypart"></div>
+      <div class="reassure"></div>
+    </section>
+
+    <!-- Listening · Nakikinig: a thick ink ring that breathes, with a caption. -->
+    <section id="listening" class="state" aria-hidden="true">
+      <div class="ring"></div>
+      <div class="caption"></div>
+    </section>
+
+    <!-- Answer · Sagot: one picture frame, speaker name, reply line. -->
+    <section id="answer" class="state" aria-hidden="true">
+      <div class="answer-wrap">
+        <div class="frame-col">
+          <div class="frame">
+            <div class="mat">
+              <div class="photo-box">
+                <!-- img or a no-photo fallback name is placed here by lola.js -->
+              </div>
+            </div>
+          </div>
+          <div class="name"></div>
+        </div>
+        <div class="reply"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Start sheet: the family taps once (iOS blocks audio until a tap).
+       It fades away after the tap. The only button on the screen. -->
+  <div id="start-sheet">
+    <button type="button" id="start-btn"></button>
+  </div>
+
+  <!-- Small FAKE label (ink on paper) shown only while the practice feed is on. -->
+  <div id="fake-label" class="hidden"></div>
+
+  <script type="module" src="lola.js"></script>
+</body>
+</html>
