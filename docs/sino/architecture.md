@@ -154,12 +154,12 @@ None of these are facts yet. Log real results in `docs/NOTES.md` (Model smoke te
 |---|---|---|
 | Speech-to-reply latency, known question | about 2 s | to verify at smoke test |
 | Speech-to-reply latency, model decides | about 4 to 5 s | to verify at smoke test |
-| Whisper small on a 4 s Tagalog clip (medium only if small is unusable) | small's transcript usable | to verify |
+| Whisper small on a 4 s Tagalog clip (medium only if small is unusable) | small's transcript usable | measured Sat ~1:35 AM: 0.76 s warm on a 3.55 s clip, but the transcript was wrong ("nasaanzi na nai."). One clip, one voice; more clips needed. See `docs/NOTES.md` |
 | Transcript quality on Taglish speech | usable for the matcher | to verify at smoke test |
-| `qwen2.5:3b` / `1.5b` JSON validity and time | valid JSON every time | to verify at smoke test |
+| `qwen2.5:3b` / `1.5b` JSON validity and time | valid JSON every time | `3b` measured Sat ~1:30 AM on 62 lines: 62/62 valid with `format: "json"` (median 1.68 s), 60/62 without (median 1.51 s). `1.5b` not measured here. See `docs/NOTES.md` |
 | Hub RAM | 8 GB (M1) | confirmed by Donita, Sat 1:20 AM |
-| Offline network (rung 1: iPhone hotspot + firewall) | iPad and iPhone reach the hub over HTTPS | to verify |
-| LAN-only firewall | outbound check fails, LAN still works | to verify (untested as of Sat 2:00 AM) |
+| Offline network (rung 1: iPhone hotspot + firewall) | iPad and iPhone reach the hub over HTTPS | passed for the iPad, Sat 2:00 AM (Donita's iPhone hotspot). iPhone not tested yet. See `docs/NOTES.md` |
+| LAN-only firewall | outbound check fails, LAN still works | passed Sat 2:00 AM after the rule fix in [DONITA-SETUP.md](DONITA-SETUP.md#5-network-d1). See `docs/NOTES.md` |
 | T5 in `ollama` mode on the hub | gate in [mvp-plan.md](mvp-plan.md#passfail-gate-t5-before-the-330-am-freeze) | waiting on the hub. Stub-mode text results only so far ([../NOTES.md](../NOTES.md#passfail-gate-t5)) |
 | Junk-line filter | drops TV sign-offs and silence, keeps real questions | to verify at smoke test |
 | Hub chime audible across a room | yes | to verify at smoke test |

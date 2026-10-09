@@ -88,16 +88,18 @@ macOS Internet Sharing doesn't work here: it needs an active upstream, and `brid
 4. **Download every model and package BEFORE turning the firewall on** (Whisper, `ollama pull`, `npm install`, `pip install`).
 5. Create the anchor `/etc/pf.anchors/sino` (with `sudo`):
 ```
-pass out quick on lo0 all
-pass out quick to { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, 224.0.0.0/4 }
+pass out quick to { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, 224.0.0.0/4 } flags any no state
 pass out quick proto udp to any port { 67, 68, 5353 }
 block drop out quick all
 ```
 6. Create `/etc/pf.sino.conf` that loads it:
 ```
+set skip on lo0
 anchor "sino"
 load anchor "sino" from "/etc/pf.anchors/sino"
 ```
+Why `flags any no state`: pf's `pass` rules default to `flags S/SA keep state`, so they only match the first packet of connections the hub starts. When the iPad opened the connection, the hub's reply (SYN-ACK) matched no pass rule and hit `block drop out quick all`. `flags any no state` lets every packet to a local address out, and `set skip on lo0` keeps the hub's own local calls (Ollama, whisper-server) unfiltered.
+
 7. Enable / disable (test before relying on it):
 ```bash
 sudo pfctl -f /etc/pf.sino.conf -e   # enable
@@ -108,8 +110,12 @@ sudo pfctl -d                        # disable (do this before downloading anyth
 curl -m 3 https://google.com   # must FAIL (timeout)
 ping -c 3 <ipad-ip>            # must work
 ```
+Third check: with the firewall still on, reload `https://<hub-ip>:<port>` on the iPad. It must load. Ping alone does not catch the reply bug above. Keep the iPad awake: with its screen locked it may not answer ping.
+
 9. `mkcert <hub-ip> localhost`, point the server at the two files it makes, and install + trust `rootCA.pem` on the iPad and iPhone (Settings → General → About → Certificate Trust Settings). If the hub IP changes, regenerate.
 10. Keep the iPhone on the Personal Hotspot screen so it doesn't sleep and drop the network.
+
+Tested Sat 2:00 AM on Donita's iPhone hotspot (hub `172.20.10.2`): passed for the iPad. The iPhone (caregiver phone) is not tested yet.
 
 All three 7 AM no-internet rehearsals use this same network.
 
