@@ -231,8 +231,14 @@ do_status() {
     say "  ?     Offline (unknown while the hub server is down)"
     down=1
   fi
-  if [ "$ALWAYS_LISTEN" = "1" ]; then
-    say "  Always-listening: ON"
+  if [ -n "$HEALTH" ]; then
+    case "$(printf '%s' "$HEALTH" | sed -n 's/.*"always":\(true\|false\).*/\1/p')" in
+      true) say "  Always-listening: ON (running hub)" ;;
+      false) say "  Always-listening: OFF (running hub; set ALWAYS_LISTEN=1 and restart to turn on)" ;;
+      *) say "  Always-listening: ? (hub health has no always field)" ;;
+    esac
+  elif [ "$ALWAYS_LISTEN" = "1" ]; then
+    say "  Always-listening: ON (shell env; hub not answering)"
   else
     say "  Always-listening: OFF (set ALWAYS_LISTEN=1 and restart to turn on)"
   fi

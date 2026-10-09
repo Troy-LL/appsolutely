@@ -226,19 +226,41 @@ async def process_clip(hub, path, label="listen now"):
         await hub.submit(spoken(text))
 
 
+_hold_always = False
+
+
+def hold_always_mic():
+    """Ask always-listening to release MIC_DEVICE so listen now can record."""
+    global _hold_always
+    _hold_always = True
+
+
+def release_always_mic():
+    global _hold_always
+    _hold_always = False
+
+
+def always_mic_held():
+    return _hold_always
+
+
 async def listen_once(hub):
     """Record one fixed-length clip, then process it like any other clip."""
     global MIC_OK
+    hold_always_mic()
     try:
+        # Always-listening kills its ffmpeg when held; wait briefly for the device.
+        await asyncio.sleep(0.2)
         path = await asyncio.to_thread(record_clip, listen_seconds())
     except MicError as exc:
         MIC_OK = False
         print(f"listen now: recording failed: {exc}", file=sys.stderr)
         return
     except Exception as exc:
-        # Any other failure (e.g. no temp file could be made): same message as before the split.
         print(f"listen now: transcription failed ({type(exc).__name__})", file=sys.stderr)
         return
+    finally:
+        release_always_mic()
     await process_clip(hub, path)
 
 
