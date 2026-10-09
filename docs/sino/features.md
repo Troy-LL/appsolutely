@@ -61,6 +61,8 @@ Lola Cora; 5 to 6 questions with phrasings; teammate-recorded replies and photos
 | "Nasaan si Nanay?" (Lola's late mother) | "Ma, ikwento mo nga si Nanay mo. Nandito lang kami." | Validation: invites the memory, no correction, no false claim |
 | "Nasaan si Joy?" | "Nasa trabaho ako, Ma, uuwi ako mamaya, kain ka muna." | Joy is alive and at work, so this is true |
 | "Sino ka?" | "Lola, ako 'to, si Troy, pamangkin mo. Ito tayo nung pasko." with a photo of Troy and Lola | The "Sino ka?" roleplay ([demo.md](demo.md)) |
+| "Nasaan ako?" | "Nandito ka lang, Ma. Kasama mo kami." | She is here with family. No room and no destination. Speaker: Joy. Audio not recorded yet |
+| "Gusto ko nang umuwi" | "Sandali lang, Ma. Nandito kami." | Does not promise a trip home. Speaker: Joy. Audio not recorded yet |
 
 ## Should (after the freeze, before add-ons)
 

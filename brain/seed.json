@@ -2,7 +2,7 @@
   {
     "id": "nasaan-si-nanay",
     "question": "Nasaan si Nanay?",
-    "phrasings": ["Si Mama asan?", "Si Nanay, asan?", "Nasaan si Nanay?", "Nasaan si Mama?"],
+    "phrasings": ["Si Mama asan?", "Si Nanay, asan?", "Nasaan si Nanay?", "Nasaan si Mama?", "Nasaan na si Nanay?", "Asan si Mama?", "Where is Nanay?", "Where is Mama?", "Where is my mother?", "Where's Nanay?", "Where's Mama?"],
     "reply_audio": "",
     "photo": "",
     "speaker": "Joy"
@@ -10,7 +10,7 @@
   {
     "id": "nasaan-si-joy",
     "question": "Nasaan si Joy?",
-    "phrasings": ["Nasaan si Joy?", "Asan si Joy?", "Nasaan ka Joy?"],
+    "phrasings": ["Nasaan si Joy?", "Asan si Joy?", "Nasaan ka Joy?", "Asan ka, Joy?", "Where is Joy?", "Where are you, Joy?", "Where's Joy?"],
     "reply_audio": "",
     "photo": "",
     "speaker": "Joy"
@@ -18,9 +18,25 @@
   {
     "id": "sino-ka",
     "question": "Sino ka?",
-    "phrasings": ["Sino ka?", "Sino ka ba?", "Sino po kayo?"],
+    "phrasings": ["Sino ka?", "Sino ka ba?", "Sino po kayo?", "Sino ba kayo?", "Who are you?"],
     "reply_audio": "",
     "photo": "",
     "speaker": "Troy"
+  },
+  {
+    "id": "nasaan-ako",
+    "question": "Nasaan ako?",
+    "phrasings": ["Nasaan ako?", "Asan ako?", "Nasaan ba ako?", "Where am I?"],
+    "reply_audio": "",
+    "photo": "",
+    "speaker": "Joy"
+  },
+  {
+    "id": "gusto-ko-nang-umuwi",
+    "question": "Gusto ko nang umuwi",
+    "phrasings": ["Gusto ko nang umuwi", "Gusto ko na umuwi", "Gusto kong umuwi", "Uuwi na ako", "I want to go home", "Take me home"],
+    "reply_audio": "",
+    "photo": "",
+    "speaker": "Joy"
   }
 ]
