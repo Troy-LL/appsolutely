@@ -115,7 +115,7 @@ Arrows show what needs what. Dotted arrows show add-on order (a → b). (c) voic
 
 **Start immediately (no prerequisites):** T1, T2, D1, D3, A1, V1.
 
-**Status as of 1:35 AM Sat. Hub: MacBook Air M1 8 GB.** Colours: Done / In progress / Waiting on hub / Not started / Cut (legend in the image). Done: I0, T1, T2 (text done, audio TODO), the spec docs. In progress: T3 + triage fixes, T5 runner, T7, and Donita's D1 (path chosen 1:20 AM, firewall test pending) to D6 while the M1 hub is set up. Waiting on hub: W1, T5 in ollama mode. Ayen and Viv tasks show not started because nothing of theirs is in the repo yet. D8 is cut; T6 is first to cut.
+**Status as of 1:35 AM Sat. Hub: MacBook Air M1 8 GB.** Colours: Done / In progress / Waiting on hub / Not started / Cut (legend in the image). Done: I0, T1, T2 (text done, audio TODO), T4 (routes to caregiver, tests in cases.json), the spec docs. In progress: T3 + triage fixes, T5 runner, T7, and Donita's D1 (path chosen 1:20 AM, firewall test pending) to D6 while the M1 hub is set up. Waiting on hub: W1, T5 in ollama mode. Ayen and Viv tasks show not started because nothing of theirs is in the repo yet. D8 is cut; T6 is first to cut.
 
 ![Sino task graph](task-graph.png)
 
@@ -129,7 +129,7 @@ flowchart TD
     T1[T1 Matcher + urgent rules<br/>✓ first version, decide.py PR #2]
     T2[T2 Record seed replies + 30 test clips<br/>✓ text done, audio TODO · PR #6]
     T3[T3 Qwen JSON decision + silent rule<br/>in progress: + triage fixes, stub until hub]
-    T4[T4 Medication]
+    T4[T4 Medication<br/>✓ routes to caregiver, tests in cases.json]
     T4m[Meals logic · after 2 AM]
     T5[T5 30-clip pass/fail test<br/>in progress: stub runner · ollama mode waits on hub]
     T7[T7 Ask Sino about Lola<br/>in progress]
@@ -194,9 +194,9 @@ flowchart TD
   classDef hub fill:#fce7f3,stroke:#be185d,stroke-width:2px,color:#111
   classDef todo fill:#ffffff,stroke:#6b7280,color:#111
   classDef cut fill:#f3f4f6,stroke:#9ca3af,stroke-dasharray:5 5,color:#6b7280
-  class I0,T1,T2,L1 done
+  class I0,T1,T2,T4,L1 done
   class T3,T5,T7,D1,D2,D3,D4,D5,D6,L2 doing
   class W,L3 hub
-  class T4,T4m,T6,D7,A1,A2,A3,A4,V1,V2,V3,V4,V5,XA,XB,F,C,R,S,L4 todo
+  class T4m,T6,D7,A1,A2,A3,A4,V1,V2,V3,V4,V5,XA,XB,F,C,R,S,L4 todo
   class D8,L5 cut
 ```
