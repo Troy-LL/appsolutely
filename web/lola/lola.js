@@ -9,6 +9,9 @@ import { STRINGS, pair, dayPartKey } from './strings.js'
 // TODO: decision D5 — the real volume is set together on the iPad at test time.
 const MAX_VOLUME = 0.8
 const FADE_IN_MS = 300
+const HOLD_MS = 8000
+const BACKOFF_MS = [500, 1000, 2000, 4000, 8000]
+const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA='
 const params = new URLSearchParams(location.search)
 const $ = (sel) => document.querySelector(sel)
 if (params.has('big')) document.documentElement.classList.add('big') // bigger type
@@ -83,10 +86,17 @@ loadSpeakers()
 // ---- Audio queue: one clip at a time; a new reply mid-clip waits its turn ----
 let current = null // the <audio> playing now
 let pending = null // the newest answer waiting its turn
+let blocked = null // a clip whose play() was refused, retried on the next tap
+let hold = null
+
+function speakerName(msg) {
+  if (typeof msg.speaker === 'string' && msg.speaker) return msg.speaker
+  return speakers.get(msg.reply_id) || ''
+}
 
 function renderAnswer(msg) {
   const box = $('#answer .photo-box')
-  const name = speakers.get(msg.reply_id) || ''
+  const name = speakerName(msg)
   const url = msg.photo ? `${hubBase()}${msg.photo}` : ''
   // TODO: reply_text is not in the /ws contract (architecture.md). We read an
   // optional field and show nothing if it is absent. Do not invent a line.
@@ -114,22 +124,52 @@ function showNameInFrame(box, name) {
   $('#answer .name').style.display = 'none'
 }
 
+function cancelHold() {
+  clearTimeout(hold)
+  hold = null
+}
+
 function playReply(msg) {
+  cancelHold()
   // Always finish a clip in progress; stash the newest answer for after it.
   if (current && !current.ended) { pending = msg; return }
   startClip(msg)
 }
 
 function startClip(msg) {
+  cancelHold()
+  blocked = null
   renderAnswer(msg) // show the picture as its clip begins
   if (!msg.reply_audio) { current = null; afterClip(); return }
   const audio = new Audio(`${hubBase()}${msg.reply_audio}`)
   audio.volume = 0
   current = audio
-  audio.addEventListener('ended', afterClip)
-  audio.addEventListener('error', afterClip)
-  audio.play().then(() => fadeIn(audio)).catch(() => { current = null }) // autoplay may need the Start tap
+  audio.addEventListener('ended', () => clipDone(audio))
+  audio.addEventListener('error', () => clipDone(audio))
+  audio.play().then(() => fadeIn(audio)).catch(() => {
+    if (current !== audio) return
+    current = null
+    blocked = audio
+    afterClip()
+  })
 }
+
+function clipDone(audio) {
+  if (audio !== current && audio !== blocked) return
+  blocked = null
+  afterClip()
+}
+
+function retryBlocked() {
+  if (!blocked) return
+  const audio = blocked
+  blocked = null
+  current = audio
+  cancelHold()
+  audio.play().then(() => fadeIn(audio)).catch(() => { if (current === audio) afterClip() })
+}
+document.addEventListener('pointerdown', retryBlocked)
+document.addEventListener('click', retryBlocked)
 
 function fadeIn(audio) {
   const steps = 10
@@ -142,7 +182,9 @@ function fadeIn(audio) {
 
 function afterClip() {
   current = null
-  if (pending) { const next = pending; pending = null; startClip(next) }
+  if (pending) { const next = pending; pending = null; startClip(next); return }
+  cancelHold()
+  hold = setTimeout(() => { hold = null; blocked = null; show('waiting') }, HOLD_MS)
 }
 
 // ---- Event handling ----
@@ -162,19 +204,63 @@ function onEvent(msg) {
       // comfort brings its own play_reply (above). Any other action with no
       // answer returns Lola to Waiting (no text, urgent included). Never
       // interrupt a clip to do so.
-      if (msg.action !== 'comfort' && !current && !pending) show('waiting')
+      if (msg.action !== 'comfort' && !current && !pending) {
+        cancelHold()
+        blocked = null
+        show('waiting')
+      }
       break
     // health and anything else: nothing for Lola to see.
   }
 }
 
-// ---- Connect (quiet reconnect every 3s) ----
+// ---- Connect: reconnect only after the hub socket closes or errors ----
+const ON_HUB = params.get('feed') === 'hub'
 let feed = null
+let feedOpen = false
+let feedGen = 0
+let attempt = 0
+let retry = null
+
 function connect() {
+  clearTimeout(retry)
+  retry = null
+  if (feed && !feedOpen) { try { feed.close() } catch {} }
+  feedOpen = false
+  const gen = ++feedGen
+  const onStatus = (status) => { if (gen === feedGen) feedStatus(status) }
   try {
-    feed = openFeed('lola', onEvent, { url: hubBase() ? `${hubBase().replace(/^http/, 'ws')}/ws?screen=lola` : undefined })
-  } catch { /* keep trying quietly */ }
+    feed = openFeed('lola', onEvent, {
+      url: params.get('hub') ? `${hubBase().replace(/^http/, 'ws')}/ws?screen=lola` : undefined,
+      onStatus,
+    })
+  } catch { scheduleReconnect() }
 }
+
+function feedStatus(status) {
+  if (status === 'open') { feedOpen = true; attempt = 0; return }
+  feedOpen = false
+  scheduleReconnect()
+}
+
+function scheduleReconnect() {
+  if (retry) return
+  const wait = BACKOFF_MS[Math.min(attempt, BACKOFF_MS.length - 1)]
+  attempt++
+  retry = setTimeout(connect, wait)
+}
+
+// ---- Screen wake lock (Safari 16.4+); every failure stays silent ----
+async function keepAwake() {
+  try { if (navigator.wakeLock) await navigator.wakeLock.request('screen') } catch {}
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return
+  keepAwake()
+  if (ON_HUB && !params.has('test') && !feedOpen) connect()
+})
+
 // ?test exposes a seam that pushes synthetic events through the REAL onEvent,
 // so screenshot tests exercise the same handlers Lola's screen uses. In test
 // mode the auto feed is suppressed so injected events are deterministic.
@@ -182,20 +268,26 @@ if (params.has('test')) {
   window.__lola = { send: onEvent, show }
 } else {
   connect()
-  // Quietly remake the real socket every 3s if it drops (only ?feed=hub drops).
-  setInterval(() => {
-    if (params.get('feed') === 'hub') { try { feed && feed.close() } catch {} ; connect() }
-  }, 3000)
 }
 
 // ---- Start sheet + FAKE label ----
+let audioCtx = null
 $('#start-btn').textContent = pair(STRINGS.start)
 $('#start-btn').addEventListener('click', () => {
   $('#start-sheet').classList.add('gone') // fades away; it is the only button
-  new Audio().play().catch(() => {})      // a silent play unlocks iOS audio
+  // iOS Safari unlocks media playback only inside a user tap.
+  new Audio(SILENT_WAV).play().catch(() => {})
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext
+    if (Ctx) {
+      audioCtx = audioCtx || new Ctx()
+      audioCtx.resume().catch(() => {})
+    }
+  } catch {}
+  keepAwake()
 })
 
 // FAKE label: ink on paper, shown only while the practice feed is active.
-if (IS_FAKE && params.get('feed') !== 'hub') {
+if (IS_FAKE && !ON_HUB) {
   const el = $('#fake-label'); el.textContent = STRINGS.fake.tl; el.classList.remove('hidden')
 }
