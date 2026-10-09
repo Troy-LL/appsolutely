@@ -65,6 +65,17 @@ TBD.
 | Fri Oct 9 11:20 PM | Interfaces locked for the build: WebSocket payloads, `POST /listen`, `GET`/`POST /questions`, and junk lines riding on `heard`. Shapes are in `docs/sino/architecture.md`. M2 RAM and measured latencies stay to verify | Troy |
 | Sat Oct 10 1:20 AM | Hub is an M1 (8 GB), macOS 26.5.1, not an M2. Models: Whisper small + qwen2.5:3b (medium + qwen2.5:1.5b only if small's Tagalog is unusable; medium + 3B and large-v3-turbo out). Internet Sharing failed (needs an active upstream; `bridge100` never appeared); no Android on the team. Network ladder changed (Troy, 1:23 AM): primary iPhone 15 hotspot + hub LAN-only `pf` firewall → spare router/pocket Wi-Fi with no WAN → iPhone USB + Internet Sharing + firewall → venue Wi-Fi + firewall. See `docs/sino/architecture.md#network` | Donita, Troy |
 
+## Pass/fail gate (T5)
+
+Filled from a real 1:45 AM run. Until then every figure is TODO. Do not mark a pass, and do not show `Test: passed 1:45 AM` on `/backstage`, before this table is filled from a run. Spec: [sino/mvp-plan.md](sino/mvp-plan.md).
+
+| Result | Value |
+|---|---|
+| urgent | TODO/10 |
+| comfort | TODO/10 |
+| TV false triggers | TODO |
+| mode | TODO (`ollama` or `stub`) |
+
 ## Handoffs
 
 (Use the template in [01-team.md](01-team.md#handoff-note-write-it-in-docsnotesmd-at-100-am-and-430-am).)
