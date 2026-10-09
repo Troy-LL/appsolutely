@@ -16,7 +16,7 @@ from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request, WebSocket
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.datastructures import UploadFile
 from starlette.websockets import WebSocketDisconnect
@@ -178,24 +178,25 @@ def meal_choice(entries, now=None):
     }
 
 
+def _text(value):
+    return value if isinstance(value, str) else ""
+
+
 def meal_clip(variant):
     try:
         entries = load_seed()
     except (OSError, ValueError):
-        return "", ""
+        return "", "", ""
     for entry in entries:
         if not isinstance(entry, dict) or entry.get("id") != "meal-check":
             continue
         replies = entry.get("replies")
         chosen = replies.get(variant) if isinstance(replies, dict) else None
         if isinstance(chosen, dict):
-            audio = chosen.get("reply_audio")
-            photo = chosen.get("photo")
-            return audio if isinstance(audio, str) else "", photo if isinstance(photo, str) else ""
-        audio = entry.get("reply_audio")
-        photo = entry.get("photo")
-        return audio if isinstance(audio, str) else "", photo if isinstance(photo, str) else ""
-    return "", ""
+            speaker = _text(chosen.get("speaker")) or _text(entry.get("speaker"))
+            return _text(chosen.get("reply_audio")), _text(chosen.get("photo")), speaker
+        return _text(entry.get("reply_audio")), _text(entry.get("photo")), _text(entry.get("speaker"))
+    return "", "", ""
 
 
 def media_for(reply_id):
@@ -210,6 +211,17 @@ def media_for(reply_id):
         photo = entry.get("photo") or ""
         return audio if isinstance(audio, str) else "", photo if isinstance(photo, str) else ""
     return "", ""
+
+
+def speaker_for(reply_id):
+    try:
+        entries = load_seed()
+    except (OSError, ValueError):
+        return ""
+    for entry in entries:
+        if isinstance(entry, dict) and entry.get("id") == reply_id:
+            return _text(entry.get("speaker"))
+    return ""
 
 
 def _reachable(url, timeout):
@@ -329,16 +341,18 @@ class Hub:
             })
         if action == "comfort":
             if matched is not None and matched["use_person"]:
-                audio, photo = matched["audio"], matched["photo"]
+                audio, photo, speaker = matched["audio"], matched["photo"], matched["speaker"]
             elif meal is not None:
-                audio, photo = meal_clip(meal["reply_variant"])
+                audio, photo, speaker = meal_clip(meal["reply_variant"])
             else:
                 audio, photo = media_for(result["reply_id"])
+                speaker = speaker_for(result["reply_id"])
             await self.send_to("lola", {
                 "event": "play_reply",
                 "reply_id": result["reply_id"],
                 "reply_audio": audio,
                 "photo": photo,
+                "speaker": speaker,
             })
             if meal is not None and meal["reply_variant"] == "unknown":
                 await self.send_to("caregiver", {
@@ -605,7 +619,7 @@ def _person_entry(who):
             audio = ""
         if not isinstance(photo, str):
             photo = ""
-        return audio, photo
+        return audio, photo, _text(person.get("speaker"))
     return None
 
 
@@ -619,12 +633,13 @@ def look_at_camera():
             "score": 0.0,
             "audio": "",
             "photo": "",
+            "speaker": "",
             "use_person": False,
             "ms": int((time.monotonic() - started) * 1000),
         }
     seen = recognize(jpeg)
     who = ""
-    audio, photo = "", ""
+    audio, photo, speaker = "", "", ""
     use_person = False
     score = seen["score"]
     name = seen["who"]
@@ -632,7 +647,7 @@ def look_at_camera():
         person = _person_entry(name)
         if person is not None:
             who = name
-            audio, photo = person
+            audio, photo, speaker = person
             use_person = True
     return {
         "who": who,
@@ -640,6 +655,7 @@ def look_at_camera():
         "score": score,
         "audio": audio,
         "photo": photo,
+        "speaker": speaker,
         "use_person": use_person,
         "ms": int((time.monotonic() - started) * 1000),
     }
@@ -862,6 +878,28 @@ def clips_snapshot():
         media_type="image/jpeg",
         headers={"Cache-Control": "no-store"},
     )
+
+
+WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+
+
+class ScreenFiles(StaticFiles):
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        if path in ("", ".", "index.html"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
+if (WEB_DIR / "lola").is_dir():
+    @app.get("/lola", include_in_schema=False)
+    def lola_slash():
+        return RedirectResponse("/lola/")
+
+    app.mount("/lola", ScreenFiles(directory=WEB_DIR / "lola", html=True), name="lola")
+
+if (WEB_DIR / "fake-feed").is_dir():
+    app.mount("/fake-feed", StaticFiles(directory=WEB_DIR / "fake-feed"), name="fake-feed")
 
 
 if __name__ == "__main__":

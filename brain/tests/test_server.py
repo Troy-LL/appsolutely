@@ -55,6 +55,7 @@ HEALTH_KEYS = {
     "model",
     "last_event_at",
 }
+PLAY_KEYS = {"event", "reply_id", "reply_audio", "photo", "speaker"}
 LINES = (
     ("Nasaan si Nanay?", "comfort", "rule", ""),
     ("Masakit dibdib ko", "urgent", "rule", ""),
@@ -88,7 +89,7 @@ def _post_jpeg(port, body):
         headers={"Content-Type": "image/jpeg"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=2) as res:
+    with urllib.request.urlopen(req, timeout=15) as res:
         return res.status, json.loads(res.read().decode("utf-8"))
 
 
@@ -139,11 +140,11 @@ async def _expect_line(clients, text, action, source, ignored):
     _check_decided(decided_c, text, action, source, ignored)
     if action == "comfort":
         play = await _recv(lola)
-        if set(play) != {"event", "reply_id", "reply_audio", "photo"}:
+        if set(play) != PLAY_KEYS:
             raise AssertionError(play)
         if play["event"] != "play_reply" or play["reply_id"] != decided_l["reply_id"]:
             raise AssertionError(play)
-        if play["reply_audio"] != "" or play["photo"] != "":
+        if play["reply_audio"] != "" or play["photo"] != "" or play["speaker"] != "Joy":
             raise AssertionError(play)
         if decided_l["reply_id"] != "nasaan-si-nanay":
             raise AssertionError(decided_l["reply_id"])
@@ -323,6 +324,14 @@ async def _run():
             meal_passed, meal_total = await _meals(port, clients, log_path)
             passed += meal_passed
             total += meal_total
+
+            total += 1
+            try:
+                _check_screens(port)
+                passed += 1
+                print("lola and fake-feed mounts: PASS")
+            except (AssertionError, OSError) as exc:
+                print(f"lola and fake-feed mounts: FAIL {exc}")
     finally:
         server.hub.decide_call = decide
         runner.should_exit = True
@@ -331,6 +340,31 @@ async def _run():
             log_path.unlink()
     print(f"PASS {passed}/{total}")
     return passed == total and total > 0
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *_args, **_kwargs):
+        return None
+
+
+def _check_screens(port):
+    base = f"http://127.0.0.1:{port}"
+    with urllib.request.urlopen(f"{base}/lola/", timeout=2) as res:
+        body = res.read().decode("utf-8")
+        if res.status != 200 or res.headers.get("Cache-Control") != "no-cache":
+            raise AssertionError((res.status, res.headers.get("Cache-Control")))
+    if "<title>Sino</title>" not in body or 'id="start-btn"' not in body:
+        raise AssertionError("lola screen missing")
+    opener = urllib.request.build_opener(_NoRedirect)
+    try:
+        opener.open(f"{base}/lola", timeout=2)
+        raise AssertionError("/lola did not redirect")
+    except urllib.error.HTTPError as exc:
+        if exc.code not in (301, 302, 307) or not exc.headers.get("Location", "").endswith("/lola/"):
+            raise AssertionError((exc.code, exc.headers.get("Location")))
+    with urllib.request.urlopen(f"{base}/fake-feed/index.js", timeout=2) as res:
+        if res.status != 200 or "openFeed" not in res.read().decode("utf-8"):
+            raise AssertionError("fake-feed missing")
 
 
 async def _stale(port, clients):
@@ -408,7 +442,7 @@ def _check_sino(msg, who):
         raise AssertionError(msg)
 
 
-async def _expect_sino(clients, audio, photo, who, seen_who):
+async def _expect_sino(clients, audio, photo, who, seen_who, speaker):
     text = "Sino ka?"
     backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
     heard = await _recv(backstage)
@@ -425,9 +459,11 @@ async def _expect_sino(clients, audio, photo, who, seen_who):
     _check_sino(await _recv(lola), who)
     _check_sino(await _recv(caregiver), who)
     play = await _recv(lola)
-    if set(play) != {"event", "reply_id", "reply_audio", "photo"}:
+    if set(play) != PLAY_KEYS:
         raise AssertionError(play)
     if play["reply_id"] != "sino-ka" or play["reply_audio"] != audio or play["photo"] != photo:
+        raise AssertionError(play)
+    if play["speaker"] != speaker:
         raise AssertionError(play)
     await _quiet(lola)
     await _quiet(caregiver)
@@ -496,7 +532,7 @@ async def _face(port, clients):
             server.grab_jpeg = lambda: None
             server.identify_jpeg = _identify_as("joy", 0.99)
             _ask_sino(port)
-            await _expect_sino(clients, "troy-line", "troy.jpg", "", None)
+            await _expect_sino(clients, "troy-line", "troy.jpg", "", None, "Troy")
 
         passed += await _one_face("face frame without module", no_module)
 
@@ -505,7 +541,7 @@ async def _face(port, clients):
             server.grab_jpeg = lambda: b"\xff\xd8\xff\xd9"
             server.identify_jpeg = _identify_as("joy", 0.91)
             _ask_sino(port)
-            await _expect_sino(clients, "joy-line", "joy.jpg", "joy", "joy")
+            await _expect_sino(clients, "joy-line", "joy.jpg", "joy", "joy", "Joy")
 
         passed += await _one_face("sino ka joy", joy_line)
 
@@ -513,7 +549,7 @@ async def _face(port, clients):
         async def low_score():
             server.identify_jpeg = _identify_as("joy", 0.54)
             _ask_sino(port)
-            await _expect_sino(clients, "troy-line", "troy.jpg", "", None)
+            await _expect_sino(clients, "troy-line", "troy.jpg", "", None, "Troy")
 
         passed += await _one_face("sino ka below threshold", low_score)
 
@@ -521,7 +557,7 @@ async def _face(port, clients):
         async def at_threshold():
             server.identify_jpeg = _identify_as("joy", 0.55)
             _ask_sino(port)
-            await _expect_sino(clients, "joy-line", "joy.jpg", "joy", "joy")
+            await _expect_sino(clients, "joy-line", "joy.jpg", "joy", "joy", "Joy")
 
         passed += await _one_face("sino ka at threshold", at_threshold)
 
@@ -529,7 +565,7 @@ async def _face(port, clients):
         async def unknown():
             server.identify_jpeg = _identify_as("visitor", 0.99)
             _ask_sino(port)
-            await _expect_sino(clients, "troy-line", "troy.jpg", "", None)
+            await _expect_sino(clients, "troy-line", "troy.jpg", "", None, "Troy")
 
         passed += await _one_face("sino ka unknown", unknown)
 
@@ -538,7 +574,7 @@ async def _face(port, clients):
             server.grab_jpeg = lambda: None
             server.identify_jpeg = _identify_as("joy", 0.99)
             _ask_sino(port)
-            await _expect_sino(clients, "troy-line", "troy.jpg", "", None)
+            await _expect_sino(clients, "troy-line", "troy.jpg", "", None, "Troy")
 
         passed += await _one_face("sino ka camera fail", camera_down)
 
@@ -591,7 +627,7 @@ def _meal_seed(load):
     return entries
 
 
-async def _expect_meal(clients, text, variant, audio, photo, last_meal_ts, card_count):
+async def _expect_meal(clients, text, variant, audio, photo, last_meal_ts, card_count, speaker="Joy"):
     backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
     heard = await _recv(backstage)
     if heard != {"event": "heard", "transcript": text, "dropped": False, "drop_reason": ""}:
@@ -607,11 +643,11 @@ async def _expect_meal(clients, text, variant, audio, photo, last_meal_ts, card_
         if msg["transcript"] != text:
             raise AssertionError(msg)
     play = await _recv(lola)
-    if set(play) != {"event", "reply_id", "reply_audio", "photo"}:
+    if set(play) != PLAY_KEYS:
         raise AssertionError(play)
     if play["event"] != "play_reply" or play["reply_id"] != "meal-check":
         raise AssertionError(play)
-    if play["reply_audio"] != audio or play["photo"] != photo:
+    if play["reply_audio"] != audio or play["photo"] != photo or play["speaker"] != speaker:
         raise AssertionError(play)
     if card_count:
         card = await _recv(caregiver)
