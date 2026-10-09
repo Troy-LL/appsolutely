@@ -10,7 +10,7 @@ Always-listening hub mic (Silero VAD) → whisper.cpp → junk-line filter → `
 
 - **Always-listening:** Silero VAD on the hub mic cuts clips when someone speaks.
 - **Throttle:** one model call at a time; stale clips (older than the one being processed) are dropped.
-- **Junk-line filter, before `decide()`:** drop clips that are too quiet, that Whisper marks as likely no speech, or whose transcript matches known junk lines ("Thank you for watching", "Salamat sa panonood", and similar). These never reach Lola or the caregiver; they're only logged on backstage.
+- **Junk-line filter, before `decide()`:** drop clips that are too quiet, that Whisper marks as likely no speech, or whose transcript matches known junk lines ("Thank you for watching", "Salamat sa panonood", and similar). These never reach Lola or the caregiver. Backstage logs them as `heard` with `dropped` true ([architecture.md](architecture.md#the-3-interfaces-locked-in-the-first-15-minutes)).
 - **Demo safety:** a hidden "listen now" button on `/backstage` forces a capture, and a hidden typed-question box sends text through the same `decide()` if the mic or Whisper fails.
 
 ### M2. Decision: comfort / caregiver / urgent / silent (Troy)

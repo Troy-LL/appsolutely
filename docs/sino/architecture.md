@@ -63,7 +63,7 @@ No text-to-speech or voice-cloning model is used anywhere: Lola only hears the f
 
 **Published accuracy reference** (Whisper paper, Radford et al. 2022, FLEURS Tagalog word error rate): base 45.8%, small 27.7%, medium 19.1%. This is read speech from a benchmark, not our measurement. Lola's real Taglish will likely be worse, which is why the matcher, the urgent rules, the junk-line filter, and silent-if-unsure exist.
 
-Web stack follows the repo defaults in [../../AGENTS.md](../../AGENTS.md) (React + Vite + Tailwind, Python FastAPI backend) unless the team decides otherwise. TODO: confirm.
+Web stack is the repo default in [../../AGENTS.md](../../AGENTS.md): React + Vite + Tailwind on the screens, Python FastAPI on the hub.
 
 ## The 3 interfaces (locked in the first 15 minutes)
 
@@ -71,18 +71,29 @@ Web stack follows the repo defaults in [../../AGENTS.md](../../AGENTS.md) (React
    ```json
    {"action": "comfort | caregiver | urgent | silent", "reply_id": "", "reason": "", "trigger_words": [], "confidence": 0.0, "latency_ms": 0}
    ```
-2. **Events (WebSocket):** `heard`, `decided`, `play_reply`, `alert`, `ask_caregiver`, `meal_logged`, `health`
-3. **Questions file:** `{id, question, phrasings[], reply_audio, photo, speaker}`
-4. **`/listen`:** named in the MVP plan (D4). Request and response body: TODO: unknown.
-5. **Folders** (from the MVP plan): `brain/`, `hub/`, `web/setup`, `web/caregiver`.
+2. **Events.** WebSocket at `/ws`. One JSON object per message. `event` is the name. The fake feed emits this same shape, so the screens do not wait on the hub.
+   - `heard`: `{"event":"heard","transcript":"","dropped":false,"drop_reason":""}`. `transcript` is the live transcript (Lola's exact words). `dropped` is true only when the junk-line filter drops the clip: too quiet, Whisper likely no speech, or a known junk line ("Thank you for watching", "Salamat sa panonood", and similar). `drop_reason` is then `too quiet`, `likely no speech`, or `junk line`. A dropped `heard` is shown on `/backstage` only. It does not call `decide()` and does not emit `decided`, `play_reply`, `alert`, or `ask_caregiver`. Junk lines ride on `heard`. They do not have their own event.
+   - `decided`: the decision object with `"event":"decided"` added. Emitted for comfort, caregiver, urgent, and silent. Silent emits `decided` and nothing else (log only).
+   - `play_reply`: `{"event":"play_reply","reply_id":"","reply_audio":"","photo":""}` to `/lola` on comfort. `reply_audio` and `photo` come from the questions file. Lola's screen shows the photo and plays the recording, and nothing else.
+   - `alert`: `{"event":"alert","transcript":""}` to `/caregiver` on urgent. The red card shows `transcript` and is the only card that plays a sound. The hub chime is separate, from the hub speaker.
+   - `ask_caregiver`: `{"event":"ask_caregiver","transcript":"","count":1}` to `/caregiver` when the action is caregiver. Quiet. Repeats of the same `transcript` share one yellow card, and `count` is how many times. One tap records a reply through `POST /questions`.
+   - `meal_logged`: `{"event":"meal_logged"}`. No extra fields. This is the Should meals check, after the 2 AM freeze. Clients ignore it until then. The name means the caregiver tapped "Kumain na".
+   - `health`: `{"event":"health","whisper":true,"ollama":true,"server":true,"mic":true,"offline":true}`. `whisper`, `ollama`, `server`, and `mic` are the health light. `true` means that part is up. `offline` true means the OFFLINE badge is showing. Sent when a client connects and again when a part changes.
+3. **Questions file:** `{id, question, phrasings[], reply_audio, photo, speaker}`. Troy's seed file is `brain/seed.json`. Donita's loader (D5) reads it, and quick setup appends to the same list.
+   - `GET /questions` returns the array.
+   - `POST /questions` accepts one object. `reply_audio` and `photo` are file parts (hold to record, and the photo). The hub stores the files and returns the stored object. The hub sets `id` when the client omits it. If `id` already exists, the hub replaces `reply_audio` and `photo` and keeps the question. That is the caregiver's one-tap record-a-reply.
+4. **`POST /listen`:** returns 202 and no body. What happened arrives on `/ws`.
+   - Listen now: `{"mode":"listen_now"}`. The hub captures from its own mic and runs VAD, Whisper, the junk filter, and `decide()`.
+   - Typed question: `{"mode":"typed","text":""}`. Skips VAD, Whisper, and the junk filter. Emits `heard` with that `text` as `transcript` and `dropped` false, then `decided`.
+5. **Folders:** `brain/`, `hub/`, `web/setup`, `web/caregiver`.
 
-Changing an interface needs a post in the team chat, because every screen depends on it. TODO: unknown (Troy + Donita) whether dropped junk lines get their own event or ride on `heard`. No event name is written.
+Changing an interface needs a post in the team chat, because every screen depends on it.
 
 ## Data flow
 
 1. The hub mic hears speech; Silero VAD cuts the clip. (Or: "listen now" on backstage forces a capture; the typed-question box skips steps 1 to 3.)
 2. whisper.cpp transcribes it on the M2 → `heard` event.
-3. Junk-line filter: quiet clips, likely-no-speech clips, and known junk lines are dropped and shown only on backstage.
+3. Junk-line filter: quiet clips, likely-no-speech clips, and known junk lines are dropped. Backstage shows them as `heard` with `dropped` true. They never reach Lola or the caregiver.
 4. Throttle: one model call at a time; stale clips are dropped.
 5. `decide()`: urgent-word rules → known-question matcher → Qwen only if still unclear → `decided` event.
 6. Comfort → `play_reply` to `/lola`. Caregiver → `ask_caregiver` to `/caregiver` (quiet, grouped). Urgent → hub chime + `alert` to `/caregiver`. Silent → log only.
