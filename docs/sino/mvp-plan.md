@@ -115,46 +115,55 @@ Arrows show what needs what. Dotted arrows show add-on order (a → b). (c) voic
 
 **Start immediately (no prerequisites):** T1, T2, D1, D3, A1, V1.
 
+**Status as of 1:35 AM Sat. Hub: MacBook Air M1 8 GB.** Colours: Done / In progress / Waiting on hub / Not started / Cut (legend in the image). Done: I0, T1, T2 (text done, audio TODO), T4 (routes to caregiver, tests in cases.json), the spec docs. In progress: T3 + triage fixes, T5 runner, T7, and Donita's D1 (path chosen 1:20 AM, firewall test pending) to D6 while the M1 hub is set up. Waiting on hub: W1, T5 in ollama mode. Ayen and Viv tasks show not started because nothing of theirs is in the repo yet. D8 is cut; T6 is first to cut.
+
 ![Sino task graph](task-graph.png)
 
 Source: [task-graph.mmd](task-graph.mmd) (Mermaid, renders on GitHub):
 
 ```mermaid
 flowchart TD
-  I0[I0 Lock 3 interfaces · 15 min · all]
+  I0[I0 Lock 3 interfaces · 15 min · all<br/>✓ done: wire contracts in architecture.md]
 
   subgraph Troy["Troy · decision engine"]
-    T1[T1 Matcher + urgent rules]
-    T2[T2 Record seed replies + 30 test clips]
-    T3[T3 Qwen JSON decision + silent rule]
-    T4[T4 Medication]
+    T1[T1 Matcher + urgent rules<br/>✓ first version, decide.py PR #2]
+    T2[T2 Record seed replies + 30 test clips<br/>✓ text done, audio TODO · PR #6]
+    T3[T3 Qwen JSON decision + silent rule<br/>in progress: + triage fixes, stub until hub]
+    T4[T4 Medication<br/>✓ routes to caregiver, tests in cases.json]
     T4m[Meals logic · after 2 AM]
-    T5[T5 30-clip pass/fail test]
-    T7[T7 Ask Sino about Lola]
-    T6[T6 a: Face match → photo + call or recorded fallback]
+    T5[T5 30-clip pass/fail test<br/>in progress: stub runner · ollama mode waits on hub]
+    T7[T7 Ask Sino about Lola<br/>in progress]
+    T6[T6 a: Face match → photo + call or recorded fallback<br/>first to cut]
   end
   subgraph Donita["Donita · M1 (8 GB) hub"]
-    D1[D1 M1 offline LAN + HTTPS · no-internet test 11:15 PM]
-    D2[D2 Whisper server · model timing 11:30 PM]
-    D3[D3 Ollama loaded + warm]
-    D4[D4 VAD → junk filter → throttle → WebSocket]
-    D5[D5 Seed loader + storage · done before 12:15]
-    D6[D6 start.sh + health light + urgent chime]
+    D1[D1 iPhone hotspot + LAN firewall + HTTPS<br/>path chosen 1:20 AM, firewall test pending]
+    D2[D2 Whisper server · model timing 11:30 PM<br/>in progress · waiting on hub]
+    D3[D3 Ollama loaded + warm<br/>in progress · waiting on hub]
+    D4[D4 VAD → junk filter → throttle → WebSocket<br/>in progress · waiting on hub]
+    D5[D5 Seed loader + storage · done before 12:15<br/>in progress · waiting on hub]
+    D6[D6 start.sh + health light + urgent chime<br/>in progress · waiting on hub]
     D7[D7 b: CCTV detector · only if stable by 5 AM]
     D8[D8 c: Voice ID · cut]
   end
   subgraph Ayen["Ayen · setup + Lola screen"]
-    A1[A1 Design system]
-    A2[A2 Lola iPad: clock, photo, reply]
-    A3[A3 Quick setup: question, phrasings, record, photo, test]
-    A4[A4 a: Call frame or recorded fallback]
+    A1[A1 Design system<br/>not started in repo]
+    A2[A2 Lola iPad: clock, photo, reply<br/>not started in repo]
+    A3[A3 Quick setup: question, phrasings, record, photo, test<br/>not started in repo]
+    A4[A4 a: Call frame or recorded fallback<br/>not started in repo]
   end
   subgraph Viv["Viviene · caregiver + backstage"]
-    V1[V1 Fake event feed]
-    V2[V2 Caregiver iPhone: red, quiet yellow, log]
-    V3[V3 Backstage + listen now + typed question]
-    V4[V4 Should: Kumain na + recap counts]
-    V5[V5 b: 'Nasaan si Lola?' · only if D7 stable by 5 AM]
+    V1[V1 Fake event feed<br/>not started in repo]
+    V2[V2 Caregiver iPhone: red, quiet yellow, log<br/>not started in repo]
+    V3[V3 Backstage + listen now + typed question<br/>not started in repo]
+    V4[V4 Should: Kumain na + recap counts<br/>not started in repo]
+    V5[V5 b: 'Nasaan si Lola?' · only if D7 stable by 5 AM<br/>not started in repo]
+  end
+  subgraph Legend["Status at 1:35 AM Sat"]
+    L1[Done]
+    L2[In progress]
+    L3[Waiting on hub]
+    L4[Not started]
+    L5[Cut]
   end
 
   I0 --> T1 & D4 & D5 & V1
@@ -166,7 +175,7 @@ flowchart TD
   A1 --> A2 & A3 & V2 & V3
   V1 --> A2 & V2 & V3
   D5 --> A3
-  D4 & D5 & D6 & T3 & A2 & V2 & V3 --> W[W1 MVP wired · 12:30–1:15 AM]
+  D4 & D5 & D6 & T3 & A2 & V2 & V3 --> W[W1 MVP wired · 12:30–1:15 AM<br/>waiting on hub]
   W --> T5 --> F[F1 MVP freeze · 2 AM]
   T4 & A3 --> F
   F --> T4m --> V4
@@ -179,4 +188,15 @@ flowchart TD
   F --> T7 --> C
   C --> R[R1 Rehearse ×3 + backup video · 7 AM]
   R --> S[S1 Submit · 8:30 AM]
+
+  classDef done fill:#dcfce7,stroke:#15803d,stroke-width:2px,color:#111
+  classDef doing fill:#fef3c7,stroke:#b45309,stroke-width:2px,color:#111
+  classDef hub fill:#fce7f3,stroke:#be185d,stroke-width:2px,color:#111
+  classDef todo fill:#ffffff,stroke:#6b7280,color:#111
+  classDef cut fill:#f3f4f6,stroke:#9ca3af,stroke-dasharray:5 5,color:#6b7280
+  class I0,T1,T2,T4,L1 done
+  class T3,T5,T7,D1,D2,D3,D4,D5,D6,L2 doing
+  class W,L3 hub
+  class T4m,T6,D7,A1,A2,A3,A4,V1,V2,V3,V4,V5,XA,XB,F,C,R,S,L4 todo
+  class D8,L5 cut
 ```
