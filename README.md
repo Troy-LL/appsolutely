@@ -17,10 +17,11 @@ Sino is a small home hub that answers a lola's repeated questions in her family'
   - whisper.cpp `whisper-server` (serves Whisper small to the hub at `127.0.0.1:8080`).
   - macOS `afplay` (built in; plays the system sound `Glass.aiff` as the urgent chime on the hub speaker).
   - `curl` and `openssl` (macOS built-ins) and `mkcert` (local HTTPS certificates), used by `hub/start.sh` for the health light and the certificate check.
+  - Google Chrome, headless (test only, not part of the app): `web/lola/reply.test.py` drives it over the DevTools protocol, offline on `127.0.0.1`, to test how Lola's screen plays family replies.
   - TODO, add the rest as each is introduced.
 - **APIs and cloud services:** none at runtime. Test clips in brain/tests/audio/lola/ were generated before the event with ElevenLabs (synthetic, test input only; Sino itself runs offline).
 - **Existing code and assets:** open-source libraries only. Demo data (`brain/seed.json` and the teammate-recorded replies and photos) is labeled as demo data. The default replies in `brain/media/` are real human recordings: Joy's four comfort replies and three meal clips, and the three "Sino ka?" lines by Troy, Joy, and Donita (no ElevenLabs, no text-to-speech). `/backstage` serves the Fontsource OFL files already in `web/backstage/fonts/` (Fredoka 500/600, DM Sans 400/500/700). Official mark: `assets/brand/sino-logo.png` (house roofline, green word, amber dot on the i), plus the trimmed web copies next to it. No new runtime dependency.
-- **AI development tools:** Claude Code, Cursor, Grok Bot, Kiro (plus the Figma MCP if used). Kiro built Lola's iPad screen (`web/lola/`). Cursor placed the official mark in the READMEs, the favicons, the caregiver top bar, the backstage header, and the Lola idle corner.
+- **AI development tools:** Claude Code, Cursor, Grok Bot, Kiro (plus the Figma MCP if used). Kiro built Lola's iPad screen (`web/lola/`). Cursor placed the official mark in the READMEs, the favicons, the caregiver top bar, the backstage header, and the Lola idle corner. Claude Code wrote the Lola reply-playback browser test (`web/lola/reply.test.py`) and the tap-retry fix it found in `web/lola/lola.js`.
 
 ## Key dates (PH time, UTC+8)
 

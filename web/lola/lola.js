@@ -175,7 +175,9 @@ function retryBlocked() {
   cancelHold()
   const id = clipId
   player.play().then(() => { if (id === clipId) fadeIn(player) }).catch(() => {
-    if (id === clipId && current === player) afterClip(HOLD_MS)
+    // A finger tap fires pointerdown before the browser counts it as a tap, so play() can be
+    // refused there. Keep the reply blocked so the click from the same tap can play it.
+    if (id === clipId && current === player) { blocked = player; afterClip(HOLD_MS) }
   })
 }
 document.addEventListener('pointerdown', retryBlocked)
