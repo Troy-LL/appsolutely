@@ -79,3 +79,5 @@ Filled from a real 1:45 AM run. Until then every figure is TODO. Do not mark a p
 ## Handoffs
 
 (Use the template in [01-team.md](01-team.md#handoff-note-write-it-in-docsnotesmd-at-100-am-and-430-am).)
+
+- Sat Oct 10, T5 stub run (`SINO_MODEL=stub python3 brain/tests/run_t5.py`, text only): mode stub; urgent 11/11; comfort 33/33; TV false triggers 8; model-path rows 15; verdict FAIL on the TV gate (0 required). Stub `classify()` returns no model action, so every TV line falls to caregiver. Speech-to-reply and model-path latency: TODO: unknown. Clip mix TODO (Troy); `cases.json` has 62 rows and the gate says 30 clips. This is not a pass; the badge stays off until a real hub run is logged.
