@@ -16,7 +16,7 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 | Time | What happens | Screen |
 |---|---|---|
 | 0:00–0:30 | Opener (below) | Lola's iPad |
-| 0:30–1:00 | Show there's no internet. Point at the OFFLINE badge: "the hub is firewalled to the house network." If the hub is unplugged, say it runs on battery (only if it really is unplugged) | Backstage |
+| 0:30–1:00 | Show there's no internet. Point at the OFFLINE badge, which is on because the hub's outbound check failed: "the hub is firewalled to the house network." Lola speaks one line; the hero row on `/backstage/?feed=hub` lands with its seconds, captioned "on the M1 hub". If the hub is unplugged, say it runs on battery (only if it really is unplugged) | Backstage |
 | 1:00–1:50 | **Live quick setup.** Ask "Nasaan yung aso?" (not in the seed) → quiet yellow card on `/caregiver` → on the iPhone, `/setup` adds the question, two phrasings, a held recording, and a photo → ask again → the family voice answers on the iPad. "Nasaan si Joy?" stays in the seed and is not added live | iPhone `/setup` + `/caregiver` → iPad |
 | 1:50–2:20 | "Sino ka?" Lola asks who Troy is. It is a known question, so the iPad shows Troy's photo and plays the line he recorded in setup. Then Troy talks to "Lola" in person. No face match and no call | iPad + Troy |
 | 2:20–3:30 | **TV test, its own beat.** Play the 20 s teleserye clip: a full dialogue that contains "nasaan si nanay" mid-sentence, not as the whole line. Sino stays silent. `/backstage` shows a dropped row and `TV lines ignored: N` ticks. Then Lola asks "Nasaan si Nanay?" plainly → the comfort reply and photo. The row shows transcript → rule or model → action, confidence, reason → ms | Backstage + iPad |

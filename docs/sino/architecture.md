@@ -113,7 +113,7 @@ Web stack is the repo default in [../../AGENTS.md](../../AGENTS.md): React + Vit
 4. **`POST /listen`:** returns 202 and no body. What happened arrives on `/ws`.
    - Listen now: `{"mode":"listen_now"}`. The hub captures from its own mic and runs VAD, Whisper, the junk filter, and `decide()`.
    - Typed question: `{"mode":"typed","text":""}`. Skips VAD, Whisper, and the junk filter. Emits `heard` with that `text` as `transcript` and `dropped` false, then `decided`.
-5. **Folders:** `brain/`, `hub/`, `web/setup`, `web/caregiver`. Only `brain/` has code on `main` so far. Which folders hold `/lola` and `/backstage` is TODO: unknown (frontend pair to decide).
+5. **Folders:** `brain/`, `hub/`, `web/setup`, `web/caregiver`, `web/backstage` (served by the hub at `/backstage/`). Which folder holds `/lola` is TODO: unknown (frontend pair to decide).
 
 **Ask Sino about Lola:** the caregiver socket sends `{"event":"ask_about_lola","question":""}` and that socket alone gets `{"event":"about_lola","intent":"","answer":"","source":"","latency_ms":0}` (`answer_about_lola()`). TODO: contract gap — those event names were not in the locked list. Post them in the team chat.
 
@@ -140,6 +140,8 @@ TODO: contract gap — the interfaces do not name a listen port. `PORT` defaults
 TODO: contract gap — `/ws` does not say which socket is `/lola`, `/caregiver`, or `/backstage`. Additive query `screen` is one of `lola`, `caregiver`, `backstage`.
 
 TODO: contract gap — `decided` has no transcript. Additive field `transcript` (same string as `heard.transcript`). Silent `decided` goes to `/backstage` only. Comfort, caregiver, and urgent go to every screen.
+
+TODO: contract gap — additive, nothing renamed. `heard` and `decided` gain `utterance_id`, the same string for one utterance, so `/backstage` pairs them into one row. The listen-drop `heard` (`dropped` true) carries its own `utterance_id` and does not emit `decided`.
 
 TODO: contract gap — `health` has no model mode or last event time. Additive fields `model` (`stub` or `ollama`) and `last_event_at` (ISO 8601, or `""` before the first decision). `GET /health` returns that same object. `offline` is true only when an outbound request fails (`https://example.com` by default, `OFFLINE_PROBE` overrides). `mic` is described under listen now below.
 
