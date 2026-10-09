@@ -11,10 +11,10 @@ Judges ask about how it works, decisions made, architecture, the AI implementati
 Lola won't say a wake word, so Sino listens without one and decides on its own. The replies are the family's own recorded voices, not a synthetic assistant. And it triages every line: comfort, caregiver, urgent, or silent.
 
 **"Isn't the reply lying to her?"**
-The family writes and records every word in quick setup (we show it live). For "Nasaan si Nanay?" (her late mother) the seeded reply validates instead of correcting or inventing: "Ma, ikwento mo nga si Nanay mo. Nandito lang kami." "Nasaan si Joy?" gets "Nasa trabaho ako" because Joy really is at work.
+The family writes and records every word in quick setup (we show it live). For "Nasaan si Nanay?" (her late mother) the seeded reply validates instead of correcting or inventing: "Ma, kwento mo nga ulit si Nanay mo." "Nasaan si Joy?" gets "Nasa trabaho ako" because Joy really is at work.
 
 **"What if it mishears, or the TV says it?"**
-Junk lines and likely-no-speech clips are dropped before the decision. If the matcher misses and the model says it's chatter, Sino stays silent and logs it. (Show it live with the TV clip.)
+Junk lines and likely-no-speech clips are dropped before the decision. The TV test is a longer dialogue that contains "nasaan si nanay" mid-sentence, not as the whole line ([demo.md](demo.md)). If the matcher misses and the model says it's chatter, Sino stays silent, `/backstage` shows a dropped row, and `TV lines ignored` ticks. A plain "Nasaan si Nanay?" after that still gets the comfort reply.
 
 **"What if she's in pain?"**
 Urgent words always alert; the model can only escalate, never downgrade. The hub plays a loud chime so anyone in the house hears it, and the caregiver phone gets a red card. Medication questions are never answered; they go to the caregiver.
@@ -53,8 +53,8 @@ See the owners table in [mvp-plan.md](mvp-plan.md#owners). Everyone explains the
 | Hub owner asleep when the hub breaks | `start.sh` + health light, so anyone can restart it; handoff notes | Donita |
 | Alert fatigue for the caregiver | Yellow cards are quiet and grouped; only red makes sound | Viviene |
 | Lola is distressed by the system | Lola's screen is never red; greeting never quizzes her or announces names as a test | Ayen, Troy |
-| Overnight scope creep | MVP frozen at 2:00 AM; add-ons behind a cut line in order a → b → c, cut at 5:00 AM | Troy |
-| Face or voice names the wrong person | Name only on a high-confidence match plus a greeting; unknown → no name; voice ID last because two 10 s samples are thin | Troy, Donita |
+| Overnight scope creep | MVP frozen at 2:00 AM; add-ons (a) then (b), cut at 5:00 AM if not stable; (b) only if stable by then; (c) voice ID is cut | Troy |
+| Face names the wrong person | Name only on a high-confidence match plus a greeting; unknown → no name. Voice ID is cut | Troy |
 | Overclaiming in the pitch | Unmeasured numbers labeled "to verify"; no "faster than cloud"; battery only if shown unplugged; CCTV labeled as a recorded clip; seed data disclosed | Everyone |
 | Privacy of voices, faces, and transcripts | Everything stays on the hub; no audio stored by default; family can delete the log | Donita |
 | Being read as a medical device | Recap is counts only and says "not a diagnosis"; always escalates to a human | Viviene |

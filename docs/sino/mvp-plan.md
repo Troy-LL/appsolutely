@@ -26,7 +26,7 @@ Time estimates are rough and not benchmarked: **MVP ≈ 3.5 h of parallel work**
 | **1:00 AM** | `start.sh` + health light work, so anyone can restart the hub; Donita and Viviene hand off and sleep |
 | 1:15 AM | Decision model wired, caregiver alerts and urgent chime working |
 | 1:45 AM | 30-clip test passes (or fall back to rules + matcher); quick setup works on the real hub |
-| **2:00 AM** | **MVP freeze.** Then Should items and add-ons behind the cut line, in order a → b → c |
+| **2:00 AM** | **MVP freeze.** Then Should items and add-ons (a) then (b). (b) only if stable by 5:00 AM. (c) voice ID is cut |
 | 5:00 AM | Add-ons cut-off |
 | 7:00 AM | Team feature freeze. 3 timed rehearsals with no internet + backup video. 7 to 8 AM: rehearse only |
 | 8:00 AM | Repo public |
@@ -35,7 +35,22 @@ Time estimates are rough and not benchmarked: **MVP ≈ 3.5 h of parallel work**
 
 ## Pass/fail gate (T5, by 1:45 AM)
 
-30 labeled clips. Pass = **urgent 10/10**, **comfort ≥ 8/10**, **0 false triggers on TV clips**, **known questions ≤ 3 s** speech to reply (model-path latency logged; expected 4 to 5 s, to verify). If it fails, ship rules + matcher and use the model only for the caregiver path. Record the real numbers in `docs/NOTES.md`. TODO (Troy): fix the clip mix (how many urgent / comfort / TV / new-question clips).
+30 labeled clips. Pass = **urgent 10/10**, **comfort ≥ 8/10**, **0 false triggers on TV clips**, **known questions ≤ 3 s** speech to reply (model-path latency logged; expected 4 to 5 s, to verify). If it fails, ship rules + matcher and use the model only for the caregiver path.
+
+Write the run to `docs/NOTES.md` and show it on `/backstage`. Until a real run is logged, every figure stays TODO. Do not fill these in early.
+
+| Field | Until measured |
+|---|---|
+| urgent | TODO/10 |
+| comfort | TODO/10 |
+| TV false triggers | TODO |
+| mode | TODO (`ollama` or `stub`) |
+
+`mode` is `ollama` when Qwen via Ollama decided the unclear lines, and `stub` when it did not. Anything the stub does beyond the existing rule (model error or timeout goes to the caregiver) is `TODO: unknown`.
+
+`/backstage` shows a small badge. The badge text is `Test: passed 1:45 AM` only after `docs/NOTES.md` records a pass. Until then the badge shows the TODO figures above and does not say passed.
+
+TODO (Troy): fix the clip mix (how many urgent / comfort / TV / new-question clips).
 
 ## Sprints per person
 
@@ -58,7 +73,7 @@ Each sprint ends with something demoable. If you finish early, pull the next spr
 |---|---|---|---|
 | S1 | 10:30–11:15 | D1 network + HTTPS + no-upstream test, D3 Ollama warm | iPad + iPhone open the https page with no internet; fallback chosen if not |
 | S2 | 11:15–12:15 | D2 Whisper + model timing (by 11:30), D4 VAD → junk filter → throttle → /listen → WebSocket, D5 seed loader + storage | Speaking near the M2 shows the transcript on backstage; TV sign-off lines are dropped; seed loader done before 12:15 (A3 needs it) |
-| S3 | 12:15–1:00 | D6 `start.sh` + health light + urgent chime | Anyone can restart the hub; urgent plays the chime |
+| S3 | 12:15–1:00 | D6 `start.sh` + health light + urgent chime | Anyone can restart the hub; the 1:00 AM chime test in [hub-chime.md](hub-chime.md) passes |
 | Sleep | 1:00–4:30 | | Hub left running; handoff note in `docs/NOTES.md` |
 | S4 | 4:30–5:00 | Add-on (b): D7 CCTV detector, only if stable by 5:00. (c) D8 voice ID is cut | "Nasa kusina" answer computed from the clip only if (b) is stable; otherwise cut |
 | S5 | 6:30–8:30 | Rehearse, README disclosures, submit | Submitted |
@@ -81,7 +96,7 @@ Each sprint ends with something demoable. If you finish early, pull the next spr
 |---|---|---|---|
 | S1 | 10:30–11:00 | V1 fake event feed | All screens can build against it |
 | S2 | 11:00–12:15 | V2 caregiver phone: red card with sound, quiet yellow with grouped repeats + record-a-reply, green log | Works on the iPhone with the fake feed |
-| S3 | 12:15–1:00 | V3 backstage: transcript, dropped lines, decision, ms, OFFLINE, health light, "listen now", typed question | Updates live from the real hub |
+| S3 | 12:15–1:00 | V3 backstage: transcript → rule or model → action, confidence, reason, ms; dropped row; `TV lines ignored: N`; T5 badge; OFFLINE; health light; "listen now"; typed question | Updates live from the real hub ([architecture.md](architecture.md#backstage-proof)) |
 | Sleep | 1:00–4:30 | | Handoff note in `docs/NOTES.md` |
 | S4 | 4:30–5:00 | V4 Should: Kumain na + recap counts; add-on (b) V5 "Nasaan si Lola?" only if D7 is stable by 5:00 | Recap shows real counts; last-seen room shows only if (b) is stable |
 | S5 | 6:30–8:30 | Pitch visuals, submission post graphic, rehearse | Post ready |
@@ -92,7 +107,7 @@ Sleep shifts follow [../01-team.md](../01-team.md): Donita + Viviene 1:00–4:30
 
 ## Task graph
 
-Arrows show what needs what. Dotted arrows show add-on order (a → b → c). Tasks with no incoming arrow can start right away.
+Arrows show what needs what. Dotted arrows show add-on order (a → b). (c) voice ID is cut. Tasks with no incoming arrow can start right away.
 
 **Start immediately (no prerequisites):** T1, T2, D1, D3, A1, V1.
 

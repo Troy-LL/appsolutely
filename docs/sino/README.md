@@ -15,6 +15,8 @@
 - Correcting her ("patay na po si Nanay") can make her grieve all over again. Answering every time wears out the caregiver.
 - Reassuring instead of correcting (validation) is a common caregiver approach, but a tired family can't do it perfectly every time. *(TODO: add a citable source before the pitch.)*
 
+**Caregiver line:** TODO — one real quote from a caregiver/nurse we talk to before 7 AM, with permission. Do not invent a quote or a statistic.
+
 **Users:** the caregiver and family (primary: they set it up and get alerts), and Lola (she hears and sees the replies).
 
 ## How it works
@@ -43,7 +45,7 @@ flowchart TD
 1. **Real family voices, never cloned or synthetic.** Every reply is a recording a family member made.
 2. **Silence is a decision.** Sino ignores TV and chatter, speaks only to known questions, and sends new or urgent ones to a human.
 3. **The family writes every reply** in quick setup, so the AI never invents facts about the family.
-4. **Every decision is visible.** The backstage screen shows what Sino heard, what it decided, and why, live.
+4. **Every decision is visible.** On `/backstage`, each utterance is transcript, then rule or model, then action, confidence, reason, and milliseconds ([architecture.md](architecture.md#backstage-proof)).
 
 ## Safety rules
 
@@ -71,6 +73,7 @@ Official "why local" reasons this maps to ([../00-event.md](../00-event.md)): **
 | [demo.md](demo.md) | 5-minute pitch script, "Sino ka?" roleplay, "Nasaan si Lola?", airplane-mode fallbacks | Viviene (visuals), Troy (script) |
 | [judge-qa.md](judge-qa.md) | Judge Q&A answers, risks and mitigations | Troy |
 | [DONITA-SETUP.md](DONITA-SETUP.md) | M2 hub installs and offline smoke test | Donita |
+| [hub-chime.md](hub-chime.md) | Urgent chime: `afplay` on the hub, red card second, `/lola` never red, 1:00 AM test | Donita |
 | [task-graph.mmd](task-graph.mmd), [task-graph.png](task-graph.png) | Task dependencies (source and rendered image) | Troy |
 
 ## Source of truth / do not invent

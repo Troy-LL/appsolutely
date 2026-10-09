@@ -35,11 +35,28 @@ Each route is designed for its own device only (no responsive juggling).
 |---|---|---|---|---|---|---|
 | **Lola's screen** | A16 iPad (landscape, ~1180×820) | Lola | `/lola` | Big clock, idle family photo, full-screen photo while the family voice plays. **Nothing else.** Never red | Greeting photo + recorded line (add-on a) | Ayen |
 | **Caregiver phone** | iPhone 15 (portrait, ~393×852) | Caregiver / family | `/caregiver` | Live log; red cards (sound); quiet yellow cards with grouped repeats and record-a-reply; green log entries. Should: "Kumain na" button, recap counts | "Nasaan si Lola?" answer (add-on b) | Viviene |
-| **Behind the scenes** | M2 MacBook (~1440×900) | Judges / presenters | `/backstage` | Live transcript, dropped junk lines, decision + reason + trigger words, matched reply + confidence, latency ms, OFFLINE badge, health light, hidden "listen now" button and typed-question box | Face match panel (a), CCTV clip with detection box (b), voice match panel (c) | Viviene |
+| **Behind the scenes** | M2 MacBook (~1440×900) | Judges / presenters | `/backstage` | Per-utterance proof ([below](#backstage-proof)): transcript → rule or model → action, confidence, reason → ms; a dropped row; `TV lines ignored: N`; T5 badge; OFFLINE badge; health light; hidden "listen now" and typed-question box | Face match panel (a). CCTV clip with detection box (b), only if stable by 5:00 AM. No voice match panel: voice ID is cut | Viviene |
 | **Setup** | iPhone 15 or iPad | Family | `/setup` | Quick setup: add question, two phrasings, hold to record, photo, test | n/a | Ayen |
 | (optional) Extra backstage | Viviene's Windows laptop | Audience | `/backstage` | Mirror of the M2 view | n/a | Viviene |
 
 Viewport sizes are approximate CSS sizes; confirm on the real devices.
+
+## Backstage proof
+
+`/backstage` is where judges see the local AI decide. One row per utterance, in this order:
+
+1. **Transcript**, from `heard.transcript`.
+2. **Rule hit or model**, from `decided.source`: `rule` or `model`.
+3. **Action, confidence, and reason**, from `decided.action`, `decided.confidence`, and `decided.reason`.
+4. **Milliseconds**, from `decided.latency_ms`.
+
+A **dropped** row replaces that chain in two cases. The junk-line filter (`heard.dropped` true) is one. A television line the decision ignores (`decided.ignored` is `tv`) is the other. The row shows the transcript and the word `dropped`. It does not play a reply and it does not raise an alert. A junk drop still does not call `decide()` and still emits no `decided` event. A TV line that is real speech is not `dropped: true`; it goes through `decide()` and comes back silent with `ignored` set to `tv`.
+
+**Counter.** The label is exactly `TV lines ignored: N`. N starts at 0 when the screen loads. Add 1 when `heard.drop_reason` is `junk line`. Add 1 when `decided.ignored` is `tv`. Do not add for `too quiet`, `likely no speech`, or in-room chatter (`action` silent and `ignored` empty).
+
+The small T5 badge is specified in [mvp-plan.md](mvp-plan.md). The fake feed emits this same shape, including `source` and `ignored`.
+
+`source` is `rule` when urgent-word rules, the medication rule, or the known-question matcher decided. `source` is `model` when Qwen decided, including a model error or timeout (that path already goes to the caregiver). `ignored` is `tv` or `""`. The hub sets `tv` when it treats the line as television. The demo clip in [demo.md](demo.md) expects `ignored` `tv` so this counter ticks. The token `decide()` uses to separate television from in-room chatter is `TODO: unknown` until the decision engine names it. This screen only reads the field.
 
 ## Models and runtimes (all on the M2, all local)
 
@@ -50,9 +67,9 @@ Viewport sizes are approximate CSS sizes; confirm on the real devices.
 | Decision for unclear lines | Qwen2.5-3B (`qwen2.5:3b`) or Qwen2.5-1.5B (`qwen2.5:1.5b`) | Ollama | Must return JSON matching the decision interface. No AI phrasing for the recap |
 | Add-on a: face match | face-api.js or MobileFaceNet ONNX | browser or hub | 3 enrolled family members only |
 | Add-on b: person detection | MediaPipe or YOLO | hub | Runs on a pre-recorded clip |
-| Add-on c: speaker match | sherpa-onnx speaker embeddings or SpeechBrain ECAPA | hub | 3 enrolled family members only |
+| Add-on c: speaker match | sherpa-onnx speaker embeddings or SpeechBrain ECAPA | hub | **Cut. Not built** ([mvp-plan.md](mvp-plan.md)) |
 
-No text-to-speech or voice-cloning model is used anywhere: Lola only hears the family's own recordings (safety rule in [README.md](README.md#safety-rules)). The add-on models (a, b, c) sit below the cut line; the face greeting and camera view overlap with common offline dementia-assistant ideas, so they are demo extras, not the story ([features.md](features.md#add-ons-behind-the-cut-line-after-the-200-am-freeze-in-this-order)).
+No text-to-speech or voice-cloning model is used anywhere: Lola only hears the family's own recordings (safety rule in [README.md](README.md#safety-rules)). Add-ons (a) and (b) sit below the cut line; (b) only if stable by 5:00 AM; (c) voice ID is cut and is not built. The face greeting and camera view overlap with common offline dementia-assistant ideas, so they are demo extras, not the story ([features.md](features.md#add-ons-behind-the-cut-line-after-the-200-am-freeze-in-this-order)).
 
 ### Speech model selection (by 11:30 PM)
 
@@ -69,11 +86,12 @@ Web stack is the repo default in [../../AGENTS.md](../../AGENTS.md): React + Vit
 
 1. **Decision** (returned by `decide()`):
    ```json
-   {"action": "comfort | caregiver | urgent | silent", "reply_id": "", "reason": "", "trigger_words": [], "confidence": 0.0, "latency_ms": 0}
+   {"action": "comfort | caregiver | urgent | silent", "reply_id": "", "reason": "", "trigger_words": [], "confidence": 0.0, "latency_ms": 0, "source": "rule | model", "ignored": ""}
    ```
+   `source` and `ignored` are additive. Do not rename the other keys. `ignored` is `""` or `tv`.
 2. **Events.** WebSocket at `/ws`. One JSON object per message. `event` is the name. The fake feed emits this same shape, so the screens do not wait on the hub.
-   - `heard`: `{"event":"heard","transcript":"","dropped":false,"drop_reason":""}`. `transcript` is the live transcript (Lola's exact words). `dropped` is true only when the junk-line filter drops the clip: too quiet, Whisper likely no speech, or a known junk line ("Thank you for watching", "Salamat sa panonood", and similar). `drop_reason` is then `too quiet`, `likely no speech`, or `junk line`. A dropped `heard` is shown on `/backstage` only. It does not call `decide()` and does not emit `decided`, `play_reply`, `alert`, or `ask_caregiver`. Junk lines ride on `heard`. They do not have their own event.
-   - `decided`: the decision object with `"event":"decided"` added. Emitted for comfort, caregiver, urgent, and silent. Silent emits `decided` and nothing else (log only).
+   - `heard`: `{"event":"heard","transcript":"","dropped":false,"drop_reason":""}`. `transcript` is the live transcript (Lola's exact words). `dropped` is true only when the junk-line filter drops the clip: too quiet, Whisper likely no speech, or a known junk line ("Thank you for watching", "Salamat sa panonood", and similar). `drop_reason` is then `too quiet`, `likely no speech`, or `junk line`. A dropped `heard` is shown on `/backstage` as a dropped row. It does not call `decide()` and does not emit `decided`, `play_reply`, `alert`, or `ask_caregiver`. Junk lines ride on `heard`. They do not have their own event. A `junk line` drop also adds 1 to `TV lines ignored: N`. `too quiet` and `likely no speech` do not.
+   - `decided`: the decision object with `"event":"decided"` added, including `source` and `ignored`. Emitted for comfort, caregiver, urgent, and silent. Silent emits `decided` and nothing else (log only). `ignored` `tv` is the television case in the [backstage proof](#backstage-proof).
    - `play_reply`: `{"event":"play_reply","reply_id":"","reply_audio":"","photo":""}` to `/lola` on comfort. `reply_audio` and `photo` come from the questions file. Lola's screen shows the photo and plays the recording, and nothing else.
    - `alert`: `{"event":"alert","transcript":""}` to `/caregiver` on urgent. The red card shows `transcript` and is the only card that plays a sound. The hub chime is separate, from the hub speaker.
    - `ask_caregiver`: `{"event":"ask_caregiver","transcript":"","count":1}` to `/caregiver` when the action is caregiver. Quiet. Repeats of the same `transcript` share one yellow card, and `count` is how many times. One tap records a reply through `POST /questions`.
@@ -97,7 +115,7 @@ Changing an interface needs a post in the team chat, because every screen depend
 4. Throttle: one model call at a time. Stale clips are discarded and emit no event.
 5. `decide()`: urgent-word rules → known-question matcher → Qwen only if still unclear → `decided` event.
 6. Comfort → `play_reply` to `/lola`. Caregiver → `ask_caregiver` to `/caregiver` (quiet, grouped). Urgent → hub chime + `alert` to `/caregiver`. Silent → log only.
-7. Every step is shown on `/backstage` with latency.
+7. `/backstage` shows each utterance as transcript → rule or model → action, confidence, reason → ms, plus the dropped row and `TV lines ignored: N` ([backstage proof](#backstage-proof)).
 
 ## Offline guarantees
 
@@ -131,4 +149,5 @@ None of these are facts yet. Log real results in `docs/NOTES.md` (Model smoke te
 | Hub chime audible across a room | yes | to verify at smoke test |
 | Hub cold start with `start.sh` | under 2 min with seed loaded | to verify at smoke test |
 | Hub on battery through the demo | needed only if we show it unplugged | to verify at smoke test |
-| Add-ons: face match, person detector, voice ID | reliable on the demo set | to verify after the freeze |
+| Add-ons (a) face match and (b) person detector | reliable on the demo set | to verify after the freeze; (b) only if stable by 5:00 AM |
+| Add-on (c) voice ID | cut, not built | not measured |
