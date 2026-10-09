@@ -10,13 +10,14 @@ import sys
 import threading
 import time
 import urllib.request
+import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request, WebSocket
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.datastructures import UploadFile
 from starlette.websockets import WebSocketDisconnect
@@ -297,11 +298,13 @@ class Hub:
             result = {**result, **meal}
         append_decision(text, result)
         self.last_event_at = datetime.now().astimezone().isoformat(timespec="seconds")
+        utterance_id = uuid.uuid4().hex
         heard = {
             "event": "heard",
             "transcript": text,
             "dropped": False,
             "drop_reason": "",
+            "utterance_id": utterance_id,
         }
         decided = {
             "event": "decided",
@@ -314,6 +317,7 @@ class Hub:
             "source": result["source"],
             "ignored": result["ignored"],
             "transcript": text,
+            "utterance_id": utterance_id,
         }
         if meal is not None:
             decided["reply_variant"] = meal["reply_variant"]
@@ -868,6 +872,56 @@ def clips_snapshot():
         media_type="image/jpeg",
         headers={"Cache-Control": "no-store"},
     )
+
+
+class _CaregiverFiles(StaticFiles):
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        name = path.rsplit("/", 1)[-1]
+        if name in ("", ".", "index.html"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
+def caregiver_dist():
+    raw = os.environ.get("CAREGIVER_DIST", "")
+    if raw:
+        return Path(raw)
+    return Path(__file__).resolve().parent.parent / "web" / "caregiver" / "dist"
+
+
+def mount_caregiver(application, folder):
+    folder = Path(folder)
+    if not folder.is_dir():
+        return False
+    application.mount(
+        "/caregiver",
+        _CaregiverFiles(directory=folder, html=True),
+        name="caregiver",
+    )
+    return True
+
+
+mount_caregiver(app, caregiver_dist())
+
+_backstage_dir = Path(__file__).resolve().parent.parent / "web" / "backstage"
+if _backstage_dir.is_dir():
+    class _BackstageFiles(StaticFiles):
+        async def get_response(self, path, scope):
+            response = await super().get_response(path, scope)
+            if path in ("", ".", "index.html"):
+                response.headers["Cache-Control"] = "no-cache"
+            return response
+
+    @app.get("/backstage", include_in_schema=False)
+    def _backstage_slash():
+        return RedirectResponse("/backstage/", status_code=307)
+
+    app.mount("/backstage", _BackstageFiles(directory=_backstage_dir, html=True), name="backstage")
+
+_fake_dir = Path(__file__).resolve().parent.parent / "web" / "fake-feed"
+if _fake_dir.is_dir():
+    app.mount("/fake-feed", StaticFiles(directory=_fake_dir), name="fake-feed")
 
 
 if __name__ == "__main__":

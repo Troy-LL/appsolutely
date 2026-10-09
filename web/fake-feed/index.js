@@ -40,7 +40,7 @@ export const SCRIPT = [
   { wait: 3000, text: 'Thank you for watching', dropped: 'junk line' },
   { wait: 3000, text: 'Kumain na ba ako?', decision: d('caregiver', '', 'model unavailable', [], 0.0, 0, 'model') },
   { wait: 3000, text: '', dropped: 'too quiet' },
-  { wait: 3000, text: 'Sino ka?', decision: d('comfort', 'sino-ka', 'known question', [], 1.0, 0, 'rule') },
+  { wait: 3000, text: 'Sino ka?', decision: d('comfort', 'sino-ka', 'known question', [], 1.0, 0, 'rule'), who: 'joy' },
   { wait: 4000, text: 'Kumain na ba ako?', decision: d('caregiver', '', 'model unavailable', [], 0.0, 0, 'model') },
   { wait: 3000, text: 'Inumin ko na ba ang gamot?', decision: d('caregiver', '', 'medication', ['gamot'], 1.0, 0, 'rule') },
   { wait: 3000, health: { ollama: false } },
@@ -49,7 +49,26 @@ export const SCRIPT = [
   { wait: 3000, text: 'Gusto ko nang umuwi', decision: d('comfort', 'gusto-ko-nang-umuwi', 'known question', [], 1.0, 0, 'rule') },
   { wait: 4000, text: 'Masakit dibdib ko', decision: d('urgent', '', 'urgent word', ['masakit', 'masakit dibdib'], 1.0, 0, 'rule') },
   { wait: 5000, text: 'Nasaan yung aso?', decision: d('caregiver', '', 'model unavailable', [], 0.0, 0, 'model') },
+  {
+    wait: 3000,
+    text: 'Kumain na ba ako?',
+    decision: d('comfort', 'meal-check', 'known question', [], 1.0, 0, 'rule'),
+    meal: { reply_variant: 'unknown', last_meal_ts: '' },
+  },
+  {
+    wait: 2000,
+    about: {
+      intent: 'where',
+      answer: 'Huling nakita sa recording: sala (clip 0:02).',
+      source: 'rule',
+      latency_ms: 1,
+      snapshot: '/clips/snapshot',
+      label: 'RECORDED CLIP · DEMO',
+    },
+  },
 ]
+
+const MEAL_NOTE = "Lola asked if she's eaten. No meal logged."
 
 // Turn one script step into [screen, payload] pairs, like brain/server.py publish().
 // counts tracks repeats so grouped yellow cards get the right count.
@@ -58,15 +77,25 @@ export function expand(step, counts, health) {
     Object.assign(health, step.health)
     return SCREENS.map((s) => [s, { ...health }])
   }
+  if (step.about) return [['caregiver', { event: 'about_lola', ...step.about }]]
   const heard = { event: 'heard', transcript: step.text, dropped: !!step.dropped, drop_reason: step.dropped || '' }
   if (step.dropped) return [['backstage', heard]] // junk drop: no decide(), no other event
   const r = step.decision
   const decided = { event: 'decided', ...r, transcript: step.text }
+  if (step.who) decided.who = step.who
+  if (step.meal) {
+    decided.reply_variant = step.meal.reply_variant
+    decided.last_meal_ts = step.meal.last_meal_ts
+  }
   const out = [['backstage', heard]]
   for (const s of r.action === 'silent' ? ['backstage'] : SCREENS) out.push([s, decided])
   if (r.action === 'comfort') {
     // reply_audio and photo are empty in brain/seed.json until the recordings land
     out.push(['lola', { event: 'play_reply', reply_id: r.reply_id, reply_audio: '', photo: '' }])
+    if (step.meal?.reply_variant === 'unknown') {
+      counts[MEAL_NOTE] = (counts[MEAL_NOTE] || 0) + 1
+      out.push(['caregiver', { event: 'ask_caregiver', transcript: MEAL_NOTE, count: counts[MEAL_NOTE] }])
+    }
   } else if (r.action === 'urgent') {
     out.push(['caregiver', { event: 'alert', transcript: step.text }])
   } else if (r.action === 'caregiver') {

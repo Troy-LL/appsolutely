@@ -18,6 +18,7 @@ export default defineConfig({
       '/ws': { target: HUB, ws: true, changeOrigin: true },
       '/questions': { target: HUB, changeOrigin: true },
       '/media': { target: HUB, changeOrigin: true },
+      '/clips': { target: HUB, changeOrigin: true },
       '/health': { target: HUB, changeOrigin: true },
     },
   },

@@ -9,11 +9,26 @@ const KEYS = {
   alert: ['event', 'transcript'],
   ask_caregiver: ['event', 'transcript', 'count'],
   health: ['event', 'whisper', 'ollama', 'server', 'mic', 'offline', 'model', 'last_event_at'],
+  about_lola: ['event', 'intent', 'answer', 'source', 'latency_ms', 'snapshot', 'label'],
+}
+const EXTRA = {
+  decided: ['who', 'reply_variant', 'last_meal_ts'],
+  alert: ['kind'],
 }
 const ALLOWED = {
   lola: ['health', 'decided', 'play_reply'],
-  caregiver: ['health', 'decided', 'alert', 'ask_caregiver'],
+  caregiver: ['health', 'decided', 'alert', 'ask_caregiver', 'about_lola'],
   backstage: ['health', 'heard', 'decided'],
+}
+
+function keysOk(msg) {
+  const want = KEYS[msg.event]
+  if (!want) return false
+  const got = Object.keys(msg)
+  const extra = EXTRA[msg.event] || []
+  const unknown = got.filter((k) => !want.includes(k) && !extra.includes(k))
+  if (unknown.length) return false
+  return want.every((k) => got.includes(k))
 }
 
 const total = SCRIPT.reduce((n, s) => n + s.wait, 0)
@@ -28,8 +43,7 @@ for (const [screen, msgs] of Object.entries(got)) {
   if (msgs[0]?.event !== 'health') fail(`${screen}: first message is not health`)
   for (const m of msgs) {
     if (!ALLOWED[screen].includes(m.event)) fail(`${screen} got ${m.event}`)
-    const want = KEYS[m.event].join()
-    if (Object.keys(m).join() !== want) fail(`${screen} ${m.event} keys ${Object.keys(m).join()}`)
+    if (!keysOk(m)) fail(`${screen} ${m.event} keys ${Object.keys(m).join()}`)
     if (m.event === 'decided' && m.action === 'silent' && screen !== 'backstage') fail(`${screen} got a silent decided`)
   }
 }
@@ -41,5 +55,13 @@ console.log(`lola ${got.lola.length}, caregiver ${got.caregiver.length}, backsta
 console.log(`TV lines ignored: ${tv}`)
 console.log(`yellow cards: ${counts.join(' | ')}`)
 if (tv !== 2) fail(`expected TV lines ignored: 2, got ${tv}`)
+const mealCard = got.caregiver.some((m) => m.event === 'ask_caregiver' && m.transcript === "Lola asked if she's eaten. No meal logged.")
+const mealDecided = got.caregiver.some((m) => m.event === 'decided' && m.reply_id === 'meal-check' && m.reply_variant === 'unknown' && m.last_meal_ts === '')
+const about = got.caregiver.find((m) => m.event === 'about_lola')
+if (!mealCard) fail('missing meal card')
+if (!mealDecided) fail('missing meal decided')
+if (!about || about.snapshot !== '/clips/snapshot' || about.label !== 'RECORDED CLIP · DEMO') fail('missing about_lola snapshot')
+if (about && (got.lola.some((m) => m.event === 'about_lola') || got.backstage.some((m) => m.event === 'about_lola'))) fail('about_lola left the caregiver')
+if (!got.caregiver.some((m) => m.event === 'decided' && m.who === 'joy')) fail('missing decided.who')
 if (bad) process.exit(1)
 console.log('ok')
