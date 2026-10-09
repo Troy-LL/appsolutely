@@ -7,12 +7,12 @@ How the devices, screens, models, and data fit together. Hardware facts come fro
 | Device | Role | Owner |
 |---|---|---|
 | Donita's MacBook Air M1 (8 GB), macOS 26.5.1 | **Home hub / brain:** mic, speaker (urgent chime), whisper.cpp, Ollama + Qwen2.5, the web server, the behind-the-scenes screen | Donita |
-| A16 iPad | Lola's screen and speaker | Ayen (screen) |
+| A16 iPad | Lola's screen and speaker; the main mic from Sat ~7:15 AM | Ayen (screen) |
 | Troy's iPhone 15 | Caregiver phone, and the rung-1 Personal Hotspot (the house network) | Viviene (screen) |
 | Viviene's Windows laptop (optional) | Extra behind-the-scenes view in a browser | Viviene |
 | Troy's 2017 MacBook Pro (Intel i5, 8 GB RAM, per [../03-playbook.md](../03-playbook.md)) | Not part of the demo. Development only. Any "cheaper hub" claim needs a timed run on it first | Troy |
 
-- **Mic:** on the hub, to avoid iPad Safari's mic limits. The iPad needs one "Simulan" tap at start because iOS blocks audio autoplay.
+- **Mic:** from Sat ~7:15 AM the main mic is the **iPad** at Lola's screen (Donita, after the 7:00 AM freeze), so a "Tulong!" is heard from where Lola is, not only by the Mac's mic. With the real hub (`/lola/?feed=hub`, not `?mic=off`), `/lola` listens all the time in the browser and uploads each clip to `POST /listen/audio` ([interfaces](#the-3-interfaces-locked-in-the-first-15-minutes)). iPad Safari's mic limits still apply: it needs HTTPS (the hub's mkcert URL, see [Network](#network)) and a tap to grant the mic. That tap is the "Simulan" tap at start, which iOS already needs because it blocks audio autoplay. The hub mic stays for "listen now" and always-listening; nothing was removed. Not tested yet: to verify on the iPad.
 - **Restart:** `start.sh` brings up the whole hub; a health light on `/backstage` shows each part (Whisper, Ollama, server, mic). Anyone on the team can restart it while Donita sleeps (sleep times: TODO: re-decide after the 1:51 AM pair change, see [../01-team.md](../01-team.md#sleep-shifts-cross-pair)).
 - Hub RAM is **8 GB** (Donita, Sat 1:20 AM). The model pair below follows the 8 GB rule.
 
@@ -40,7 +40,7 @@ Each route is designed for its own device only (no responsive juggling).
 
 | Viewport | Device | Who sees it | Route | Shows in the MVP | Add-ons | Owner |
 |---|---|---|---|---|---|---|
-| **Lola's screen** | A16 iPad (landscape, ~1180×820) | Lola | `/lola` | Big clock, idle family photo, full-screen photo while the family voice plays. **Nothing else.** Never red. Calm colors only. "Sino ka?" is a known question like the others: the registered person's photo and their recorded line | Add-on (a), after the freeze: "Sino ka?" plays the matched family member's photo and line on a high-confidence match, Troy's otherwise; no extra UI | Ayen (frontend pair: Ayen + Viviene) |
+| **Lola's screen** | A16 iPad (landscape, ~1180×820) | Lola | `/lola` | Big clock, idle family photo, full-screen photo while the family voice plays. **Nothing else.** Never red. Calm colors only. From Sat ~7:15 AM it also listens, still calm and never red: the "Simulan" tap asks for the microphone, then it listens in the browser (off with `?mic=off`). "Sino ka?" is a known question like the others: the registered person's photo and their recorded line | Add-on (a), after the freeze: "Sino ka?" plays the matched family member's photo and line on a high-confidence match, Troy's otherwise; no extra UI | Ayen (frontend pair: Ayen + Viviene) |
 | **Caregiver phone** | iPhone 15 (portrait, ~393×852) | Caregiver / family | `/caregiver` | Live log; red cards (sound); quiet yellow cards with grouped repeats and record-a-reply; green log entries. Should, after the 3:30 AM freeze: Ask Sino about Lola ("how is she" and "what has she been saying" are this log, counts and her words, not a diagnosis; "where is she" is the no-camera answer, no room guessed), "Kumain na" button, recap counts | n/a (add-ons cut) | Viviene (frontend pair: Ayen + Viviene) |
 | **Behind the scenes** | M1 MacBook Air (8 GB) (~1440×900) | Judges / presenters | `/backstage` | Per-utterance proof ([below](#backstage-proof)): transcript → rule or model → action, confidence, reason → ms; a dropped row; `TV lines ignored: N`; T5 badge; OFFLINE badge; health light; hidden "listen now" and typed-question box | After the freeze: a `face_seen` row (add-on a). No CCTV view, no voice match panel (both cut) | Viviene |
 | **Setup** | iPhone 15 or iPad | Family | `/setup` | Quick setup: add question, two phrasings, hold to record, photo, test | n/a | Ayen (frontend pair: Ayen + Viviene) |
@@ -113,6 +113,7 @@ Web stack is the repo default in [../../AGENTS.md](../../AGENTS.md): React + Vit
 4. **`POST /listen`:** returns 202 and no body. What happened arrives on `/ws`.
    - Listen now: `{"mode":"listen_now"}`. The hub captures from its own mic and runs VAD, Whisper, the junk filter, and `decide()`.
    - Typed question: `{"mode":"typed","text":""}`. Skips VAD, Whisper, and the junk filter. Emits `heard` with that `text` as `transcript` and `dropped` false, then `decided`.
+   - iPad clip: **`POST /listen/audio`**, `multipart/form-data`. Field `audio`: one file whose filename ends in `.wav`, `.m4a`, `.mp4`, `.webm`, `.ogg`, or `.aac`, not empty, up to 2 MB. Optional field `source` (`ipad`). Returns 202 and no body, or 400 `{"error":""}`. The hub converts the clip with ffmpeg to 16 kHz mono WAV and runs the same path as listen now: Whisper → junk filter → clip deleted → a dropped `heard` on backstage, or `decide()`. One clip at a time, newest wins. Clips inside the hub's deaf windows (after `play_reply`, after the chime; see always-listening below) are ignored, so a cry inside those windows is not heard from the iPad either. Results arrive on `/ws` as the events above; no new events. **Additive change after the 7:00 AM freeze** (Donita, Sat ~7:15 AM); nothing existing changes. Post in the team chat (TODO: Donita).
 5. **Folders:** `brain/`, `hub/`, `web/setup`, `web/caregiver` (served at `/caregiver/`), `web/lola` (served at `/lola/`), `web/backstage` (served at `/backstage/`).
 
 **Ask Sino about Lola:** the caregiver socket sends `{"event":"ask_about_lola","question":""}` and that socket alone gets `{"event":"about_lola","intent":"","answer":"","source":"","latency_ms":0}` (`answer_about_lola()`). TODO: contract gap — those event names were not in the locked list. Post them in the team chat.
@@ -123,7 +124,7 @@ Changing an interface needs a post in the team chat, because every screen depend
 
 ## Data flow
 
-1. The hub mic hears speech; Silero VAD cuts the clip. (Or: "listen now" on backstage forces a capture; the typed-question box skips steps 1 to 3.)
+1. The iPad mic (the main input from Sat ~7:15 AM): `/lola` cuts a clip in the browser with a loudness gate (12 dB over the noise floor, ~0.3 s kept before the start, ends after 0.8 s of quiet, clips 0.5–8 s), encodes it as WAV, and uploads it to `POST /listen/audio`; the hub converts it to 16 kHz mono WAV. The iPad pauses while a family reply plays and for 1 s after. Thresholds not tuned yet: to verify on the iPad. Or the hub mic hears speech; Silero VAD cuts the clip. (Or: "listen now" on backstage forces a capture; the typed-question box skips steps 1 to 3.)
 2. whisper.cpp transcribes it on the hub → `heard` event.
 3. Junk-line filter: quiet clips, likely-no-speech clips, and known junk lines are dropped. Backstage shows them as `heard` with `dropped` true. They never reach Lola or the caregiver.
 4. Throttle: one model call at a time. Stale clips are discarded and emit no event, except a line with an urgent word: it is always decided (README safety rule 1).
@@ -133,7 +134,7 @@ Changing an interface needs a post in the team chat, because every screen depend
 
 ## Running the hub server
 
-`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `GET /questions`, `POST /questions`, `POST /clips`, `GET /clips/snapshot`, and `/media`, and it calls `decide()` and `answer_about_lola()`. When `web/caregiver/dist` exists it also serves that build at `/caregiver` (`index.html` with `Cache-Control: no-cache`); the phone opens `https://<hub>:8000/caregiver/?feed=hub` so `/ws`, `/questions`, `/media` and `/clips/snapshot` share one origin. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
+`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `POST /listen/audio`, `GET /questions`, `POST /questions`, `POST /clips`, `GET /clips/snapshot`, and `/media`, and it calls `decide()` and `answer_about_lola()`. When `web/caregiver/dist` exists it also serves that build at `/caregiver` (`index.html` with `Cache-Control: no-cache`); the phone opens `https://<hub>:8000/caregiver/?feed=hub` so `/ws`, `/questions`, `/media` and `/clips/snapshot` share one origin. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
 
 TODO: contract gap — the interfaces do not name a listen port. `PORT` defaults to 8000. `HOST` defaults to `0.0.0.0`.
 
@@ -243,6 +244,7 @@ None of these are facts yet. Log real results in `docs/NOTES.md` (Model smoke te
 | T5 in `ollama` mode on the hub | gate in [mvp-plan.md](mvp-plan.md#passfail-gate-t5-before-the-330-am-freeze) | waiting on the hub. Stub-mode text results only so far ([../NOTES.md](../NOTES.md#passfail-gate-t5)) |
 | Junk-line filter | drops TV sign-offs and silence, keeps real questions | to verify at smoke test |
 | Hub chime audible across a room | yes | to verify at smoke test |
+| iPad mic (`/lola` listening, Sat ~7:15 AM) | a "Tulong!" said at the iPad reaches the hub and alerts | not tested yet: to verify on the iPad |
 | Hub cold start with `start.sh` | under 2 min with seed loaded | to verify at smoke test |
 | Hub on battery through the demo | needed only if we show it unplugged | to verify at smoke test |
 | Add-on (a) face match | runs on the hub CPU next to Whisper and Qwen without swapping; if the hub swaps, fall back to `qwen2.5:1.5b` | un-cut Sat 3:23 AM, not built yet; to verify after T5 passes |

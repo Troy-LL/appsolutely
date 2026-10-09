@@ -17,6 +17,7 @@ Always-listening hub mic (Silero VAD) → whisper.cpp → junk-line filter → `
 ### M1. Listening pipeline (Donita)
 
 - **Always-listening:** Silero VAD on the hub mic cuts clips when someone speaks.
+- **iPad mic (Donita, Sat ~7:15 AM, after the freeze):** the iPad's mic is now the main way Lola is heard. `/lola` listens all the time in the browser and sends each clip to the hub (`POST /listen/audio`), which runs the same Whisper → junk filter → `decide()` path ([architecture.md](architecture.md#devices)). The hub mic stays for "listen now" and always-listening. To verify on the iPad.
 - **Throttle:** one model call at a time; stale clips (older than the one being processed) are dropped.
 - **Junk-line filter, before `decide()`:** drop clips that are too quiet, that Whisper marks as likely no speech, or whose transcript matches known junk lines ("Thank you for watching", "Salamat sa panonood", and similar). These never reach Lola or the caregiver. Backstage logs them as `heard` with `dropped` true ([architecture.md](architecture.md#the-3-interfaces-locked-in-the-first-15-minutes)).
 - **Demo safety:** a hidden "listen now" button on `/backstage` forces a capture, and a hidden typed-question box sends text through the same `decide()` if the mic or Whisper fails.

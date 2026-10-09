@@ -52,6 +52,8 @@ from listen import enable_mic, mic_ok, start_listen  # noqa: E402
 from chime import enable_chime, play_chime  # noqa: E402
 # hub/always.py (Donita, D4): always-listening, off unless ALWAYS_LISTEN=1.
 from always import always_on, deafen_for_chime, deafen_for_reply, enable_always, start_always  # noqa: E402
+# hub/upload.py (Donita): the iPad's mic. Lola's screen uploads short clips; same steps as listen now.
+from upload import receive_clip  # noqa: E402
 
 SCREENS = ("lola", "caregiver", "backstage")
 UNKNOWN_MEAL_NOTE = "Lola asked if she's eaten. No meal logged."
@@ -549,6 +551,12 @@ async def listen(request: Request):
     if text.strip():
         await hub.submit(text)
     return Response(status_code=202)
+
+
+@app.post("/listen/audio")
+async def listen_audio(request: Request):
+    # Multipart: audio (file), source (optional). 202 empty, or 400 {"error"}. Results on /ws.
+    return await receive_clip(hub, request)
 
 
 @app.websocket("/ws")
