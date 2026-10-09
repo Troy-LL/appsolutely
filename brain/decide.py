@@ -35,7 +35,7 @@ def _match_known_question(normalized):
         candidates = [entry.get("question", "")] + list(entry.get("phrasings", []))
         for candidate in candidates:
             phrase = normalize(candidate)
-            if phrase and (phrase == normalized or phrase in normalized):
+            if phrase and phrase == normalized:
                 return entry.get("id", "")
     return None
 
