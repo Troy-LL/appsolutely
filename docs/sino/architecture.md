@@ -40,9 +40,9 @@ Each route is designed for its own device only (no responsive juggling).
 
 | Viewport | Device | Who sees it | Route | Shows in the MVP | Add-ons | Owner |
 |---|---|---|---|---|---|---|
-| **Lola's screen** | A16 iPad (landscape, ~1180×820) | Lola | `/lola` | Big clock, idle family photo, full-screen photo while the family voice plays. **Nothing else.** Never red. Calm colors only. "Sino ka?" is a known question like the others: the registered person's photo and their recorded line | Add-on (a), after the freeze: "Sino ka?" plays the recognised person's photo and line (Troy's if nobody is matched); no extra UI | Ayen (frontend pair: Ayen + Viviene) |
-| **Caregiver phone** | iPhone 15 (portrait, ~393×852) | Caregiver / family | `/caregiver` | Live log; red cards (sound); quiet yellow cards with grouped repeats and record-a-reply; green log entries. Should, after the 3:30 AM freeze: Ask Sino about Lola ("how is she" and "what has she been saying" are this log, counts and her words, not a diagnosis; "where is she" is the no-camera answer, no room guessed, unless add-on (b) has a sighting), "Kumain na" button, recap counts | Add-on (b), after the freeze: "Nasa sala, N minuto na." + caregiver-only snapshot; door alert card (`alert` with `kind: "door"`) | Viviene (frontend pair: Ayen + Viviene) |
-| **Behind the scenes** | M1 MacBook Air (8 GB) (~1440×900) | Judges / presenters | `/backstage` | Per-utterance proof ([below](#backstage-proof)): transcript → rule or model → action, confidence, reason → ms; a dropped row; `TV lines ignored: N`; T5 badge; OFFLINE badge; health light; hidden "listen now" and typed-question box | After the freeze: `face_seen` and `cctv_seen` rows (add-ons a and b). No voice match panel (voice ID cut) | Viviene |
+| **Lola's screen** | A16 iPad (landscape, ~1180×820) | Lola | `/lola` | Big clock, idle family photo, full-screen photo while the family voice plays. **Nothing else.** Never red. Calm colors only. "Sino ka?" is a known question like the others: the registered person's photo and their recorded line | Add-on (a), after the freeze: "Sino ka?" plays the matched family member's photo and line on a high-confidence match, Troy's otherwise; no extra UI | Ayen (frontend pair: Ayen + Viviene) |
+| **Caregiver phone** | iPhone 15 (portrait, ~393×852) | Caregiver / family | `/caregiver` | Live log; red cards (sound); quiet yellow cards with grouped repeats and record-a-reply; green log entries. Should, after the 3:30 AM freeze: Ask Sino about Lola ("how is she" and "what has she been saying" are this log, counts and her words, not a diagnosis; "where is she" is the no-camera answer, no room guessed), "Kumain na" button, recap counts | n/a (add-ons cut) | Viviene (frontend pair: Ayen + Viviene) |
+| **Behind the scenes** | M1 MacBook Air (8 GB) (~1440×900) | Judges / presenters | `/backstage` | Per-utterance proof ([below](#backstage-proof)): transcript → rule or model → action, confidence, reason → ms; a dropped row; `TV lines ignored: N`; T5 badge; OFFLINE badge; health light; hidden "listen now" and typed-question box | After the freeze: a `face_seen` row (add-on a). No CCTV view, no voice match panel (both cut) | Viviene |
 | **Setup** | iPhone 15 or iPad | Family | `/setup` | Quick setup: add question, two phrasings, hold to record, photo, test | n/a | Ayen (frontend pair: Ayen + Viviene) |
 | (optional) Extra backstage | Viviene's Windows laptop | Audience | `/backstage` | Mirror of the hub view | n/a | Viviene |
 
@@ -74,11 +74,11 @@ What `brain/decide.py` does today: the TV-word rule (`TV_PHRASES` and `TV_TOKENS
 | Voice activity detection | Silero VAD | hub | Starts capture only when someone speaks |
 | Speech to text | Whisper small (default); medium only as the fallback below | whisper.cpp (`-l tl`) | See the selection rule below |
 | Decision for unclear lines | Qwen2.5-3B (`qwen2.5:3b`) (default); Qwen2.5-1.5B (`qwen2.5:1.5b`) only with the medium fallback | Ollama | Must return JSON matching the decision interface. No AI phrasing for the recap |
-| Add-on a: face match (T6) | OpenCV YuNet (detect) + SFace (recognise), a few MB | OpenCV, hub CPU | **Un-cut Sat 3:15 AM.** After the freeze, after T5 passes on the hub. Not built yet ([features.md](features.md#should-after-the-330-am-freeze)) |
-| Add-on b: person detection (T8) | OpenCV HOG person detector | OpenCV, hub CPU | **Un-cut Sat 3:15 AM.** Same gate. Not built yet. Single person assumed |
+| Add-on a: face match (T6) | OpenCV YuNet (detect) + SFace (recognise), a few MB | OpenCV, hub CPU | **Un-cut Sat 3:23 AM.** After the core runs on the hub and T5 passes; hard stop 5 AM. One frame per "Sino ka?". Not built yet ([features.md](features.md#should-after-the-330-am-freeze)) |
+| Add-on b: person detection | n/a | n/a | **Cut, Sat 2:00 AM. Next step** |
 | Add-on c: speaker match | n/a | n/a | **Cut. Not built** ([mvp-plan.md](mvp-plan.md)) |
 
-No text-to-speech or voice-cloning model is used anywhere: Lola only hears the family's own recordings (safety rule in [README.md](README.md#safety-rules)). Voice ID is cut and there is no live call. "Sino ka?" is a seeded known question: the iPad shows the registered person's photo and plays the line they recorded. With add-on (a) after the freeze, it plays the recognised person's line, and Troy's if nobody is matched ([features.md](features.md#should-after-the-330-am-freeze)).
+No text-to-speech or voice-cloning model is used anywhere: Lola only hears the family's own recordings (safety rule in [README.md](README.md#safety-rules)). CCTV and voice ID are cut, and there is no live call. "Sino ka?" is a seeded known question: the iPad shows the registered person's photo and plays the line they recorded. With add-on (a) after the freeze, a high-confidence match plays that family member's line; anything else plays Troy's ([features.md](features.md#should-after-the-330-am-freeze)).
 
 ### Speech model selection (by 11:30 PM)
 
@@ -145,17 +145,12 @@ TODO: contract gap — `health` has no model mode or last event time. Additive f
 
 TODO: contract gap — no route or event for Ask Sino about Lola. Inbound on `/ws` from the caregiver socket: `{"event":"ask_about_lola","question":""}`. Reply to that socket only: `{"event":"about_lola","intent":"","answer":"","source":"","latency_ms":0}`.
 
-**Add-ons a and b (after the freeze, not built yet; Sat 3:15 AM).** TODO: contract gaps, all additive, nothing renamed. Post them in the team chat when built:
+**Add-on a, face match (after the freeze, not built yet; Sat 3:23 AM).** TODO: contract gaps, all additive, nothing renamed. Post them in the team chat when built:
 
-- `POST /face/frame`: one JPEG from a camera. Recognises against the enrolled family (troy, joy, donita). The frame is kept in memory only.
-- `face_seen` (to `/backstage` only): who was recognised, or nobody.
-- `decided.who`: additive field, the recognised person for a "Sino ka?" decision, `""` if nobody.
-- Seed `sino-ka` gains additive `by_person`: the reply per enrolled person. No match → Troy's line.
-- `/camera?room=<room>`: the page an old phone or iPad opens as a camera.
-- `POST /cctv/frame`: one JPEG plus `room`. The HOG detector updates `last_seen` (`room`, `minutes_ago`), which `_where_answer` in `brain/ask.py` already reads.
-- `GET /cctv/snapshot`: the last sighting's frame, caregiver only, in memory, gone after 120 s.
-- `cctv_seen` (to `/backstage` only): room and time of a sighting.
-- `alert.kind`: additive; `"door"` when the camera in room `pinto` sees a person (wandering), at most 1 per 2 min. Without `kind`, `alert` is the urgent alert as before.
+- `POST /face/frame`: one JPEG, sent **once per "Sino ka?" trigger** (no stream, no polling loop). Recognises against the enrolled family (troy, joy, donita). In memory only.
+- `face_seen` (to `/backstage` only): who was recognised and the score, or nobody.
+- `decided.who`: additive field on a "Sino ka?" decision, the matched person on a high-confidence match, `""` otherwise.
+- Seed `sino-ka` gains additive `by_person`: the reply per enrolled person. No high-confidence match → Troy's line.
 
 TODO: contract gap — the local log is not named as SQLite or JSONL. This server appends one JSON object per decision to `brain/decisions.jsonl` (`SINO_LOG` overrides the path). `answer_about_lola` reads those rows.
 
@@ -189,8 +184,8 @@ HOST=0.0.0.0 PORT=8000 SINO_MODEL=ollama HUB_URL=http://127.0.0.1:11434 CERT=/ab
 
 - The family sets it up and controls everything. Pitch the caregiver as the user.
 - The mic is always on, so **nothing it hears leaves the house**. No audio is stored by default. Only transcripts and decisions go into the local log, and the family can delete it.
-- No voice samples are collected (voice ID is cut). Family recordings and photos for replies stay on the hub.
-- Face match and CCTV (add-ons, after the freeze): enrollment photos of the 3 family members stay on the hub and are gitignored, never committed. Camera frames are processed in memory and never written to disk. The CCTV snapshot is in memory for 120 s and shown only on the caregiver phone, never on Lola's iPad or `/backstage`. Cameras send frames only to the hub on the house network, the same LAN-only firewall as the mic.
+- No voice samples are collected (voice ID is cut). No CCTV (cut). Family recordings and photos for replies stay on the hub.
+- Face match (add-on, after the freeze): the 3 family members are enrolled on the hub; their photos stay there and are gitignored, never committed. One frame is grabbed only when "Sino ka?" fires, processed in memory, and never written to disk.
 - No cloned or synthetic family voices, ever.
 - Not a medical device, not a diagnosis. It always escalates to a human.
 
@@ -213,5 +208,6 @@ None of these are facts yet. Log real results in `docs/NOTES.md` (Model smoke te
 | Hub chime audible across a room | yes | to verify at smoke test |
 | Hub cold start with `start.sh` | under 2 min with seed loaded | to verify at smoke test |
 | Hub on battery through the demo | needed only if we show it unplugged | to verify at smoke test |
-| Add-ons (a) face match and (b) person detector | runs on the hub CPU next to Whisper and Qwen without pushing the 8 GB hub into swap | un-cut Sat 3:15 AM, not built yet; to verify after T5 passes |
+| Add-on (a) face match | runs on the hub CPU next to Whisper and Qwen without swapping; if the hub swaps, fall back to `qwen2.5:1.5b` | un-cut Sat 3:23 AM, not built yet; to verify after T5 passes |
+| Add-on (b) person detector | n/a | cut, not built |
 | Add-on (c) voice ID | cut, not built | not measured |

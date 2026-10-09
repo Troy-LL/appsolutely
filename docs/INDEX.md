@@ -91,8 +91,8 @@ Read this first. It tells you which file owns what and when to open it.
 | **Throttle** | One model call at a time; stale clips are dropped |
 | **Listen now** | Hidden button on `/backstage` that forces a capture; with the typed-question box, the demo safety |
 | **Urgent chime** | Loud sound from the hub speaker on an urgent decision, via `afplay` ([sino/hub-chime.md](sino/hub-chime.md)); first alert channel (no push offline). Red card on `/caregiver` is the second. `/lola` never red |
-| **Cut line** | The line between the MVP and the add-ons. Below it, after the 3:30 AM freeze and only once T5 passes on the hub: T6 face match and T8 CCTV where + door alert (un-cut Sat 3:15 AM) |
-| **Add-ons** | Sino's post-freeze extras on Troy's path: (a) face match (T6) and (b) CCTV where + door alert (T8), un-cut Sat 3:15 AM, not built yet. (c) voice ID and the live call on the house Wi-Fi stay cut (next steps) |
+| **Cut line** | The line between the MVP and the add-ons. Since Sat 3:23 AM only T6 face match sits below it: after the 3:30 AM freeze, once the core runs on the hub and T5 passes, hard stop 5 AM |
+| **Add-ons** | Sino's post-freeze extras: (a) face match (T6), un-cut Sat 3:23 AM, not built yet. (b) "Nasaan si Lola?" on CCTV, the door alert, (c) voice ID, and the live call on the house Wi-Fi stay cut (next steps) |
 | **Health light** | Status of Whisper, Ollama, server, and mic on `/backstage`; tells anyone whether to run `start.sh` |
 | **MVP freeze** | 3:30 AM Sat for Sino's core (moved from 2:00 AM at 2:00 AM). Different from the 7:00 AM team feature freeze |
 | **To verify at smoke test** | Label for any number or capability not yet measured on the real devices |

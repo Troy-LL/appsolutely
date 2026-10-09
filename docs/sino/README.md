@@ -3,7 +3,7 @@
 > *Kapag nagtanong ulit si Lola, boses ng pamilya ang sasagot.*
 > *When Lola asks again, her family's voice answers.*
 
-**Status:** idea locked Fri Oct 9 (see the decision log in [../NOTES.md](../NOTES.md)). This folder is the **locked spec**. Application code follows it. Latest decisions (Sat 2:00 AM): MVP freeze moved to 3:30 AM; recorded family voices are the reply for every known question; voice ID and the live call are cut to next steps. Sat ~3:15 AM: face match and CCTV where + door alert are back as after-freeze add-ons on Troy's path, built only after T5 passes on the hub ([features.md](features.md)). Pitch line: "Siri for dementia care, fully offline."
+**Status:** idea locked Fri Oct 9 (see the decision log in [../NOTES.md](../NOTES.md)). This folder is the **locked spec**. Application code follows it. Latest decisions (Sat 2:00 AM): MVP freeze moved to 3:30 AM; recorded family voices are the reply for every known question; the CCTV clip, voice ID, and the live call are cut to next steps. Sat 3:23 AM: face match is back as the one after-freeze add-on, only after the core runs on the hub and T5 passes ([features.md](features.md)).
 
 **Vision:** "An offline-first assistant so families caring for someone with dementia have more time and more patience for them, even when they can't be in the room."
 
@@ -48,9 +48,7 @@ flowchart TD
   P[Should, after the freeze: registered person asks Sino about Lola · caregiver phone] --> H{How is she / What has she been saying?}
   H -- yes --> LG[Local log: counts + her words, not a diagnosis]
   P --> W{Where is she?}
-  W --> CC{CCTV add-on built and Lola seen?}
-  CC -- yes --> LS['Nasa sala, N minuto na.' + caregiver-only snapshot]
-  CC -- no --> NC[No camera answer, no room guessed · fallback]
+  W --> NC[No camera answer, no room guessed · camera add-on cut]
 ```
 
 ## What makes it different
