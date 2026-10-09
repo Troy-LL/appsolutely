@@ -1,6 +1,5 @@
 import type { Entry } from '../types'
 import { dateLine, timeInWords, type T } from '../i18n/i18n'
-import { Back } from '../components/Icons'
 
 // Lola's day printed like a torn paper receipt: every moment today, oldest first,
 // and the day's totals at the bottom. "Print or save" uses the phone's print sheet
@@ -14,7 +13,7 @@ const tear = (top: boolean) => {
   return `${d} L342 ${base} Z`
 }
 
-export function ReceiptScreen({ t, today, onBack }: { t: T; today: Entry[]; onBack: () => void }) {
+export function ReceiptScreen({ t, today }: { t: T; today: Entry[] }) {
   const now = Date.now()
   const rows = [...today].sort((a, b) => a.at - b.at)
   const isUrgent = (e: Entry) => e.kind === 'urgent' || e.kind === 'seen'
@@ -33,10 +32,6 @@ export function ReceiptScreen({ t, today, onBack }: { t: T; today: Entry[]; onBa
 
   return (
     <>
-      <div className="sn-subhead sn-noprint">
-        <button type="button" className="sn-icon-btn" aria-label={t.one('back')} onClick={onBack}><Back /></button>
-        <h2>{t.one('receiptTitle')}</h2>
-      </div>
       <div className="sn-scroll sn-receipt-wrap">
         <p className="sn-intro pl sn-noprint" style={{ marginTop: 20 }}>{t.two(complete ? 'receiptDone' : 'receiptSoFar')}</p>
         <svg className="sn-tear" viewBox="0 0 342 12" preserveAspectRatio="none" aria-hidden="true"><path d={tear(true)} /></svg>

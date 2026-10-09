@@ -20,6 +20,9 @@ interface Props {
   onUnread: (id: string) => void
   onPerson: (name: string) => void
   onFamily: () => void
+  lastNote: Entry | null
+  onAte: () => void
+  onUndoNote: () => void
 }
 
 const TILTS = ['l', '', 'r'] as const
@@ -65,10 +68,15 @@ export function HomeScreen(p: Props) {
         </div>
       </div>
 
-      <SummaryChips t={t} answered={answered} needs={needs} open={widget} setOpen={setWidget} onRecord={p.onRecord} />
+      <button type="button" className="sn-btn sn-btn--wide sn-ate" onClick={p.onAte}>{t.btn('kumainNa')}</button>
+      {p.lastNote?.preset === 'ate' ? (
+        <div className="sn-undo">
+          <span>{p.lastNote.sentToHub ? t.one('loggedHub') : `${t.one('actAdded')}: ${p.lastNote.label ? (t.lang === 'en' ? p.lastNote.label[1] : p.lastNote.label[0]) : p.lastNote.transcript}`}</span>
+          <button type="button" className="sn-btn sn-btn--quiet" onClick={p.onUndoNote}>{t.btn('undo')}</button>
+        </div>
+      ) : null}
 
       {urgent.map((e) => <UrgentCard key={e.id} t={t} entry={e} onRead={() => p.onRead(e.id)} />)}
-      {!urgent.length ? <div style={{ height: 20 }} /> : null}
 
       <div className="sn-block">
         <Heading main={hNeeds.main} sub={hNeeds.sub} />
@@ -76,6 +84,15 @@ export function HomeScreen(p: Props) {
           <ul className="sn-log">{needs.map((e) => <NeedsCard key={e.id} t={t} entry={e} onRecord={() => p.onRecord(e.id)} />)}</ul>
         ) : <p className="sn-calm pl">{t.two('needsEmpty')}</p>}
       </div>
+
+      <div className="sn-block">
+        <Heading main={hAns.main} sub={hAns.sub} />
+        {done.length ? (
+          <ul className="sn-log">{done.map((e) => <DoneCard key={e.id} t={t} entry={e} onUnread={() => p.onUnread(e.id)} />)}</ul>
+        ) : <p className="sn-calm pl">{t.two('noMoments')}</p>}
+      </div>
+
+      <SummaryChips t={t} answered={answered} needs={needs} open={widget} setOpen={setWidget} onRecord={p.onRecord} />
 
       <div className="sn-block">
         <Heading main={hFam.main} sub={hFam.sub}>
@@ -88,13 +105,6 @@ export function HomeScreen(p: Props) {
               ariaLabel={t.one('personReplies', { name: x.name })} onClick={() => p.onPerson(x.name)} />
           ))}
         </div>
-      </div>
-
-      <div className="sn-block">
-        <Heading main={hAns.main} sub={hAns.sub} />
-        {done.length ? (
-          <ul className="sn-log">{done.map((e) => <DoneCard key={e.id} t={t} entry={e} onUnread={() => p.onUnread(e.id)} />)}</ul>
-        ) : <p className="sn-calm pl">{t.two('noMoments')}</p>}
       </div>
     </div>
   )

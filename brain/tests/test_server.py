@@ -10,6 +10,7 @@ import json
 import os
 import socket
 import sys
+import tempfile
 import threading
 import time
 import urllib.error
@@ -24,6 +25,7 @@ sys.path.insert(0, str(ROOT))
 os.environ["SINO_MODEL"] = "stub"
 os.environ["SINO_LOG"] = str(HERE / "_test_decisions.jsonl")
 os.environ["OFFLINE_PROBE"] = "http://127.0.0.1:9"
+os.environ["CAREGIVER_DIST"] = str(HERE / "_no_caregiver_dist")
 os.environ.pop("CERT", None)
 os.environ.pop("KEY", None)
 
@@ -186,6 +188,27 @@ async def _expect_line(clients, text, action, source, ignored):
     return decided_b
 
 
+def _caregiver_pages(port):
+    req = urllib.request.Request(f"http://127.0.0.1:{port}/caregiver/")
+    try:
+        urllib.request.urlopen(req, timeout=2)
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404:
+            raise AssertionError(exc.code) from exc
+    else:
+        raise AssertionError("caregiver was mounted with no dist")
+    folder = Path(tempfile.mkdtemp())
+    (folder / "index.html").write_text("<!doctype html><title>caregiver</title>phone", encoding="utf-8")
+    if not server.mount_caregiver(server.app, folder):
+        raise AssertionError("mount failed")
+    with urllib.request.urlopen(req, timeout=2) as res:
+        body = res.read().decode("utf-8")
+        if res.status != 200 or "phone" not in body:
+            raise AssertionError(body[:120])
+        if res.headers.get("Cache-Control") != "no-cache":
+            raise AssertionError(res.headers.get("Cache-Control"))
+
+
 async def _wait_up(port):
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
@@ -211,6 +234,13 @@ async def _run():
     total = 0
     try:
         await _wait_up(port)
+        total += 1
+        try:
+            await asyncio.to_thread(_caregiver_pages, port)
+            passed += 1
+            print("caregiver page: PASS")
+        except Exception as exc:
+            print(f"caregiver page: FAIL {exc}")
         async with websockets.connect(f"ws://127.0.0.1:{port}/ws?screen=backstage") as backstage, \
                 websockets.connect(f"ws://127.0.0.1:{port}/ws?screen=lola") as lola, \
                 websockets.connect(f"ws://127.0.0.1:{port}/ws?screen=caregiver") as caregiver:
