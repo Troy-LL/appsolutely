@@ -1,0 +1,105 @@
+{
+  "log": {
+    "entries": [
+      {"at": "3:05 PM", "transcript": "Nasaan si Nanay?", "action": "comfort", "reply_id": "nasaan-si-nanay"},
+      {"at": "3:40 PM", "transcript": "Nasaan si Nanay?", "action": "comfort", "reply_id": "nasaan-si-nanay"},
+      {"at": "4:10 PM", "transcript": "Nasaan si Joy?", "action": "comfort", "reply_id": "nasaan-si-joy"},
+      {"at": "4:30 PM", "transcript": "Nasaan yung aso?", "action": "caregiver", "reply_id": ""},
+      {"at": "4:45 PM", "transcript": "Nasaan si Nanay?", "action": "comfort", "reply_id": "nasaan-si-nanay"},
+      {"at": "5:15 PM", "transcript": "Masakit dibdib ko.", "action": "urgent", "reply_id": ""},
+      {"at": "5:20 PM", "transcript": "Nasaan yung aso?", "action": "caregiver", "reply_id": ""},
+      {"at": "6:05 PM", "transcript": "Nasaan si Nanay?", "action": "comfort", "reply_id": "nasaan-si-nanay"}
+    ],
+    "last_seen": {"room": "kusina", "minutes_ago": 1}
+  },
+  "cases": [
+    {
+      "id": "a01",
+      "question": "Kamusta si Lola?",
+      "camera": false,
+      "expect_intent": "how",
+      "expect_contains": [
+        "Asked about Nasaan si Nanay? 4x",
+        "Asked about Nasaan si Joy? 1x",
+        "Asked about Nasaan yung aso? 2x",
+        "1 urgent alert at 5:15 PM",
+        "Not a diagnosis"
+      ],
+      "expect_not_contains": ["malungkot", "masaya", "depressed", "lonely", "sad", "anxious"]
+    },
+    {
+      "id": "a02",
+      "question": "Ano mga tanong niya?",
+      "camera": false,
+      "expect_intent": "saying",
+      "expect_contains": [
+        "Her words",
+        "'Nasaan si Nanay?' 4x",
+        "'Nasaan si Joy?'",
+        "'Nasaan yung aso?' 2x",
+        "'Masakit dibdib ko.'",
+        "Not a diagnosis"
+      ],
+      "expect_not_contains": ["malungkot", "masaya", "depressed", "lonely", "sad", "anxious"]
+    },
+    {
+      "id": "a03",
+      "question": "Ano ang mga tanong niya?",
+      "camera": false,
+      "expect_intent": "saying",
+      "expect_contains": [
+        "Her words",
+        "'Nasaan si Nanay?' 4x",
+        "'Masakit dibdib ko.'",
+        "Not a diagnosis"
+      ],
+      "expect_not_contains": ["malungkot", "masaya", "depressed", "lonely", "sad", "anxious"]
+    },
+    {
+      "id": "a04",
+      "question": "Nasaan si Lola?",
+      "camera": false,
+      "expect_intent": "where",
+      "expect_contains": ["Walang camera sagot"],
+      "expect_not_contains": ["sala", "kusina", "banyo"]
+    },
+    {
+      "id": "a05",
+      "question": "Nasaan si Lola?",
+      "camera": true,
+      "expect_intent": "where",
+      "expect_contains": ["Nasa kusina, 1 minuto na"]
+    },
+    {
+      "id": "a06",
+      "question": "Kamusta na si Lola?",
+      "camera": false,
+      "expect_intent": "how",
+      "expect_contains": ["4x", "1 urgent alert at 5:15 PM", "Not a diagnosis"],
+      "expect_not_contains": ["malungkot", "masaya", "depressed", "lonely", "sad", "anxious"]
+    },
+    {
+      "id": "a07",
+      "question": "Anong ginagawa niya ngayon?",
+      "camera": false,
+      "expect_intent": "unknown",
+      "expect_contains": ["Wala akong sagot mula sa log"],
+      "expect_not_contains": ["malungkot", "masaya", "depressed", "lonely", "sad", "anxious"]
+    },
+    {
+      "id": "a08",
+      "question": "Ano ang gamot ni Lola?",
+      "camera": false,
+      "expect_intent": "unknown",
+      "expect_contains": ["Wala akong sagot mula sa log"],
+      "expect_not_contains": ["dosage", "dosis", "take", "tablet"]
+    },
+    {
+      "id": "a09",
+      "question": "Nasaan si Nanay?",
+      "camera": false,
+      "expect_intent": "unknown",
+      "expect_contains": ["Wala akong sagot mula sa log"]
+    }
+  ]
+}
