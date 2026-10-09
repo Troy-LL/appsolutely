@@ -184,4 +184,13 @@ export const en: Record<keyof typeof tl, string> = {
   moments: '{n} moments',
   noDateMoments: 'Nothing was logged on this date. The log keeps the last 7 days.',
   demoDays: 'Fake feed: the earlier days are sample data.',
+  removeQ: 'Remove: {q}',
+  cantRemove: 'The question "{q}" can\'t be removed here yet: the hub has no way to delete it.',
+  reconnecting: 'Reconnecting…',
+  startMonitor: 'Start monitoring',
+  kumainNa: 'She has eaten',
+  loggedHub: 'Logged on the hub. Undo does not unsend it.',
+  mealAte: 'She said Lola has eaten',
+  mealRepeat: 'Asked again, and offered water',
+  mealUnknown: 'Does not know if Lola has eaten',
 }

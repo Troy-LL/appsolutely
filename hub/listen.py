@@ -220,7 +220,8 @@ async def process_clip(hub, path, label="listen now"):
     reason = junk_reason(text, peak)
     if reason:
         await hub.send_to("backstage", {"event": "heard", "transcript": text,
-                                        "dropped": True, "drop_reason": reason})
+                                        "dropped": True, "drop_reason": reason,
+                                        "utterance_id": uuid.uuid4().hex})
     else:
         await hub.submit(spoken(text))
 

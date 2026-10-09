@@ -65,10 +65,11 @@ Five colours, each with one job, plus white only as text on green or red. Exactl
 | `red` | `#C23232` | Urgent, caregiver phone only | Never |
 | `white` | `#FFFFFF` | Text on green or red fills only | Never |
 
-- Lola's screen is **`ink` on `paper` only**. No green, amber or red there, not even as decoration.
+- Lola's screen is **`ink` on `paper` only**. No green, amber or red there, not even as decoration. The 36px mark on Waiting is the one recorded exception (see LolaScreen).
 - Colour on a card lives in three places only: the 10px tab on its left edge, its status mark, and (for urgent) the whole card turning red. Card bodies stay `paper`.
 - Every amber shape carries an `ink` outline, because amber on paper is only 1.8:1.
 - In illustration, green and amber are furniture, never a signal; red never appears, so it always means urgent.
+- The official mark (`assets/brand/sino-logo.png`) is filled with the same two colours. Opaque pixels sample as green `#2F5E4E` and amber `#E9A83A`, matching the `green` and `amber` tokens. Tokens are unchanged.
 
 | Pair | Ratio | Use |
 |---|---|---|
@@ -93,7 +94,7 @@ Two families only.
 - **The rule:** if it is a heading, a name, a label, a number or a time, it is Fredoka. If it is a sentence, it is DM Sans. When in doubt, ask "would this be bold in a newspaper?"; if yes, Fredoka.
 - Headings: `heading-xl` 56, `heading-l` 35, `heading-m` 22, `heading-s` 16 (SemiBold); `eyebrow` 14 for step counts and dates; `time-l` 56 for Lola's clock time and `time-m` 22 for log times; names in `name-tag` 16, `name-m` 22, `name-l` 35 (Medium). Fredoka is for a few words at a time, never for sentences.
 - Text: `text-l` 35, `text-m` 22, `text-s` 16, `label` 16 Bold for buttons, `log-s` 15 with tabular figures. Left-aligned, never justified, short lines.
-- **Wordmark:** "Sino" in Fredoka SemiBold, ink on paper. No drawn logo exists; never invent one.
+- **Wordmark:** "Sino" in Fredoka SemiBold, ink on paper, when the name is set in type. The official drawn mark is `assets/brand/sino-logo.png` (house roofline, green word, amber dot). Do not invent another mark.
 - Lola's screen uses `text-l` and `text-m`, names in `name-m`. The **Bigger** option swaps in `text-l-big` 44 and `text-m-big` 28 (names 28 / 44); the family picks it on the real iPad.
 - The caregiver app scales every style by A / A+ / A++ (`scale-a`, `scale-a-plus`, `scale-a-plus-plus`). No pinch gestures.
 - Both faces are SIL OFL.
@@ -181,7 +182,7 @@ Hidden from families, but still made to be read. **Sino's log** (`ReceiptStrip`)
 - No pastels, tints, opacity fades or colours outside the six.
 - No gradients, glows, blur, glass, 3D or realistic textures.
 - No unframed photos, stock faces, silhouettes or avatars made of initials in coloured circles.
-- No red outside the urgent card. No colour on Lola's screen.
+- No red outside the urgent card. No colour on Lola's screen, except the 36px mark on Waiting (see LolaScreen).
 - No grid of identical feature cards, no dashboard of numbers, no "ask anything" box.
 - No timers, countdowns or timeouts. No "Oops".
 - No irreversible action without showing what will happen, with Undo.
@@ -390,6 +391,7 @@ Lola's iPad as one wall of the sala: a clock while Sino waits, one framed memory
 - Answer: one `MemoryFrame` (`frame-l`, straight, no shadow), the name in `name-m` (Fredoka), the reply in `text-l`.
 - No photo yet: the name in `name-l` inside the empty frame. Never a gray box, silhouette or stock face.
 - No green, amber or red on this screen. Urgent changes nothing here. No buttons, hints, countdowns or auto-dim.
+- Waiting is the one exception: a 36px official mark in the corner. It is not faded (this file forbids opacity tricks) and it is absent from Listening and Answer, so it does not sit with the clock or a reply. A full-colour mark is still outside the ink-on-paper rule above; the corner placement is the calmest fit, not a new colour on Lola's wall.
 
 ### StepIndicator
 

@@ -4,6 +4,7 @@ import type { Entry } from '../types'
 import { timeInWords, type Key, type T } from '../i18n/i18n'
 import { daysAgo, startOfDay } from '../data/history'
 import { Plus, Receipt, Sliders, X } from '../components/Icons2'
+import { mealKey, voiceOf } from '../feed/events'
 
 type Kind = 'all' | 'urgent' | 'needs' | 'ok' | 'note'
 type Range = 'today' | 'week' | 'date'
@@ -92,10 +93,16 @@ export function ActivityScreen({ t, entries, demoDays, lastNote, onRecord, onAdd
         : e.kind === 'needs' ? t.one('needs')
           : e.kind === 'note' ? t.one('noteWord')
             : t.one('answered')
+  const voiceLine = (e: Entry) => {
+    const voice = voiceOf(e)
+    if (!voice) return ''
+    if (voice.type === 'meal') return t.one(mealKey(voice.variant))
+    return t.one('voicePlayed', { name: voice.name })
+  }
   const sub = (e: Entry) =>
     e.kind === 'needs' && e.count > 1 ? t.one('timesSince', { n: e.count, time: timeInWords(e.firstAt ?? e.at, t.lang) })
       : e.kind === 'answered' && e.savedByYou ? t.one('yourVoiceSaved')
-        : e.kind === 'answered' && e.speaker ? t.one('voicePlayed', { name: e.speaker })
+        : e.kind === 'answered' ? voiceLine(e)
           : e.kind === 'seen' ? t.one('seenSub')
             : e.kind === 'note' ? t.one('addedBy') : ''
   const mark = (e: Entry) => (isUrgent(e) ? '▲' : e.kind === 'needs' ? '●' : e.kind === 'note' ? '+' : '✓')
@@ -137,7 +144,7 @@ export function ActivityScreen({ t, entries, demoDays, lastNote, onRecord, onAdd
           <p className="sn-tl__quote">“{words(e)}”</p>
           {s ? <p className="sn-tl__sub">{s}</p> : null}
           {e.kind === 'needs' && back === 0 ? (
-            <button type="button" className="sn-btn sn-btn--sm" onClick={() => onRecord(e.id)}>{t.btn('record')}</button>
+            <button type="button" className="sn-btn sn-btn--wide" onClick={() => onRecord(e.id)}>{t.btn('record')}</button>
           ) : null}
         </div>
       </li>,
@@ -184,7 +191,7 @@ export function ActivityScreen({ t, entries, demoDays, lastNote, onRecord, onAdd
 
       {lastNote ? (
         <div className="sn-undo">
-          <span>{t.one('actAdded')}: {lastNote.label ? say(lastNote.label) : lastNote.transcript}</span>
+          <span>{lastNote.sentToHub ? t.one('loggedHub') : `${t.one('actAdded')}: ${lastNote.label ? say(lastNote.label) : lastNote.transcript}`}</span>
           <button type="button" className="sn-btn sn-btn--quiet" onClick={onUndoNote}>{t.btn('undo')}</button>
         </div>
       ) : null}

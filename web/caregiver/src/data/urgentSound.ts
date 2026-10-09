@@ -5,11 +5,18 @@
 import { useEffect } from 'react'
 
 let ctx: AudioContext | null = null
-const unlock = () => {
+
+export function unlockAudio() {
   if (!ctx) ctx = new AudioContext()
   void ctx.resume()
+  const buffer = ctx.createBuffer(1, 1, 22050)
+  const source = ctx.createBufferSource()
+  source.buffer = buffer
+  source.connect(ctx.destination)
+  source.start()
 }
-if (typeof window !== 'undefined') window.addEventListener('pointerdown', unlock, { once: true })
+
+if (typeof window !== 'undefined') window.addEventListener('pointerdown', unlockAudio, { once: true })
 
 function ding() {
   if (!ctx || ctx.state !== 'running') return

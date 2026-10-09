@@ -2,10 +2,11 @@ import type { Screen } from '../types'
 import type { T } from '../i18n/i18n'
 import { Chat, Clock, Frames, Home, List } from './Icons'
 
-// Order: Home, Family, Sino AI, Activity log, Sino knows.
+// Home, Family, Sino AI, Activity, Knows. The day receipt opens from Activity; Account from the top bar.
 export const TAB_SCREENS: Screen[] = ['home', 'family', 'ask', 'activity', 'knows']
 
 export function TabBar({ t, screen, go, badge }: { t: T; screen: Screen; go: (s: Screen) => void; badge: number }) {
+  const current = screen === 'receipt' ? 'activity' : screen
   const tabs = [
     { id: 'home' as const, label: t.one('tabHome'), icon: <Home /> },
     { id: 'family' as const, label: t.one('tabFamily'), icon: <Frames /> },
@@ -16,8 +17,8 @@ export function TabBar({ t, screen, go, badge }: { t: T; screen: Screen; go: (s:
   return (
     <nav className="sn-tabs" aria-label="Sino">
       {tabs.map((tab) => (
-        <button key={tab.id} type="button" className={`sn-tab${screen === tab.id ? ' is-on' : ''}`}
-          aria-current={screen === tab.id ? 'page' : undefined} onClick={() => go(tab.id)}>
+        <button key={tab.id} type="button" className={`sn-tab${current === tab.id ? ' is-on' : ''}`}
+          aria-current={current === tab.id ? 'page' : undefined} onClick={() => go(tab.id)}>
           <span className="sn-tab__icon">
             {tab.icon}
             {/* amber marker: cards waiting for you (ink outline, never colour alone: the count is the word) */}

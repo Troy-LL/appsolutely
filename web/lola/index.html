@@ -5,6 +5,8 @@
   <!-- iPad landscape, one wall of the sala. user-scalable=no: Lola never pinches. -->
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sino</title>
+  <link rel="icon" href="favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="stylesheet" href="lola.css" />
 </head>
 <body>
@@ -15,6 +17,8 @@
 
     <!-- Waiting · Naghihintay: wall clock, time, day-part, reassurance. -->
     <section id="waiting" class="state" aria-hidden="true">
+      <!-- Idle only. Listening and Answer stay one object (docs/sino/design-system.md). -->
+      <img class="mark" src="sino-logo.webp" alt="" width="64" height="36" />
       <!-- The clock face is drawn as flat ink SVG by lola.js (hour + minute
            hands only, no second hand, redrawn once a minute). -->
       <svg class="clock" viewBox="0 0 100 100" aria-hidden="true"></svg>
@@ -48,10 +52,20 @@
 
   </main>
 
-  <!-- Start sheet: the family taps once (iOS blocks audio until a tap).
-       It fades away after the tap. The only button on the screen. -->
+  <!-- Start sheet: the family (not Lola) sees this once, before Guided Access.
+       They pick a language, then tap Start. iOS blocks audio until a tap, so
+       Start also unlocks sound. The sheet fades away after Start; after that
+       no language choice is on screen. All labels come from strings.js. -->
   <div id="start-sheet">
-    <button type="button" id="start-btn"></button>
+    <div class="start-box">
+      <!-- Two plain language buttons, each written in its own language. -->
+      <div class="lang-row">
+        <button type="button" class="lang-btn" data-lang="tl"></button>
+        <button type="button" class="lang-btn" data-lang="en"></button>
+      </div>
+      <p id="start-help"></p>
+      <button type="button" id="start-btn"></button>
+    </div>
   </div>
 
   <!-- Small FAKE label (ink on paper) shown only while the practice feed is on. -->

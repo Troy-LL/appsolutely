@@ -4,6 +4,7 @@ import { timeInWords, type T } from '../i18n/i18n'
 import { ASK_QUESTIONS } from '../data/askLocal'
 import { Chat } from '../components/Icons'
 import { Send } from '../components/Icons2'
+import clipDemo from '../assets/clip-demo.svg'
 
 interface Props {
   t: T
@@ -12,6 +13,16 @@ interface Props {
   busy: boolean
   // question: the words to send; intent: known when a quick question was tapped
   onAsk: (question: string, intent?: AskIntent) => void
+}
+
+function Shot({ src, label }: { src: string; label?: string }) {
+  const [shown, setShown] = useState(src)
+  return (
+    <figure className="sn-shot">
+      <img src={shown} alt={label ?? ''} onError={() => { if (shown !== clipDemo) setShown(clipDemo) }} />
+      {label ? <span className="sn-shot__label">{label}</span> : null}
+    </figure>
+  )
 }
 
 // Sino AI = Ask Sino about Lola (T7). Three fixed questions, answers built from the log.
@@ -55,7 +66,10 @@ export function AskScreen({ t, me, messages, busy, onAsk }: Props) {
                 {m.pending ? (
                   <p className="sn-msg__thinking"><span className="sn-dots" aria-hidden="true"><i /><i /><i /></span>{t.one('askThinking')}</p>
                 ) : (
-                  <p className="pl">{m.error ? <><span className="sn-dot" aria-hidden="true" /> </> : null}{m.text}</p>
+                  <>
+                    {m.snapshot ? <Shot src={m.snapshot} label={m.label} /> : null}
+                    <p className="pl">{m.error ? <><span className="sn-dot" aria-hidden="true" /> </> : null}{m.text}</p>
+                  </>
                 )}
               </div>
               {metaFor(m) ? <p className="sn-msg__meta">{metaFor(m)}</p> : null}

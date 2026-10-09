@@ -1,3 +1,5 @@
+.env
+.DS_Store
 .venv/
 __pycache__/
 *.pyc
@@ -11,3 +13,5 @@ brain/clips/media/*
 !brain/clips/media/README.md
 *.jpg
 *.jpeg
+!web/lola/practice.jpg
+web/lola/shots/

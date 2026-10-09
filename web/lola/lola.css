@@ -2,9 +2,10 @@
  *
  * Design system: docs/sino/design-system.md (look) + the task spec (behavior).
  * Only two colours ever appear here: paper #F4EDE0 and ink #2B2420.
- * The one exception is the Start sheet's button, which may be green.
- * No green/amber/red, gradients, shadows, blur, glow, icons or buttons
- * anywhere else. One object on the wall at a time, 48px margins.
+ * The Start sheet's button may be green. Waiting also carries a small
+ * official mark (green and amber); Listening and Answer do not.
+ * No gradients, shadows, blur, glow, or buttons anywhere else.
+ * One object on the wall at a time, 48px margins.
  */
 
 /* ---- Local fonts (offline). Files live in fonts/. If a file is missing,
@@ -107,6 +108,13 @@ html, body {
 }
 
 /* ---- Waiting: wall clock, time, day-part, reassurance ---- */
+#waiting .mark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 36px;
+  width: auto;
+}
 #waiting .clock {
   width: min(34vh, 300px);
   height: min(34vh, 300px);
@@ -244,7 +252,47 @@ html, body {
   opacity: 0;
   pointer-events: none;
 }
-#start-sheet button {
+/* The family's choice column: language buttons, help line, Start. */
+#start-sheet .start-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+#start-sheet .lang-row {
+  display: flex;
+  gap: 16px;
+}
+/* Language buttons: chunky like Start, but ink-on-paper (no green here).
+   The chosen one is pressed flat and filled ink with paper text. */
+#start-sheet .lang-btn {
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 28px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 14px;         /* r-button */
+  padding: 16px 40px;
+  min-height: 48px;            /* tap-min */
+  cursor: pointer;
+}
+#start-sheet .lang-btn[aria-pressed='true'] {
+  color: var(--paper);
+  background: var(--ink);
+}
+/* The help line under the language choice. */
+#start-sheet #start-help {
+  font-family: var(--text);
+  font-weight: 400;
+  font-size: 22px;             /* text-m */
+  color: var(--ink);
+  margin: 0;
+  text-align: center;
+  max-width: 32ch;
+}
+/* Start: the chunky green button, same as before. */
+#start-sheet #start-btn {
   font-family: var(--heading);
   font-weight: 600;
   font-size: 28px;

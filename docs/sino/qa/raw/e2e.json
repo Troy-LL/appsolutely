@@ -1,0 +1,742 @@
+[
+ {
+  "name": "E1 known question -> family reply on iPad",
+  "lines": [
+   "Nasaan si Nanay?"
+  ],
+  "events": {
+   "lola": [
+    [
+     3,
+     "decided",
+     "comfort"
+    ],
+    [
+     3,
+     "play_reply",
+     ""
+    ]
+   ],
+   "caregiver": [
+    [
+     3,
+     "decided",
+     "comfort"
+    ]
+   ],
+   "backstage": [
+    [
+     3,
+     "heard",
+     "Nasaan si Nanay?"
+    ],
+    [
+     3,
+     "decided",
+     "comfort"
+    ]
+   ]
+  },
+  "raw": {
+   "lola": [
+    {
+     "event": "decided",
+     "action": "comfort",
+     "reply_id": "nasaan-si-nanay",
+     "reason": "known question",
+     "trigger_words": [],
+     "confidence": 1.0,
+     "latency_ms": 0,
+     "source": "rule",
+     "ignored": "",
+     "transcript": "Nasaan si Nanay?"
+    },
+    {
+     "event": "play_reply",
+     "reply_id": "nasaan-si-nanay",
+     "reply_audio": "",
+     "photo": ""
+    }
+   ],
+   "caregiver": [
+    {
+     "event": "decided",
+     "action": "comfort",
+     "reply_id": "nasaan-si-nanay",
+     "reason": "known question",
+     "trigger_words": [],
+     "confidence": 1.0,
+     "latency_ms": 0,
+     "source": "rule",
+     "ignored": "",
+     "transcript": "Nasaan si Nanay?"
+    }
+   ],
+   "backstage": [
+    {
+     "event": "heard",
+     "transcript": "Nasaan si Nanay?",
+     "dropped": false,
+     "drop_reason": ""
+    },
+    {
+     "event": "decided",
+     "action": "comfort",
+     "reply_id": "nasaan-si-nanay",
+     "reason": "known question",
+     "trigger_words": [],
+     "confidence": 1.0,
+     "latency_ms": 0,
+     "source": "rule",
+     "ignored": "",
+     "transcript": "Nasaan si Nanay?"
+    }
+   ]
+  }
+ },
+ {
+  "name": "E2 urgent -> red card on caregiver phone",
+  "lines": [
+   "Hindi ako makahinga"
+  ],
+  "events": {
+   "lola": [
+    [
+     6,
+     "decided",
+     "urgent"
+    ]
+   ],
+   "caregiver": [
+    [
+     6,
+     "decided",
+     "urgent"
+    ],
+    [
+     6,
+     "alert",
+     "Hindi ako makahinga"
+    ]
+   ],
+   "backstage": [
+    [
+     6,
+     "heard",
+     "Hindi ako makahinga"
+    ],
+    [
+     6,
+     "decided",
+     "urgent"
+    ]
+   ]
+  },
+  "raw": {
+   "lola": [
+    {
+     "event": "decided",
+     "action": "urgent",
+     "reply_id": "",
+     "reason": "urgent word",
+     "trigger_words": [
+      "hindi makahinga"
+     ],
+     "confidence": 1.0,
+     "latency_ms": 0,
+     "source": "rule",
+     "ignored": "",
+     "transcript": "Hindi ako makahinga"
+    }
+   ],
+   "caregiver": [
+    {
+     "event": "decided",
+     "action": "urgent",
+     "reply_id": "",
+     "reason": "urgent word",
+     "trigger_words": [
+      "hindi makahinga"
+     ],
+     "confidence": 1.0,
+     "latency_ms": 0,
+     "source": "rule",
+     "ignored": "",
+     "transcript": "Hindi ako makahinga"
+    },
+    {
+     "event": "alert",
+     "transcript": "Hindi ako makahinga"
+    }
+   ],
+   "backstage": [
+    {
+     "event": "heard",
+     "transcript": "Hindi ako makahinga",
+     "dropped": false,
+     "drop_reason": ""
+    },
+    {
+     "event": "decided",
+     "action": "urgent",
+     "reply_id": "",
+     "reason": "urgent word",
+     "trigger_words": [
+      "hindi makahinga"
+     ],
+     "confidence": 1.0,
+     "latency_ms": 0,
+     "source": "rule",
+     "ignored": "",
+     "transcript": "Hindi ako makahinga"
+    }
+   ]
+  }
+ },
+ {
+  "name": "E3 new question (Qwen) -> quiet card, repeats grouped",
+  "lines": [
+   "Nasaan yung aso?",
+   "Nasaan yung aso?"
+  ],
+  "events": {
+   "lola": [
+    [
+     1443,
+     "decided",
+     "caregiver"
+    ],
+    [
+     6034,
+     "decided",
+     "caregiver"
+    ]
+   ],
+   "caregiver": [
+    [
+     1444,
+     "decided",
+     "caregiver"
+    ],
+    [
+     1444,
+     "ask_caregiver",
+     "Nasaan yung aso?"
+    ],
+    [
+     6034,
+     "decided",
+     "caregiver"
+    ],
+    [
+     6034,
+     "ask_caregiver",
+     "Nasaan yung aso?"
+    ]
+   ],
+   "backstage": [
+    [
+     1443,
+     "heard",
+     "Nasaan yung aso?"
+    ],
+    [
+     1444,
+     "decided",
+     "caregiver"
+    ],
+    [
+     6034,
+     "heard",
+     "Nasaan yung aso?"
+    ],
+    [
+     6034,
+     "decided",
+     "caregiver"
+    ]
+   ]
+  },
+  "raw": {
+   "lola": [
+    {
+     "event": "decided",
+     "action": "caregiver",
+     "reply_id": "",
+     "reason": "Query about pet location is unclear and new",
+     "trigger_words": [],
+     "confidence": 0.9,
+     "latency_ms": 1439,
+     "source": "model",
+     "ignored": "",
+     "transcript": "Nasaan yung aso?"
+    },
+    {
+     "event": "decided",
+     "action": "caregiver",
+     "reply_id": "",
+     "reason": "The person is asking where the pet is, which is new and unclear.",
+     "trigger_words": [],
+     "confidence": 0.95,
+     "latency_ms": 1524,
+     "source": "model",
+     "ignored": "",
+     "transcript": "Nasaan yung aso?"
+    }
+   ],
+   "caregiver": [
+    {
+     "event": "decided",
+     "action": "caregiver",
+     "reply_id": "",
+     "reason": "Query about pet location is unclear and new",
+     "trigger_words": [],
+     "confidence": 0.9,
+     "latency_ms": 1439,
+     "source": "model",
+     "ignored": "",
+     "transcript": "Nasaan yung aso?"
+    },
+    {
+     "event": "ask_caregiver",
+     "transcript": "Nasaan yung aso?",
+     "count": 1
+    },
+    {
+     "event": "decided",
+     "action": "caregiver",
+     "reply_id": "",
+     "reason": "The person is asking where the pet is, which is new and unclear.",
+     "trigger_words": [],
+     "confidence": 0.95,
+     "latency_ms": 1524,
+     "source": "model",
+     "ignored": "",
+     "transcript": "Nasaan yung aso?"
+    },
+    {
+     "event": "ask_caregiver",
+     "transcript": "Nasaan yung aso?",
+     "count": 2
+    }
+   ],
+   "backstage": [
+    {
+     "event": "heard",
+     "transcript": "Nasaan yung aso?",
+     "dropped": false,
+     "drop_reason": ""
+    },
+    {
+     "event": "decided",
+     "action": "caregiver",
+     "reply_id": "",
+     "reason": "Query about pet location is unclear and new",
+     "trigger_words": [],
+     "confidence": 0.9,
+     "latency_ms": 1439,
+     "source": "model",
+     "ignored": "",
+     "transcript": "Nasaan yung aso?"
+    },
+    {
+     "event": "heard",
+     "transcript": "Nasaan yung aso?",
+     "dropped": false,
+     "drop_reason": ""
+    },
+    {
+     "event": "decided",
+     "action": "caregiver",
+     "reply_id": "",
+     "reason": "The person is asking where the pet is, which is new and unclear.",
+     "trigger_words": [],
+     "confidence": 0.95,
+     "latency_ms": 1524,
+     "source": "model",
+     "ignored": "",
+     "transcript": "Nasaan yung aso?"
+    }
+   ]
+  }
+ },
+ {
+  "name": "E4 TV line -> silent, backstage only",
+  "lines": [
+   "Abangan ang susunod na kabanata"
+  ],
+  "events": {
+   "lola": [],
+   "caregiver": [],
+   "backstage": [
+    [
+     2,
+     "heard",
+     "Abangan ang susunod na kabanata"
+    ],
+    [
+     2,
+     "decided",
+     "silent"
+    ]
+   ]
+  },
+  "raw": {
+   "lola": [],
+   "caregiver": [],
+   "backstage": [
+    {
+     "event": "heard",
+     "transcript": "Abangan ang susunod na kabanata",
+     "dropped": false,
+     "drop_reason": ""
+    },
+    {
+     "event": "decided",
+     "action": "silent",
+     "reply_id": "",
+     "reason": "television line",
+     "trigger_words": [
+      "abangan",
+      "kabanata"
+     ],
+     "confidence": 1.0,
+     "latency_ms": 0,
+     "source": "rule",
+     "ignored": "tv",
+     "transcript": "Abangan ang susunod na kabanata"
+    }
+   ]
+  }
+ },
+ {
+  "name": "E5 urgent said while Qwen is busy, then another line",
+  "lines": [
+   "Nasaan yung susi?",
+   "Saklolo",
+   "Nasaan si Joy?"
+  ],
+  "events": {
+   "lola": [
+    [
+     1267,
+     "decided",
+     "comfort"
+    ],
+    [
+     1267,
+     "play_reply",
+     ""
+    ]
+   ],
+   "caregiver": [
+    [
+     1267,
+     "decided",
+     "comfort"
+    ]
+   ],
+   "backstage": [
+    [
+     1266,
+     "heard",
+     "Nasaan si Joy?"
+    ],
+    [
+     1267,
+     "decided",
+     "comfort"
+    ]
+   ]
+  },
+  "raw": {
+   "lola": [
+    {
+     "event": "decided",
+     "action": "comfort",
+     "reply_id": "nasaan-si-joy",
+     "reason": "known question",
+     "trigger_words": [],
+     "confidence": 1.0,
+     "latency_ms": 1,
+     "source": "rule",
+     "ignored": "",
+     "transcript": "Nasaan si Joy?"
+    },
+    {
+     "event": "play_reply",
+     "reply_id": "nasaan-si-joy",
+     "reply_audio": "",
+     "photo": ""
+    }
+   ],
+   "caregiver": [
+    {
+     "event": "decided",
+     "action": "comfort",
+     "reply_id": "nasaan-si-joy",
+     "reason": "known question",
+     "trigger_words": [],
+     "confidence": 1.0,
+     "latency_ms": 1,
+     "source": "rule",
+     "ignored": "",
+     "transcript": "Nasaan si Joy?"
+    }
+   ],
+   "backstage": [
+    {
+     "event": "heard",
+     "transcript": "Nasaan si Joy?",
+     "dropped": false,
+     "drop_reason": ""
+    },
+    {
+     "event": "decided",
+     "action": "comfort",
+     "reply_id": "nasaan-si-joy",
+     "reason": "known question",
+     "trigger_words": [],
+     "confidence": 1.0,
+     "latency_ms": 1,
+     "source": "rule",
+     "ignored": "",
+     "transcript": "Nasaan si Joy?"
+    }
+   ]
+  }
+ },
+ {
+  "name": "E6 Qwen down -> caregiver, not silent",
+  "lines": [
+   "Nasaan yung susi?"
+  ],
+  "events": {
+   "lola": [
+    [
+     8,
+     "decided",
+     "caregiver"
+    ]
+   ],
+   "caregiver": [
+    [
+     8,
+     "decided",
+     "caregiver"
+    ],
+    [
+     9,
+     "ask_caregiver",
+     "Nasaan yung susi?"
+    ]
+   ],
+   "backstage": [
+    [
+     8,
+     "heard",
+     "Nasaan yung susi?"
+    ],
+    [
+     9,
+     "decided",
+     "caregiver"
+    ]
+   ]
+  },
+  "raw": {
+   "lola": [
+    {
+     "event": "decided",
+     "action": "caregiver",
+     "reply_id": "",
+     "reason": "model unavailable",
+     "trigger_words": [],
+     "confidence": 0.0,
+     "latency_ms": 4,
+     "source": "model",
+     "ignored": "",
+     "transcript": "Nasaan yung susi?"
+    }
+   ],
+   "caregiver": [
+    {
+     "event": "decided",
+     "action": "caregiver",
+     "reply_id": "",
+     "reason": "model unavailable",
+     "trigger_words": [],
+     "confidence": 0.0,
+     "latency_ms": 4,
+     "source": "model",
+     "ignored": "",
+     "transcript": "Nasaan yung susi?"
+    },
+    {
+     "event": "ask_caregiver",
+     "transcript": "Nasaan yung susi?",
+     "count": 1
+    }
+   ],
+   "backstage": [
+    {
+     "event": "heard",
+     "transcript": "Nasaan yung susi?",
+     "dropped": false,
+     "drop_reason": ""
+    },
+    {
+     "event": "decided",
+     "action": "caregiver",
+     "reply_id": "",
+     "reason": "model unavailable",
+     "trigger_words": [],
+     "confidence": 0.0,
+     "latency_ms": 4,
+     "source": "model",
+     "ignored": "",
+     "transcript": "Nasaan yung susi?"
+    }
+   ]
+  }
+ },
+ {
+  "name": "E7 Qwen hangs -> 4 s timeout -> caregiver",
+  "lines": [
+   "Nasaan yung susi?"
+  ],
+  "events": {
+   "lola": [
+    [
+     81,
+     "health",
+     ""
+    ],
+    [
+     4010,
+     "decided",
+     "caregiver"
+    ]
+   ],
+   "caregiver": [
+    [
+     81,
+     "health",
+     ""
+    ],
+    [
+     4010,
+     "decided",
+     "caregiver"
+    ],
+    [
+     4011,
+     "ask_caregiver",
+     "Nasaan yung susi?"
+    ]
+   ],
+   "backstage": [
+    [
+     81,
+     "health",
+     ""
+    ],
+    [
+     4010,
+     "heard",
+     "Nasaan yung susi?"
+    ],
+    [
+     4011,
+     "decided",
+     "caregiver"
+    ]
+   ]
+  },
+  "raw": {
+   "lola": [
+    {
+     "event": "health",
+     "whisper": true,
+     "ollama": false,
+     "server": true,
+     "mic": false,
+     "offline": true,
+     "model": "ollama",
+     "last_event_at": "2026-10-10T04:57:56+08:00"
+    },
+    {
+     "event": "decided",
+     "action": "caregiver",
+     "reply_id": "",
+     "reason": "model unavailable",
+     "trigger_words": [],
+     "confidence": 0.0,
+     "latency_ms": 4003,
+     "source": "model",
+     "ignored": "",
+     "transcript": "Nasaan yung susi?"
+    }
+   ],
+   "caregiver": [
+    {
+     "event": "health",
+     "whisper": true,
+     "ollama": false,
+     "server": true,
+     "mic": false,
+     "offline": true,
+     "model": "ollama",
+     "last_event_at": "2026-10-10T04:57:56+08:00"
+    },
+    {
+     "event": "decided",
+     "action": "caregiver",
+     "reply_id": "",
+     "reason": "model unavailable",
+     "trigger_words": [],
+     "confidence": 0.0,
+     "latency_ms": 4003,
+     "source": "model",
+     "ignored": "",
+     "transcript": "Nasaan yung susi?"
+    },
+    {
+     "event": "ask_caregiver",
+     "transcript": "Nasaan yung susi?",
+     "count": 2
+    }
+   ],
+   "backstage": [
+    {
+     "event": "health",
+     "whisper": true,
+     "ollama": false,
+     "server": true,
+     "mic": false,
+     "offline": true,
+     "model": "ollama",
+     "last_event_at": "2026-10-10T04:57:56+08:00"
+    },
+    {
+     "event": "heard",
+     "transcript": "Nasaan yung susi?",
+     "dropped": false,
+     "drop_reason": ""
+    },
+    {
+     "event": "decided",
+     "action": "caregiver",
+     "reply_id": "",
+     "reason": "model unavailable",
+     "trigger_words": [],
+     "confidence": 0.0,
+     "latency_ms": 4003,
+     "source": "model",
+     "ignored": "",
+     "transcript": "Nasaan yung susi?"
+    }
+   ]
+  }
+ }
+]
