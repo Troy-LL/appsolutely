@@ -40,11 +40,22 @@ TBD.
 - Demo Day: 5-min pitch + live demo, 3-min judge Q&A (8 min per team). Finalists announced Sat Oct 10, 1:00 PM. Working product over many slides.
 - Example tools (none required): Ollama, LM Studio, llama.cpp, MLX, ONNX, PyTorch, TensorFlow, WebGPU, Core ML, AMD ROCm, DirectML, Hugging Face.
 
-### Model smoke test (fill after idea lock)
+### Model smoke test (hub: M1 8 GB)
+
+Hub: M1 MacBook Air, 8 GB (MacBookAir10,1), macOS 26.5.1. whisper.cpp built with Metal, `-l tl`. Ollama 0.40.2 (Homebrew formula). Only the Fri offline row ran with Wi-Fi off; the Device column says what was on.
 
 | Model + runtime | Device (airplane mode) | Inputs | Correct | Speed | Pass? |
 |---|---|---|---|---|---|
-| | | /5 | | | |
+| Whisper small, whisper.cpp | Hub, Wi-Fi on (Sat ~1:35 AM) | `test.wav`: Donita saying "Nasaan si Nanay?", 3.55 s (1 clip, 1 voice) | No: "nasaanzi na nai." (both runs) | run 1: 0.98 s (wall 1.25 s); run 2: 0.76 s (wall 0.87 s) | Speed yes, transcript no. More clips needed |
+| Whisper medium, whisper.cpp (fallback only) | Hub, Wi-Fi on (Fri Oct 9 evening) | same `test.wav` | Yes: "Nasaan si nanay." | 2.27 s, including 0.72 s model load | Correct on 1 clip. Fallback only (pairs with `qwen2.5:1.5b`) |
+| `qwen2.5:3b`, Ollama, Troy's `build_prompt` (`brain/model.py`), plain | Hub, Wi-Fi on (Sat ~1:30 AM) | 62 lines of `brain/tests/cases.json` (as of PR #6) | 60/62 valid JSON by `parse_model_json`. 2 malformed (`confidence` outside the object) | median 1.51 s, p90 1.79 s, max 2.68 s | No |
+| `qwen2.5:3b`, Ollama, same prompt + `format: "json"` | Hub, Wi-Fi on (Sat ~1:30 AM) | same 62 lines | 62/62 valid JSON | median 1.68 s, p90 2.12 s, max 2.88 s | Yes for JSON. Accuracy is T5, not this check |
+| `qwen2.5:3b` cold / warm / after idle | Hub, Wi-Fi state not logged (Sat, from 12:43 AM) | single requests | n/a | First after start: 5.56 s (3.89 s of it model load). Second: 1.17 s. After ~35 min idle: 9.00 s (Mac swapping: 8.3 GB swap used, 41% memory free), then 0.24–0.27 s on a tiny prompt | Close other heavy apps. A keep-warm ping may be needed |
+| `qwen2.5:3b` on "Masakit ang dibdib ko" | Hub, Wi-Fi state not logged | 5 runs (3 Fri evening, 2 Sat 12:43 AM) | 0/5: `caregiver`, not `urgent` | not logged | No. Urgent words stay hard-coded before the model (`brain/decide.py`) |
+| Whisper small + `qwen2.5:3b` offline | Hub, **Wi-Fi off** (Fri Oct 9 evening) | not logged | both ran | not logged | Yes (ran offline) |
+| Ollama under the LAN-only firewall | Hub, firewall on, internet blocked (Sat 2:00 AM) | `curl http://127.0.0.1:11434/api/version` | `{"version":"0.40.2"}` | n/a | Yes. Whisper not run under the firewall yet |
+
+Raw outputs of the JSON check are on the hub at `~/sino/d3-json-check.txt` (not in the repo). Troy's `brain/model.py` on main already sends `format: "json"`.
 
 ## Decision log
 
@@ -64,12 +75,15 @@ TBD.
 | Fri Oct 9 10:40 PM | Spec hardened: quick setup is the MVP onboarding (9-step wizard dropped); junk-line filter + throttle + hidden "listen now"; speech model picked by timing at 11:30 PM with a RAM rule; urgent = hub chime + red card (no push offline); quiet grouped yellow cards; recap is counts only; "Nasaan si Nanay?" gets a validation reply; Internet Sharing no-upstream test at 11:15 PM; add-ons a → b → c behind a cut line; why-local leads with the always-on mic | Troy |
 | Fri Oct 9 11:20 PM | Interfaces locked for the build: WebSocket payloads, `POST /listen`, `GET`/`POST /questions`, and junk lines riding on `heard`. Shapes are in `docs/sino/architecture.md`. M2 RAM and measured latencies stay to verify | Troy |
 | Sat Oct 10 1:20 AM | Hub is an M1 (8 GB), macOS 26.5.1, not an M2. Models: Whisper small + qwen2.5:3b (medium + qwen2.5:1.5b only if small's Tagalog is unusable; medium + 3B and large-v3-turbo out). Internet Sharing failed (needs an active upstream; `bridge100` never appeared); no Android on the team. Network ladder changed (Troy, 1:23 AM): primary iPhone 15 hotspot + hub LAN-only `pf` firewall → spare router/pocket Wi-Fi with no WAN → iPhone USB + Internet Sharing + firewall → venue Wi-Fi + firewall. See `docs/sino/architecture.md#network` | Donita, Troy |
+| Sat Oct 10 12:43 AM | D3 done: Ollama 0.40.2 (Homebrew formula, not the app) running on the hub. `qwen2.5:3b` kept loaded (`OLLAMA_KEEP_ALIVE=-1`; `ollama ps`: 2.2 GB, 100% GPU, until Forever), local-only on `127.0.0.1:11434`. Timings in Model smoke test above | Donita |
+| Sat Oct 10 | Viviene's hotspot tried first for D1: the Mac got no IPv4 address by DHCP, only `192.0.0.2` (IPv6-only network with 464XLAT). Not usable with the IPv4 firewall | Donita |
 | Sat Oct 10 2:00 AM | **Hub and models (locked).** Hub = Donita's MacBook Air M1 (8 GB). Whisper small + qwen2.5:3b; Whisper medium + qwen2.5:1.5b only if small's Tagalog is unusable. Network: Troy's iPhone 15 hotspot + LAN-only `pf` firewall on the hub. Internet Sharing failed; no Android. Hub not up yet; firewall untested | Troy |
 | Sat Oct 10 2:00 AM | **Pairs changed (at 1:51 AM).** Troy + Donita on the backend (hub + brain), Ayen + Viviene on the frontend (`/lola`, `/setup`, `/caregiver`, `/backstage`). The cross-pair sleep shifts in `docs/01-team.md` are TODO: re-decide | Troy |
 | Sat Oct 10 2:00 AM | **Recorded family voices are the core reply** for every known question. No text-to-speech, no cloning. Still to record (TODO): Joy's four replies and Troy's "Sino ka?" line | Troy |
 | Sat Oct 10 2:00 AM | **Live call cut** from tonight's build. Next step: calling a registered person on the house Wi-Fi (WebRTC). "Sino ka?" = the iPad shows the registered person's photo and plays their recorded line; on stage Troy then talks to "Lola" in person. Replaces the 12:57 AM "live call instead of the recording" change | Troy |
 | Sat Oct 10 2:00 AM | **MVP freeze moved from 2:00 AM to 3:30 AM.** Core to protect: hub hears, transcribes, `decide()`; known question gets the recorded voice + photo on the iPad; urgent gets the hub chime + red card; TV silent and `/backstage` shows decisions; quick setup with "Nasaan yung aso?" live. After the freeze: T7 Ask Sino about Lola (code already in `brain/ask.py`), meals, recap counts. Cut now: T6 face match and add-on (b) CCTV (next steps; "Nasaan si Lola?" answers "no camera answer"). Voice ID already cut. 5 AM add-ons cut-off: n/a. 7 AM rehearse and 8:30 AM submit unchanged. See `docs/sino/mvp-plan.md` | Troy |
 | Sat Oct 10 2:00 AM | **Status.** PRs #10 (triage hardening), #11 (T7 `ask.py`), #12 (T5 runner) merged. Stub-mode text run on Troy's Mac: urgent 34/34, comfort 37/37, TV false triggers 0, new 11/11, ask 9/9. Latency TODO (hub). Hub not up yet; firewall untested. Details under Pass/fail gate (T5) | Troy |
+| Sat Oct 10 2:00 AM | D1 passed on Donita's iPhone hotspot (hub `172.20.10.2`, iPad `172.20.10.3`): firewall on → internet blocked (`curl` timed out), Ollama on the hub works, iPad pings, iPad loads `https://172.20.10.2:8443` (a throwaway test page) with no certificate warning. The firewall rules in `docs/sino/DONITA-SETUP.md` were fixed: the original rules (tested 1:55 AM) dropped the hub's replies to the iPad, so its page reload never reached the hub's server. iPhone (caregiver phone) not tested yet | Donita |
 
 ## Pass/fail gate (T5)
 
