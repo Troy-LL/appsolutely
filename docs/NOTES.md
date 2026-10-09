@@ -64,6 +64,17 @@ TBD.
 | Fri Oct 9 10:40 PM | Spec hardened: quick setup is the MVP onboarding (9-step wizard dropped); junk-line filter + throttle + hidden "listen now"; speech model picked by timing at 11:30 PM with a RAM rule; urgent = hub chime + red card (no push offline); quiet grouped yellow cards; recap is counts only; "Nasaan si Nanay?" gets a validation reply; Internet Sharing no-upstream test at 11:15 PM; add-ons a → b → c behind a cut line; why-local leads with the always-on mic | Troy |
 | Fri Oct 9 11:20 PM | Interfaces locked for the build: WebSocket payloads, `POST /listen`, `GET`/`POST /questions`, and junk lines riding on `heard`. Shapes are in `docs/sino/architecture.md`. M2 RAM and measured latencies stay to verify | Troy |
 
+## Pass/fail gate (T5)
+
+Filled from a real 1:45 AM run. Until then every figure is TODO. Do not mark a pass, and do not show `Test: passed 1:45 AM` on `/backstage`, before this table is filled from a run. Spec: [sino/mvp-plan.md](sino/mvp-plan.md).
+
+| Result | Value |
+|---|---|
+| urgent | TODO/10 |
+| comfort | TODO/10 |
+| TV false triggers | TODO |
+| mode | TODO (`ollama` or `stub`) |
+
 ## Handoffs
 
 (Use the template in [01-team.md](01-team.md#handoff-note-write-it-in-docsnotesmd-at-100-am-and-430-am).)

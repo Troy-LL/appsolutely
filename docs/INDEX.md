@@ -27,6 +27,7 @@ Read this first. It tells you which file owns what and when to open it.
 | [docs/sino/demo.md](sino/demo.md) | Pitch run of show, why-local close, "Sino ka?" roleplay, "Nasaan si Lola?", fallbacks, video | Troy (script), Viviene (visuals) | 7:00 AM Sat rehearsals |
 | [docs/sino/judge-qa.md](sino/judge-qa.md) | Judge Q&A answers, risks and mitigations | Troy | Before rehearsals and Demo Day |
 | [docs/sino/DONITA-SETUP.md](sino/DONITA-SETUP.md) | M2 hub installs and offline smoke test | Donita | Before the build; results go to NOTES |
+| [docs/sino/hub-chime.md](sino/hub-chime.md) | Urgent chime via `afplay`, red card second, `/lola` never red, 1:00 AM test | Donita | Before the 1:00 AM handoff |
 | `docs/sino/task-graph.mmd`, `task-graph.png` | Task dependencies (source and image) | Troy | With mvp-plan |
 | [docs/NOTES.md](NOTES.md) | Links, briefing summary, model smoke-test results, decision log, handoffs | Viviene (briefing), anyone (decisions) | 12:45 PM briefing; whenever a decision is made |
 | `CONTRIBUTIONS.md` (created after 1 PM) | Who built what, tools used | Viviene | Sat 7:00 AM |
@@ -87,9 +88,9 @@ Read this first. It tells you which file owns what and when to open it.
 | **Junk-line filter** | Drops quiet clips, likely-no-speech clips, and known Whisper junk lines ("Thank you for watching", "Salamat sa panonood") before `decide()` |
 | **Throttle** | One model call at a time; stale clips are dropped |
 | **Listen now** | Hidden button on `/backstage` that forces a capture; with the typed-question box, the demo safety |
-| **Urgent chime** | Loud sound from the hub speaker on an urgent decision; first alert channel (no push offline) |
+| **Urgent chime** | Loud sound from the hub speaker on an urgent decision, via `afplay` ([sino/hub-chime.md](sino/hub-chime.md)); first alert channel (no push offline). Red card on `/caregiver` is the second. `/lola` never red |
 | **Cut line** | Everything below it in features.md is an add-on, built after the 2:00 AM freeze only |
-| **Add-ons** | Sino's post-freeze extras, in order: (a) face greeting, (b) "Nasaan si Lola?" on a recorded clip, (c) voice ID. Each has an off switch; cut at 5:00 AM |
+| **Add-ons** | Sino's post-freeze extras: (a) face greeting, then (b) "Nasaan si Lola?" on a recorded clip, only if stable by 5:00 AM. (c) voice ID is cut. (a) and (b) each have an off switch; cut at 5:00 AM if not stable |
 | **Health light** | Status of Whisper, Ollama, server, and mic on `/backstage`; tells anyone whether to run `start.sh` |
 | **MVP freeze** | 2:00 AM Sat for Sino's core. Different from the 7:00 AM team feature freeze |
 | **To verify at smoke test** | Label for any number or capability not yet measured on the real devices |
