@@ -8,7 +8,6 @@ from model import classify
 SEED_PATH = Path(__file__).resolve().parent / "seed.json"
 
 URGENT_TOKENS = ("masakit", "nahulog", "tulong")
-BREATHING_TOKEN = "makahinga"
 BREATHING_TRIGGER = "hindi makahinga"
 MEDICATION_TOKENS = ("gamot", "dosis", "reseta", "tableta")
 ACTIONS = ("comfort", "caregiver", "urgent", "silent")
@@ -81,7 +80,7 @@ def decide(text: str) -> dict:
     tokens = normalized.split()
 
     urgent_hits = [token for token in tokens if token in URGENT_TOKENS]
-    if BREATHING_TOKEN in tokens:
+    if BREATHING_TRIGGER in normalized or ("hindi" in tokens and "makahinga" in tokens):
         return _result("urgent", "urgent word", [BREATHING_TRIGGER], 1.0, started)
     if urgent_hits:
         return _result("urgent", "urgent word", urgent_hits, 1.0, started)

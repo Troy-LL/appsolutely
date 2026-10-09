@@ -27,6 +27,7 @@
   {"id": "t05", "bucket": "tv", "text": "Kumusta ka na bes", "expected": "caregiver"},
   {"id": "t06", "bucket": "tv", "text": "Abangan ang susunod na kabanata. Nasaan si Nanay?", "expected": "caregiver"},
   {"id": "t07", "bucket": "tv", "text": "Sa teleserye, sino ka ba talaga?", "expected": "caregiver"},
+  {"id": "t08", "bucket": "tv", "text": "Sa dula, makahinga muna sila", "expected": "caregiver"},
   {"id": "n01", "bucket": "new", "text": "Inumin ko na ba ang gamot?", "expected": "caregiver"},
   {"id": "n02", "bucket": "new", "text": "Ilan ang dosis ng gamot ko?", "expected": "caregiver"},
   {"id": "n03", "bucket": "new", "text": "Nasaan yung aso?", "expected": "caregiver"},
