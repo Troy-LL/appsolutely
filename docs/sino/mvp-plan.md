@@ -22,8 +22,8 @@ Pairs since 1:51 AM Sat: **Troy + Donita on the backend** (hub + brain), **Ayen 
 | By | Done |
 |---|---|
 | 10:45 PM | Interfaces locked (I0). Done |
-| **11:15 PM** | **Network checkpoint: path chosen late, 1:20 AM.** Internet Sharing failed (needs an upstream). Primary: iPhone 15 hotspot + LAN-only `pf` firewall on the hub; backups: spare router/pocket Wi-Fi with no WAN → iPhone USB + Internet Sharing + firewall → venue Wi-Fi + firewall ([architecture.md](architecture.md#network)). mkcert cert for the hub IP. Firewall untested as of 2:00 AM |
-| **11:30 PM** | **Speech model picked:** 8 GB hub → Whisper small + qwen2.5:3b; medium + qwen2.5:1.5b only if small's Tagalog is unusable (timed on a 4 s clip); RAM rule applied ([architecture.md](architecture.md#speech-model-selection-by-1130-pm)). Timing results: TODO, not in NOTES yet |
+| **11:15 PM** | **Network checkpoint: path chosen late, 1:20 AM.** Internet Sharing failed (needs an upstream). Primary: iPhone 15 hotspot + LAN-only `pf` firewall on the hub; backups: spare router/pocket Wi-Fi with no WAN → iPhone USB + Internet Sharing + firewall → venue Wi-Fi + firewall ([architecture.md](architecture.md#network)). mkcert cert for the hub IP. **Passed Sat 2:00 AM for the iPad** on Donita's iPhone hotspot after a firewall rule fix (PR #14); caregiver iPhone not tested yet |
+| **11:30 PM** | **Speech model picked:** 8 GB hub → Whisper small + qwen2.5:3b; medium + qwen2.5:1.5b only if small's Tagalog is unusable (timed on a 4 s clip); RAM rule applied ([architecture.md](architecture.md#speech-model-selection-by-1130-pm)). Timings logged in NOTES (PR #14): Whisper small 0.76 s warm but misheard 1 clip, medium right on that clip in 2.27 s; `qwen2.5:3b` 62/62 valid JSON with `format: "json"`. Small vs medium not decided yet: the 32 clips (PR #18) are being run on the hub |
 | 12:30 AM | End to end: hub mic → iPad plays a reply. **Missed: the hub is not up yet (2:00 AM).** Now due before the 3:30 AM freeze |
 | **1:00 AM** | `start.sh` + health light work, so anyone can restart the hub. **Missed (hub not up).** The 1:00 AM sleep handoff did not happen: sleep shifts are TODO: re-decide ([../01-team.md](../01-team.md#sleep-shifts-cross-pair)) |
 | 1:15 AM | Decision model wired, caregiver alerts and urgent chime working. Decision code done in stub mode (PRs #10–#12); hub side missed, now due before 3:30 AM |
@@ -63,16 +63,16 @@ Each sprint ends with something demoable. If you finish early, pull the next spr
 
 ### Troy: decision engine
 
-**T7 `answer_about_lola(question, log)`** is Should, after the 3:30 AM freeze. The code is already merged (`brain/ask.py`, PR #11, 9/9 cases in stub mode); what is left is wiring it to `/caregiver` (contract gap in [architecture.md](architecture.md#the-3-interfaces-locked-in-the-first-15-minutes)). The intent is one of `how`, `saying`, or `where`. The rules run first. Qwen only picks the intent, and it returns JSON only. Code builds the answer from the log: counts, her exact words, and the last urgent. `where` returns the no-camera answer, because add-on (b) is cut. Never a diagnosis or a mood.
+**T7 `answer_about_lola(question, log)`** is Should, after the 3:30 AM freeze. The code is already merged (`brain/ask.py`, PR #11, 9/9 cases in stub mode); the hub side is wired too (PR #16 added the `ask_about_lola` / `about_lola` socket events, named as contract gaps in [architecture.md](architecture.md#the-3-interfaces-locked-in-the-first-15-minutes)); what is left is the `/caregiver` UI. The intent is one of `how`, `saying`, or `where`. The rules run first. Qwen only picks the intent, and it returns JSON only. Code builds the answer from the log: counts, her exact words, and the last urgent. `where` returns the no-camera answer, because add-on (b) is cut. Never a diagnosis or a mood.
 
 | Sprint | Time | Deliver | Done when |
 |---|---|---|---|
 | S1 | 10:30–11:15 | I0 interfaces + T1 matcher + urgent rules | `decide("Si Mama asan?")` = comfort, `"masakit dibdib"` = urgent. **Done** (PR #2) |
-| S2 | 11:15–12:15 | T2 seed questions + replies (incl. "Nasaan si Nanay?" and "Nasaan si Joy?") + 30 test clips (with the team) | Text done (PR #6, 5 questions). Recordings TODO: Joy's four replies + Troy's "Sino ka?" line. Audio clips in `brain/tests/clips`: TODO |
+| S2 | 11:15–12:15 | T2 seed questions + replies (incl. "Nasaan si Nanay?" and "Nasaan si Joy?") + 30 test clips (with the team) | Text done (PR #6, 5 questions). **Audio test clips done:** 32 synthetic Lola clips + manifest in `brain/tests/audio/lola/` (PR #18). Recordings TODO: Joy's four replies + Troy's "Sino ka?" line. Real-voice clips: TODO |
 | S3 | 12:15–1:15 | T3 Qwen JSON decision + silent rule, T4 medication | **Done in stub mode** (PR #10): unclear lines go to caregiver; silent only at model confidence ≥ 0.8; medication never answered. `ollama` mode waits on the hub |
-| S4 | 1:15–2:00 | T5 pass/fail test, tune thresholds | **Runner done** (PR #12), stub results in the gate above. Hub `ollama` run waits on the hub, before 3:30 AM |
-| S5 | 2:00–3:30 | With Donita: get the hub up, run T5 on the hub, wire `decide()` to the WebSocket; record "Sino ka?" | Core above works on the hub by the freeze |
-| S6 | after 3:30 | Should: T7 wiring and meals logic (T4m) | `answer_about_lola("Kamusta si Lola?")` returns log counts on `/caregiver`; `answer_about_lola("Nasaan si Lola?")` returns the no-camera answer; "Kumain na ba ako?" answers from the log |
+| S4 | 1:15–2:00 | T5 pass/fail test, tune thresholds | **Runner done** (PR #12), stub results in the gate above. Audio mode for the runner: not on GitHub yet (3:00 AM). Hub `ollama` run with audio not logged yet; due before 3:30 AM |
+| S5 | 2:00–3:30 | With Donita: get the hub up, run T5 on the hub, wire `decide()` to the WebSocket; record "Sino ka?" | `decide()` → WebSocket **done** (PR #16: `POST /listen`, `/ws` per screen (lola, caregiver, backstage), `GET /health`, 13/13 tests in stub). Still to do: T5 on the hub, "Sino ka?" recording. Core above works on the hub by the freeze |
+| S6 | after 3:30 | Should: T7 wiring and meals logic (T4m) | Socket side done in PR #16 (`ask_about_lola` → `about_lola`); the `/caregiver` UI is left. `answer_about_lola("Kamusta si Lola?")` returns log counts on `/caregiver`; `answer_about_lola("Nasaan si Lola?")` returns the no-camera answer; "Kumain na ba ako?" answers from the log |
 | Cut | | T6 face match | Next step |
 | Sleep | TODO: re-decide | | |
 
@@ -80,9 +80,9 @@ Each sprint ends with something demoable. If you finish early, pull the next spr
 
 | Sprint | Time | Deliver | Done when |
 |---|---|---|---|
-| S1 | 10:30–11:15 (D1 path chosen late, 1:20 AM) | D1 iPhone hotspot + LAN-only firewall + mkcert HTTPS ([DONITA-SETUP.md](DONITA-SETUP.md#5-network-d1)), D3 Ollama warm | iPad + iPhone open the https page; `curl -m 3 https://google.com` fails on the hub; ping to the iPad works. **Firewall untested as of 2:00 AM** |
-| S2 | 11:15–12:15 | D2 Whisper + model timing (by 11:30), D4 VAD → junk filter → throttle → /listen → WebSocket, D5 seed loader + storage | Speaking near the hub shows the transcript on backstage; TV sign-off lines are dropped; seed loader done (A3 needs it). In progress, hub not up as of 2:00 AM |
-| S3 | 12:15–1:00 | D6 `start.sh` + health light + urgent chime | Anyone can restart the hub; the chime test in [hub-chime.md](hub-chime.md) passes. In progress |
+| S1 | 10:30–11:15 (D1 path chosen late, 1:20 AM) | D1 iPhone hotspot + LAN-only firewall + mkcert HTTPS ([DONITA-SETUP.md](DONITA-SETUP.md#5-network-d1)), D3 Ollama warm | iPad + iPhone open the https page; `curl -m 3 https://google.com` fails on the hub; ping to the iPad works. **D1 passed Sat 2:00 AM for the iPad** (hub `172.20.10.2`, firewall rule fixed, PR #14); caregiver iPhone not tested yet. **D3 done** 12:43 AM: `qwen2.5:3b` kept loaded, 62/62 valid JSON with `format: "json"` |
+| S2 | 11:15–12:15 | D2 Whisper + model timing (by 11:30), D4 VAD → junk filter → throttle → /listen → WebSocket, D5 seed loader + storage | Speaking near the hub shows the transcript on backstage; TV sign-off lines are dropped; seed loader done (A3 needs it). In progress (3:00 AM): D2 timed (small 0.76 s but misheard 1 clip; medium right on it, 2.27 s), the 32 clips are being run; `/listen` + WebSocket + seed served by `GET /questions` + JSONL log came in PR #16; VAD, junk filter, throttle, and `POST /questions` are not in the repo yet |
+| S3 | 12:15–1:00 | D6 `start.sh` + health light + urgent chime | Anyone can restart the hub; the chime test in [hub-chime.md](hub-chime.md) passes. In progress: the server sends the `alert` event (PR #16); `start.sh`, health light, and chime code are not in the repo yet (3:00 AM) |
 | S4 | 2:00–3:30 | With Troy: finish D1–D6 so the core runs on the hub by the freeze | Core above works on the hub |
 | Cut | | D7 CCTV detector, D8 voice ID | Next steps |
 | Sleep | TODO: re-decide | | Hub left running; handoff note in `docs/NOTES.md` |
@@ -92,9 +92,9 @@ Each sprint ends with something demoable. If you finish early, pull the next spr
 
 | Sprint | Time | Deliver | Done when |
 |---|---|---|---|
-| S1 | 10:30–11:15 | A1 design system (tokens, components) | Shared Tailwind theme pushed. Not in the repo yet (2:00 AM) |
-| S2 | 11:15–12:15 | A2 Lola iPad screen: big clock, idle photo, full-screen reply | Plays a reply from the fake feed. Not in the repo yet |
-| S3 | 12:15–1:45 | A3 quick setup: add question, two phrasings, hold to record, photo, test | A new question added on the iPhone is answered on the iPad. Not in the repo yet |
+| S1 | 10:30–11:15 | A1 design system (tokens, components) | Shared Tailwind theme pushed. In progress: the look spec is merged ([design-system.md](design-system.md), PR #15, owner Viviene); theme code not in the repo yet (3:00 AM) |
+| S2 | 11:15–12:15 | A2 Lola iPad screen: big clock, idle photo, full-screen reply | Plays a reply from the fake feed. Not in the repo yet (3:00 AM) |
+| S3 | 12:15–1:45 | A3 quick setup: add question, two phrasings, hold to record, photo, test | A new question added on the iPhone is answered on the iPad. Not in the repo yet (3:00 AM) |
 | S4 | before 3:30 | With Viviene: check A2 + A3 on the real devices against the hub | Freeze-ready |
 | Cut | | A4 face-match frame | Next step. "Sino ka?" is a normal reply on A2: photo + recorded line |
 | Sleep | TODO: re-decide | | |
@@ -104,9 +104,9 @@ Each sprint ends with something demoable. If you finish early, pull the next spr
 
 | Sprint | Time | Deliver | Done when |
 |---|---|---|---|
-| S1 | 10:30–11:00 | V1 fake event feed | All screens can build against it. Not in the repo yet (2:00 AM) |
-| S2 | 11:00–12:15 | V2 caregiver phone: red card with sound, quiet yellow with grouped repeats + record-a-reply, green log | Works on the iPhone with the fake feed. Not in the repo yet |
-| S3 | 12:15–1:00 | V3 backstage: transcript → rule or model → action, confidence, reason, ms; dropped row; `TV lines ignored: N`; T5 badge; OFFLINE; health light; "listen now"; typed question | Updates live from the real hub ([architecture.md](architecture.md#backstage-proof)). Not in the repo yet |
+| S1 | 10:30–11:00 | V1 fake event feed | All screens can build against it. Not in the repo yet (3:00 AM; PR #4 added only an empty `packages/ui`). Stand-in: `brain/server.py` in stub mode + `brain/tests/fake_hub.py` (PR #16) |
+| S2 | 11:00–12:15 | V2 caregiver phone: red card with sound, quiet yellow with grouped repeats + record-a-reply, green log | Works on the iPhone with the fake feed. Not in the repo yet (3:00 AM) |
+| S3 | 12:15–1:00 | V3 backstage: transcript → rule or model → action, confidence, reason, ms; dropped row; `TV lines ignored: N`; T5 badge; OFFLINE; health light; "listen now"; typed question | Updates live from the real hub ([architecture.md](architecture.md#backstage-proof)). Not in the repo yet (3:00 AM) |
 | S4 | after 3:30 | V4 Should: Kumain na + recap counts; Ask Sino about Lola on `/caregiver` (with Troy's T7 wiring) | Recap shows real counts |
 | Cut | | V5 "Nasaan si Lola?" CCTV view | Next step |
 | Sleep | TODO: re-decide | | Handoff note in `docs/NOTES.md` |
@@ -122,7 +122,7 @@ Arrows show what needs what. Cut tasks (T6, A4, D7, V5, D8) are drawn, marked cu
 
 **Start immediately (no prerequisites):** T1, T2, D1, D3, A1, V1.
 
-**Status as of 2:00 AM Sat. Hub: MacBook Air M1 8 GB.** Colours: Done / In progress / Waiting on hub / Not started / Cut (legend in the image). Done: I0, T1, T2 (text; recordings TODO), T4, T3 and T5 in stub mode (PRs #10 and #12; `ollama` mode waits on the hub), T7's `brain/ask.py` (PR #11; wiring after the freeze), the spec docs. In progress: Donita's D1 (path chosen, firewall untested) to D6, with Troy, while the M1 hub is set up. Waiting on hub: W1, T5 in `ollama` mode. Not started in the repo: Ayen's and Viviene's tasks (nothing of theirs is on `main` yet). Cut: T6, A4, D7, V5, D8.
+**Status as of ~3:00 AM Sat. Hub: MacBook Air M1 8 GB.** Colours: Done / In progress / Waiting on hub / Not started / Cut (legend in the image). Done: I0, T1, T2 (text + 32 synthetic Lola audio clips, PR #18; recordings TODO), T4, T3 and T5 in stub mode (PRs #10 and #12; `ollama` mode not run on the hub yet), T7 (`brain/ask.py`, PR #11, and its socket events, PR #16; `/caregiver` UI after the freeze), D1 (passed for the iPad at 2:00 AM after the firewall fix, PR #14; caregiver iPhone untested), D3 (Ollama `qwen2.5:3b` kept loaded, 62/62 valid JSON), the `decide()` → WebSocket wiring (PR #16), the spec docs. In progress: D2 (Whisper small timed but misheard 1 clip; medium right on it; 32 clips being run), D4 and D5 (`/listen`, `/ws`, `GET /questions`, and the JSONL log are in PR #16; VAD, junk filter, throttle, and `POST /questions` are not), D6 (`alert` event exists; no `start.sh`, health light, or chime code in the repo yet), A1 (design-system.md merged, PR #15; no theme code). Waiting on hub: W1 (needs the mic path and the screens), T5 in `ollama` mode with audio. Not started in the repo: A2, A3, V1 to V4 (PR #4 added only an empty `packages/ui`). Cut: T6, A4, D7, V5, D8.
 
 ![Sino task graph](task-graph.png)
 
@@ -135,41 +135,41 @@ flowchart TD
   subgraph Backend["Backend pair · Troy + Donita"]
     subgraph Troy["Troy · decision engine"]
       T1[T1 Matcher + urgent rules<br/>✓ decide.py · PR #2, hardened PR #10]
-      T2[T2 Seed replies + 30 test clips<br/>✓ text done · PR #6 · recordings TODO]
-      T3[T3 Qwen JSON decision + silent rule<br/>✓ done in stub · PR #10 · ollama waits on hub]
+      T2[T2 Seed replies + 30 test clips<br/>✓ text PR #6 · 32 synthetic Lola clips PR #18<br/>recordings TODO: Joy ×4 + Sino ka?]
+      T3[T3 Qwen JSON decision + silent rule<br/>✓ done in stub · PR #10 · ollama run on hub not logged]
       T4[T4 Medication<br/>✓ routes to caregiver, tests in cases.json]
-      T5[T5 30-clip pass/fail test<br/>✓ stub runner · PR #12 · ollama run waits on hub]
-      T7[T7 Ask Sino about Lola · after 3:30 AM<br/>✓ brain/ask.py · PR #11 · wiring after freeze]
+      T5[T5 30-clip pass/fail test<br/>✓ stub runner · PR #12 · hub audio run not logged]
+      T7[T7 Ask Sino about Lola · after 3:30 AM<br/>✓ ask.py PR #11 · socket events PR #16 · /caregiver UI left]
       T4m[Meals logic · after 3:30 AM]
       T6[T6 a: Face match<br/>cut · next step]
     end
     subgraph Donita["Donita · M1 (8 GB) hub"]
-      D1[D1 iPhone hotspot + LAN firewall + HTTPS<br/>path chosen 1:20 AM · firewall untested]
-      D2[D2 Whisper small server + timing<br/>in progress · waiting on hub]
-      D3[D3 Ollama qwen2.5:3b loaded + warm<br/>in progress · waiting on hub]
-      D4[D4 VAD → junk filter → throttle → WebSocket<br/>in progress · waiting on hub]
-      D5[D5 Seed loader + storage<br/>in progress · waiting on hub]
-      D6[D6 start.sh + health light + urgent chime<br/>in progress · waiting on hub]
+      D1[D1 iPhone hotspot + LAN firewall + HTTPS<br/>✓ passed for iPad 2:00 AM · PR #14 · caregiver iPhone untested]
+      D2[D2 Whisper small server + timing<br/>small 0.76 s but misheard 1 clip · medium right · 32 clips running]
+      D3[D3 Ollama qwen2.5:3b loaded + warm<br/>✓ kept loaded · 62/62 valid JSON · PR #14]
+      D4[D4 VAD → junk filter → throttle → WebSocket<br/>/listen + /ws in PR #16 · VAD, filter, throttle not in repo]
+      D5[D5 Seed loader + storage<br/>GET /questions + JSONL log in PR #16 · POST /questions not in repo]
+      D6[D6 start.sh + health light + urgent chime<br/>alert event in PR #16 · start.sh + chime not in repo]
       D7[D7 b: CCTV detector<br/>cut · next step]
       D8[D8 c: Voice ID<br/>cut]
     end
   end
   subgraph Frontend["Frontend pair · Ayen + Viviene"]
     subgraph Ayen["Ayen · setup + Lola screen"]
-      A1[A1 Design system<br/>not started in repo]
+      A1[A1 Design system<br/>spec merged PR #15 · theme code not in repo]
       A2[A2 Lola iPad: clock, photo, recorded reply<br/>not started in repo]
       A3[A3 Quick setup: question, phrasings, record, photo, test<br/>not started in repo]
       A4[A4 a: Face-match frame<br/>cut · next step]
     end
     subgraph Viv["Viviene · caregiver + backstage"]
-      V1[V1 Fake event feed<br/>not started in repo]
+      V1[V1 Fake event feed<br/>not in repo · stub server + fake_hub.py can stand in]
       V2[V2 Caregiver iPhone: red, quiet yellow, log<br/>not started in repo]
       V3[V3 Backstage + listen now + typed question<br/>not started in repo]
       V4[V4 Should: Kumain na + recap counts · after 3:30 AM<br/>not started in repo]
       V5[V5 b: 'Nasaan si Lola?' CCTV view<br/>cut · next step]
     end
   end
-  subgraph Legend["Status as of 2:00 AM Sat"]
+  subgraph Legend["Status as of ~3:00 AM Sat"]
     L1[Done]
     L2[In progress]
     L3[Waiting on hub]
@@ -186,7 +186,7 @@ flowchart TD
   A1 --> A2 & A3 & V2 & V3
   V1 --> A2 & V2 & V3
   D5 --> A3
-  D4 & D5 & D6 & T3 & A2 & V2 & V3 --> W[W1 MVP wired on the hub · before 3:30 AM<br/>waiting on hub]
+  D4 & D5 & D6 & T3 & A2 & V2 & V3 --> W[W1 MVP wired on the hub · before 3:30 AM<br/>server glue PR #16 · mic path + screens missing]
   W --> T5 --> F[F1 MVP freeze · 3:30 AM<br/>moved from 2 AM]
   T4 & A3 --> F
   F --> T7 & T4m
@@ -201,9 +201,9 @@ flowchart TD
   classDef hub fill:#fce7f3,stroke:#be185d,stroke-width:2px,color:#111
   classDef todo fill:#ffffff,stroke:#6b7280,color:#111
   classDef cut fill:#f3f4f6,stroke:#9ca3af,stroke-dasharray:5 5,color:#6b7280
-  class I0,T1,T2,T3,T4,T5,T7,L1 done
-  class D1,D2,D3,D4,D5,D6,L2 doing
+  class I0,T1,T2,T3,T4,T5,T7,D1,D3,L1 done
+  class D2,D4,D5,D6,A1,L2 doing
   class W,L3 hub
-  class T4m,A1,A2,A3,V1,V2,V3,V4,F,R,S,L4 todo
+  class T4m,A2,A3,V1,V2,V3,V4,F,R,S,L4 todo
   class T6,A4,D7,V5,D8,C,L5 cut
 ```
