@@ -28,6 +28,7 @@ Read this first. It tells you which file owns what and when to open it.
 | [docs/sino/judge-qa.md](sino/judge-qa.md) | Judge Q&A answers, risks and mitigations | Troy | Before rehearsals and Demo Day |
 | [docs/sino/DONITA-SETUP.md](sino/DONITA-SETUP.md) | M1 (8 GB) hub installs and offline smoke test | Donita | Before the build; results go to NOTES |
 | [docs/sino/hub-chime.md](sino/hub-chime.md) | Urgent chime via `afplay`, red card second, `/lola` never red, pre-freeze test | Donita | As soon as the hub is up, before the 3:30 AM freeze |
+| [docs/sino/design-system.md](sino/design-system.md) | Visual source of truth (v6, "the sala"): palette, type, tokens.css, components, Lola/caregiver/technical views, open design decisions D1-D5, plus a spec-alignment note | Ayen + Viviene | Before building or reviewing any screen |
 | `docs/sino/task-graph.mmd`, `task-graph.png` | Task dependencies and status (source and image; status as of 2:00 AM Sat) | Troy | With mvp-plan |
 | [docs/NOTES.md](NOTES.md) | Links, briefing summary, model smoke-test results, decision log, T5 results (stub and hub), handoffs | Viviene (briefing), anyone (decisions) | 12:45 PM briefing; whenever a decision is made |
 | `CONTRIBUTIONS.md` (created after 1 PM) | Who built what, tools used | Viviene | Sat 7:00 AM |
