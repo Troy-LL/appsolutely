@@ -1,21 +1,27 @@
 from __future__ import annotations
 
+import http.client
 import json
+import os
 import re
+import urllib.request
 
 ACTIONS = ("comfort", "caregiver", "urgent", "silent")
+MODEL_NAME = "qwen2.5:3b"
+DEFAULT_HUB_URL = "http://localhost:11434"
+TIMEOUT_S = 4
+SILENT_MIN_CONFIDENCE = 0.8
 
 PROMPT = """You are the fallback classifier for Sino, an offline home hub for an elderly person. You run locally (qwen2.5 via Ollama). You are not a cloud service.
 
 You are only asked when the urgent-word check and the known-question matcher already missed. Decide what the hub should do with the transcript below.
 
 Reply with JSON only. No prose, no markdown, no code fences. Use exactly these keys:
-{"action": "...", "reason": "...", "trigger_words": [...], "confidence": 0.0}
+{"action": "...", "confidence": 0.0, "reason": "..."}
 
 action is one of: comfort, caregiver, urgent, silent.
-reason is one short sentence.
-trigger_words is the list of words from the transcript that drove your choice.
 confidence is a number from 0.0 to 1.0.
+reason is one short sentence.
 
 Rules:
 - Chatter or TV in the background: action silent.
@@ -71,4 +77,25 @@ def parse_model_json(raw: str) -> dict | None:
 
 
 def classify(text: str) -> dict | None:
-    return None
+    if os.environ.get("SINO_MODEL", "stub") != "ollama":
+        return None
+    base_url = os.environ.get("HUB_URL") or DEFAULT_HUB_URL
+    body = json.dumps(
+        {"model": MODEL_NAME, "prompt": build_prompt(text), "format": "json", "stream": False}
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        base_url.rstrip("/") + "/api/generate",
+        data=body,
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=TIMEOUT_S) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError, http.client.HTTPException):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    output = parse_model_json(payload.get("response"))
+    if output and output["action"] == "silent" and output["confidence"] < SILENT_MIN_CONFIDENCE:
+        output["action"] = "caregiver"
+    return output
