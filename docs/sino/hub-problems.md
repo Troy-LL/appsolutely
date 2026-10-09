@@ -15,11 +15,11 @@
 | # | Problem | How bad | Who fixes it | Status |
 |---|---|---|---|---|
 | 1 | Whisper mishears Tagalog questions | High | Donita + team | ❌ Open |
-| 2 | Misheard lines can go **silent** or raise a **false alarm** | **Very high** | Troy | ❌ Open |
+| 2 | Misheard lines can go **silent** or raise a **false alarm** | **Very high** | Troy | Fixed in code, pending hub retest |
 | 3 | Qwen sometimes takes longer than its 4-second limit | Medium | Donita | 🟡 Better |
 | 4 | Unclear if Whisper medium + Qwen 3B fit in 8 GB | Medium | Team | ❌ Open |
 | 5 | Network: caregiver iPhone not tested, firewall off | Medium | Donita | ❌ Open |
-| 6 | ElevenLabs missing from the README disclosures | Low (but a rule) | Troy | ❌ Open |
+| 6 | ElevenLabs missing from the README disclosures | Low (but a rule) | Troy | Fixed |
 
 ---
 
@@ -66,7 +66,13 @@ The worst results from the 32 test clips (Whisper small + Qwen, Sat 3:31 AM):
 
 It doesn't pass yet. One run per clip, computer voices, and a quick script rather than Troy's official runner.
 
-**What to do:** Troy checks the decision rules. Then run his official test (`brain/tests/run_t5.py --audio`) on the hub and log the numbers in NOTES.
+**Status:** fixed in code (Sat ~3:45 AM), pending a hub retest. Urgent is rules-only, so a model urgent becomes caregiver. The model may stay silent only at confidence ≥ 0.9, and only when the line has no breathing, pain, or fall word. "Herap huminga.", "hirap humenga", "di maka hinga", and "I can't breathe" alarm. "Sateleserye si no kabatalaga." stays silent. "Who is this?", "A Thunkah Joy.", and "Gusto ko na mo mo wei." go to the caregiver instead of silent.
+
+**What to do:** retest on the hub and log the numbers in NOTES:
+
+```bash
+SINO_MODEL=ollama WHISPER_BIN=... WHISPER_MODEL=.../ggml-medium-q5_0.bin python3 brain/tests/run_t5.py --audio --out docs/sino/t5-hub-medium.jsonl
+```
 
 ## 3. Qwen sometimes takes longer than its 4-second limit
 
@@ -98,7 +104,7 @@ It doesn't pass yet. One run per clip, computer voices, and a quick script rathe
 
 ## 6. ElevenLabs missing from the README disclosures
 
-Troy used ElevenLabs (a cloud text-to-speech service) to make the test clips. The repo rules ([../../AGENTS.md](../../AGENTS.md)) say every service and AI tool must be listed in the README.
+Troy used ElevenLabs (a cloud text-to-speech service) to make the test clips. The repo rules ([../../AGENTS.md](../../AGENTS.md)) say every service and AI tool must be listed in the README. Listed in the root README disclosures (Sat ~3:45 AM).
 
 ---
 

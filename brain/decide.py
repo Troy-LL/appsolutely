@@ -18,7 +18,20 @@ URGENT_STEMS = (
 LOOB_IDIOMS = ("masakit ang loob", "sakit ng loob")
 MEDICATION_TOKENS = ("gamot", "dosis", "reseta", "tableta")
 TV_PHRASES = ("thank you for watching", "salamat sa panonood")
-TV_TOKENS = ("abangan", "kabanata", "palabas", "teleserye", "dula", "bes")
+TV_TOKENS = (
+    "abangan", "kabanata", "palabas", "teleserye", "dula", "bes",
+    "balita", "commercial",
+)
+_SILENT_MIN_CONFIDENCE = 0.9
+_BODY_WORDS = ("breathe", "breath", "chest", "fell", "pain", "hurts")
+_ENGLISH_URGENT = (
+    (re.compile(r"\b(?:cannot|cant|can t) breathe\b"), "cannot breathe"),
+    (re.compile(r"\bhelp\b"), "help"),
+    (re.compile(r"\bi fell\b"), "i fell"),
+    (re.compile(r"\bfell down\b"), "fell down"),
+    (re.compile(r"\bchest pain\b"), "chest pain"),
+    (re.compile(r"\bmy chest hurts\b"), "my chest hurts"),
+)
 MATCH_FILLER = {"po", "opo", "lola", "ma", "na", "ba"}
 MATCH_ALIASES = {"asan": "nasaan"}
 MATCH_THRESHOLD = 0.85
@@ -202,12 +215,19 @@ def _result(action, reason, trigger_words, confidence, started, reply_id="", sou
     }
 
 
-def _from_model(output, started):
+def _has_body_word(text):
+    tokens = normalize(text).split()
+    if _mentions_urgent(tokens, FUZZY_SOLO + ("hirap", "huminga", "hinga", "makahinga")):
+        return True
+    return any(word in tokens for word in _BODY_WORDS)
+
+
+def _from_model(output, started, text=""):
     if not isinstance(output, dict) or output.get("action") not in ACTIONS:
         return _result("caregiver", "model unavailable", [], 0.0, started, source="model")
 
     action = output["action"]
-    if action == "comfort":
+    if action in ("comfort", "urgent"):
         action = "caregiver"
 
     reason = output.get("reason")
@@ -222,8 +242,12 @@ def _from_model(output, started):
     confidence = output.get("confidence")
     if isinstance(confidence, bool) or not isinstance(confidence, (int, float)):
         confidence = 0.0
+    confidence = float(confidence)
 
-    return _result(action, reason, trigger_words, float(confidence), started, source="model")
+    if action == "silent" and (confidence < _SILENT_MIN_CONFIDENCE or _has_body_word(text)):
+        action = "caregiver"
+
+    return _result(action, reason, trigger_words, confidence, started, source="model")
 
 
 def _levenshtein(left, right, limit):
@@ -325,11 +349,20 @@ def _fuzzy_urgent_hits(tokens):
         _mentions_urgent(tokens, ("hindi",)) or "di" in tokens
     ):
         hits.append("hindi makahinga")
+    if _mentions_urgent(tokens, ("hirap",)) and _mentions_urgent(tokens, ("huminga", "hinga")):
+        hits.append("hirap huminga")
+    if _mentions_urgent(tokens, ("huminga", "hinga")) and (
+        _mentions_urgent(tokens, ("hindi",)) or "di" in tokens
+    ):
+        hits.append("di makahinga")
     return hits
 
 
 def _urgent_hits(normalized):
     hits = [stem for stem, pattern in _URGENT_PATTERNS if pattern.search(normalized)]
+    for pattern, stem in _ENGLISH_URGENT:
+        if pattern.search(normalized):
+            hits.append(stem)
     tokens = normalized.split()
     if "makahinga" in tokens and any(neg in tokens for neg in _BREATHING_NEGATIONS):
         hits.append("hindi makahinga")
@@ -363,7 +396,10 @@ def decide(text: str) -> dict:
         return _result("caregiver", "medication", medication_hits, 1.0, started)
 
     tv_hits = [phrase for phrase in TV_PHRASES if phrase in normalized]
-    tv_hits += [token for token in tokens if token in TV_TOKENS]
+    for token in tokens:
+        for tv in TV_TOKENS:
+            if tv in token and tv not in tv_hits:
+                tv_hits.append(tv)
     if tv_hits:
         return _result("silent", "television line", tv_hits, 1.0, started, ignored="tv")
 
@@ -371,4 +407,4 @@ def decide(text: str) -> dict:
     if reply_id is not None:
         return _result("comfort", "known question", [], round(ratio, 3), started, reply_id=reply_id)
 
-    return _from_model(classify(text), started)
+    return _from_model(classify(text), started, text)

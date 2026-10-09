@@ -20,7 +20,7 @@ The family writes and records every word in quick setup (we show it live). For "
 Junk lines and likely-no-speech clips are dropped before the decision. The TV test is a longer dialogue that contains "nasaan si nanay" mid-sentence, not as the whole line ([demo.md](demo.md)). Known TV words are silent by rule. If the matcher misses and the model says it's chatter, Sino stays silent and `/backstage` shows the decision. (Whether the `TV lines ignored` counter ticks on a model decision is TODO: see [architecture.md](architecture.md#backstage-proof).) A plain "Nasaan si Nanay?" after that still gets the comfort reply.
 
 **"What if she's in pain?"**
-Urgent words always alert; the model can only escalate, never downgrade. The hub plays a loud chime so anyone in the house hears it, and the caregiver phone gets a red card. Medication questions are never answered; they go to the caregiver.
+Urgent words always alert. Only the rules raise urgent; a model urgent becomes caregiver, and a missed urgent is never silent. The hub plays a loud chime so anyone in the house hears it, and the caregiver phone gets a red card. Medication questions are never answered; they go to the caregiver.
 
 **"How does the alert reach the phone with no internet?"**
 It doesn't use push notifications (those need Apple's servers). The chime is the first channel; the caregiver page, open on the home network, is the second.
@@ -55,7 +55,7 @@ See the owners table in [mvp-plan.md](mvp-plan.md#owners). Everyone explains the
 |---|---|---|
 | Speech recognition mishears Lola's Taglish | Two phrasings per question, matcher threshold, silent-if-unsure, caregiver card for anything new; speech model picked by measurement | Troy, Donita |
 | Whisper invents text from silence or TV sign-offs | Junk-line filter (quiet clips, likely-no-speech, known junk lines) before `decide()` | Donita |
-| An urgent line is missed | Urgent words checked first; model can only escalate; urgent 10/10 in the pass/fail gate | Troy |
+| An urgent line is missed | Urgent words checked first; only the rules raise urgent; a model urgent becomes caregiver; urgent 10/10 in the pass/fail gate | Troy |
 | TV or chatter triggers a reply | Silent when the matcher misses and the model says chatter; TV clips in the test set with a 0 false-trigger target | Troy |
 | Always-listening floods the model | One model call at a time; stale clips dropped | Donita |
 | Always-listening misses on stage | Hidden "listen now" button and typed-question box on backstage | Viviene |
