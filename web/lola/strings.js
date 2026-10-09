@@ -1,18 +1,22 @@
-// strings.js — every word Lola's screen can show, in Tagalog + English.
-// Nothing user-visible is hardcoded in the HTML or in lola.js. If a string
-// is missing here, it does not appear on screen.
+// strings.js — every word Lola's screen can show, one key per word, with a
+// value per language. The screen shows ONE language at a time (chosen by the
+// family on the Start sheet), never a "Tagalog / English" pair.
 //
-// Pairs are written "Tagalog / English" the way the design system asks
-// ("Nandito lang po kami. / We're right here."). The screen shows the whole
-// pair; it does not pick one language.
+// Adding a language (e.g. Bisaya) is local to this file: add a `ceb` value to
+// each entry below and list `ceb` in LANGS. No other file needs to change.
+// A missing value for the chosen language falls back to `tl`.
+//
+// Names and reply lines are the family's own words and are NOT in this file;
+// they are never translated.
+
+export const LANGS = ['tl', 'en'] // add 'ceb' here (and a ceb: value below) later
+export const DEFAULT_LANG = 'tl'
 
 export const STRINGS = {
-  // Waiting state.
-  // The day-part line reads: "<dayPart.tl> / <dayPart.en>".
+  // Waiting state — the day-part line, keyed by hour (see dayPartKey).
   dayParts: {
-    // Chosen so the sample times verify as asked:
-    //   00:05 -> umaga, 11:59 -> umaga, 12:30 -> tanghali,
-    //   17:15 -> hapon, 21:00 -> gabi.
+    // Chosen so the sample times verify: 00:05 umaga, 11:59 umaga,
+    // 12:30 tanghali, 17:15 hapon, 21:00 gabi.
     umaga:    { tl: 'ng umaga',    en: 'in the morning' },   // hour 0–11
     tanghali: { tl: 'ng tanghali', en: 'at noon' },          // hour 12
     hapon:    { tl: 'ng hapon',    en: 'in the afternoon' },  // hour 13–17
@@ -24,23 +28,27 @@ export const STRINGS = {
   // Listening state.
   listening: { tl: 'Nakikinig po ako.', en: "I'm listening." },
 
-  // Start sheet. The only button on the whole screen.
-  start: { tl: 'Simulan', en: 'Start' },
+  // Start sheet (family only, before Guided Access).
+  start:     { tl: 'Simulan', en: 'Start' },
+  startHelp: { tl: 'Piliin ang wika, pagkatapos pindutin ang Simulan.', en: 'Choose the language, then press Start.' },
 
-  // The small "this is the practice feed, not the hub" label.
-  fake: { tl: 'FAKE', en: '' },
+  // The small "practice feed, not the hub" label.
+  fake: { tl: 'FAKE', en: 'FAKE' },
 }
 
-// Join a {tl, en} pair into one display string: "Tagalog / English".
-// If one side is empty (like the FAKE label's en), show just the other.
-export function pair(s) {
-  if (!s) return ''
-  if (s.tl && s.en) return `${s.tl} / ${s.en}`
-  return s.tl || s.en || ''
+// Each language's own name, shown on its own button ("Tagalog", "English").
+// These are proper names, written the same in any UI language.
+export const LANG_NAMES = { tl: 'Tagalog', en: 'English' }
+
+// Look up one string in one language. Falls back to the default language, then
+// to any value present, so a half-translated entry never shows blank.
+export function t(entry, lang) {
+  if (!entry) return ''
+  return entry[lang] || entry[DEFAULT_LANG] || entry.tl || entry.en || ''
 }
 
-// Pick the day-part key for a given hour (0–23).
-// Boundaries are documented above and checked at the sample times.
+// Pick the day-part key for a given hour (0–23). Boundaries checked at the
+// sample times above.
 export function dayPartKey(hour) {
   if (hour < 12) return 'umaga'
   if (hour === 12) return 'tanghali'

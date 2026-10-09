@@ -1,9 +1,9 @@
 // lola.js — Lola's wall. Plain ES module, no build step. States: Waiting
-// (clock) -> Listening (ring) -> Answer (framed photo). Events from the fake
-// feed, or the real hub with ?feed=hub. Behavior: task spec; look:
-// docs/sino/design-system.md. Options: ?big, ?time=17:15, ?hub=host:port, ?feed=hub.
+// (clock) -> Listening (ring) -> Answer (framed photo). One language at a time.
+// Behavior: task spec; look: docs/sino/design-system.md.
+// Options: ?lang=tl|en, ?big, ?time=17:15, ?hub=host:port, ?feed=hub.
 import { openFeed, IS_FAKE } from '../fake-feed/index.js'
-import { STRINGS, pair, dayPartKey } from './strings.js'
+import { STRINGS, LANGS, DEFAULT_LANG, LANG_NAMES, t, dayPartKey } from './strings.js'
 
 // SAFETY (sound): never louder than MAX_VOLUME; clips fade in over FADE_IN_MS.
 // TODO: decision D5 — the real volume is set together on the iPad at test time.
@@ -14,10 +14,24 @@ const BACKOFF_MS = [500, 1000, 2000, 4000, 8000]
 const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA='
 const params = new URLSearchParams(location.search)
 const $ = (sel) => document.querySelector(sel)
-if (params.has('big')) document.documentElement.classList.add('big') // bigger type
+if (params.has('big')) document.documentElement.classList.add('big')
 const stage = { waiting: $('#waiting'), listening: $('#listening'), answer: $('#answer') }
 
-// ---- Clock: flat ink SVG, hands redrawn once a minute (?time freezes it) ----
+const LANG_KEY = 'sino.lola.lang'
+const readSaved = () => { try { return localStorage.getItem(LANG_KEY) } catch { return null } }
+const savePick = (l) => { try { localStorage.setItem(LANG_KEY, l) } catch { /* storage off */ } }
+let lang = [params.get('lang'), readSaved(), DEFAULT_LANG].find((l) => LANGS.includes(l)) || DEFAULT_LANG
+
+function renderCopy() {
+  document.documentElement.setAttribute('lang', lang)
+  $('#waiting .reassure').textContent = t(STRINGS.waitingReassurance, lang)
+  $('#listening .caption').textContent = t(STRINGS.listening, lang)
+  $('#start-btn').textContent = t(STRINGS.start, lang)
+  const help = $('#start-help')
+  if (help) help.textContent = t(STRINGS.startHelp, lang)
+  drawClock()
+}
+
 function fixedTime() {
   const raw = params.get('time')
   if (!raw) return null
@@ -32,7 +46,6 @@ function drawClock() {
   const svg = $('#waiting .clock')
   const d = new Date()
   const now = fixedTime() || { h: d.getHours(), min: d.getMinutes() }
-  // Hand angles. 12 o'clock is straight up (-90deg from the x-axis).
   const minA = (now.min / 60) * 360 - 90
   const hourA = (((now.h % 12) + now.min / 60) / 12) * 360 - 90
   const hand = (deg, len, w) => {
@@ -44,34 +57,25 @@ function drawClock() {
     `<circle cx="50" cy="50" r="46" fill="none" stroke="#2b2420" stroke-width="3"/>` +
     hand(hourA, 24, 5) + hand(minA, 36, 3) +
     `<circle cx="50" cy="50" r="3" fill="#2b2420"/>`
-
-  // Time text, e.g. "5:15" (12-hour, no leading zero, no AM/PM word).
   const h12 = now.h % 12 === 0 ? 12 : now.h % 12
   $('#waiting .time').textContent = `${h12}:${String(now.min).padStart(2, '0')}`
-  // Day-part pair from strings.js, keyed by the 24-hour hour.
-  $('#waiting .daypart').textContent = pair(STRINGS.dayParts[dayPartKey(now.h)])
+  $('#waiting .daypart').textContent = t(STRINGS.dayParts[dayPartKey(now.h)], lang)
 }
 
-// Fill the fixed waiting/listening copy from strings.js.
-$('#waiting .reassure').textContent = pair(STRINGS.waitingReassurance)
-$('#listening .caption').textContent = pair(STRINGS.listening)
-// Redraw the clock now, then at the top of each minute (unless frozen).
-drawClock()
+renderCopy()
 if (!fixedTime()) {
   const toNextMinute = (60 - new Date().getSeconds()) * 1000
   setTimeout(function tick() { drawClock(); setInterval(drawClock, 60000) }, toNextMinute)
 }
 
-// ---- State switching: one object on the wall at a time ----
 function show(name) {
   for (const key of Object.keys(stage)) {
     stage[key].classList.toggle('show', key === name)
     stage[key].setAttribute('aria-hidden', key === name ? 'false' : 'true')
   }
 }
-show('waiting') // start on the clock
+show('waiting')
 
-// ---- Speaker names from GET /questions (reply_id -> speaker), loaded once ----
 const speakers = new Map()
 const hubBase = () => (params.get('hub') ? `${location.protocol}//${params.get('hub')}` : '')
 async function loadSpeakers() {
@@ -79,14 +83,13 @@ async function loadSpeakers() {
     const res = await fetch(`${hubBase()}/questions`)
     if (!res.ok) return
     for (const q of await res.json()) if (q && q.id) speakers.set(q.id, q.speaker || '')
-  } catch { /* offline / not served: leave the map empty, show nothing extra */ }
+  } catch { /* offline / not served */ }
 }
 loadSpeakers()
 
-// ---- Audio queue: one clip at a time; a new reply mid-clip waits its turn ----
-let current = null // the <audio> playing now
-let pending = null // the newest answer waiting its turn
-let blocked = null // a clip whose play() was refused, retried on the next tap
+let current = null
+let pending = null
+let blocked = null
 let hold = null
 
 function speakerName(msg) {
@@ -98,20 +101,16 @@ function renderAnswer(msg) {
   const box = $('#answer .photo-box')
   const name = speakerName(msg)
   const url = msg.photo ? `${hubBase()}${msg.photo}` : ''
-  // TODO: reply_text is not in the /ws contract (architecture.md). We read an
-  // optional field and show nothing if it is absent. Do not invent a line.
   $('#answer .reply').textContent = typeof msg.reply_text === 'string' ? msg.reply_text : ''
 
   if (url) {
-    // Photo path: show the image; name goes on the plate under the frame.
     box.innerHTML = `<img alt="" />`
     const img = box.querySelector('img')
-    img.onerror = () => showNameInFrame(box, name) // broken image -> name in frame
+    img.onerror = () => showNameInFrame(box, name)
     img.src = url
     $('#answer .name').textContent = name
     $('#answer .name').style.display = ''
   } else {
-    // No photo: the name sits inside the empty frame; no plate underneath.
     showNameInFrame(box, name)
   }
   show('answer')
@@ -131,7 +130,6 @@ function cancelHold() {
 
 function playReply(msg) {
   cancelHold()
-  // Always finish a clip in progress; stash the newest answer for after it.
   if (current && !current.ended) { pending = msg; return }
   startClip(msg)
 }
@@ -139,7 +137,7 @@ function playReply(msg) {
 function startClip(msg) {
   cancelHold()
   blocked = null
-  renderAnswer(msg) // show the picture as its clip begins
+  renderAnswer(msg)
   if (!msg.reply_audio) { current = null; afterClip(); return }
   const audio = new Audio(`${hubBase()}${msg.reply_audio}`)
   audio.volume = 0
@@ -174,9 +172,9 @@ document.addEventListener('click', retryBlocked)
 function fadeIn(audio) {
   const steps = 10
   let i = 0
-  const t = setInterval(() => {
+  const timer = setInterval(() => {
     audio.volume = Math.min(MAX_VOLUME, (++i / steps) * MAX_VOLUME)
-    if (i >= steps) clearInterval(t)
+    if (i >= steps) clearInterval(timer)
   }, FADE_IN_MS / steps)
 }
 
@@ -187,34 +185,25 @@ function afterClip() {
   hold = setTimeout(() => { hold = null; blocked = null; show('waiting') }, HOLD_MS)
 }
 
-// ---- Event handling ----
 function onEvent(msg) {
   if (!msg || typeof msg !== 'object') return
   switch (msg.event) {
     case 'heard':
-      // A real heard (dropped false) means Lola is being listened to.
-      // TODO contract gap: the hub routes `heard` to backstage only, so lola
-      // never receives it today. Handled here so Listening works if that changes.
       if (!msg.dropped) show('listening')
       break
     case 'play_reply':
       playReply(msg)
       break
     case 'decided':
-      // comfort brings its own play_reply (above). Any other action with no
-      // answer returns Lola to Waiting (no text, urgent included). Never
-      // interrupt a clip to do so.
       if (msg.action !== 'comfort' && !current && !pending) {
         cancelHold()
         blocked = null
         show('waiting')
       }
       break
-    // health and anything else: nothing for Lola to see.
   }
 }
 
-// ---- Connect: reconnect only after the hub socket closes or errors ----
 const ON_HUB = params.get('feed') === 'hub'
 let feed = null
 let feedOpen = false
@@ -250,7 +239,6 @@ function scheduleReconnect() {
   retry = setTimeout(connect, wait)
 }
 
-// ---- Screen wake lock (Safari 16.4+); every failure stays silent ----
 async function keepAwake() {
   try { if (navigator.wakeLock) await navigator.wakeLock.request('screen') } catch {}
 }
@@ -261,21 +249,23 @@ document.addEventListener('visibilitychange', () => {
   if (ON_HUB && !params.has('test') && !feedOpen) connect()
 })
 
-// ?test exposes a seam that pushes synthetic events through the REAL onEvent,
-// so screenshot tests exercise the same handlers Lola's screen uses. In test
-// mode the auto feed is suppressed so injected events are deterministic.
 if (params.has('test')) {
   window.__lola = { send: onEvent, show }
 } else {
   connect()
 }
 
-// ---- Start sheet + FAKE label ----
+const langButtons = [...document.querySelectorAll('.lang-btn')]
+const markLang = () => langButtons.forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === lang ? 'true' : 'false'))
+for (const b of langButtons) {
+  b.textContent = LANG_NAMES[b.dataset.lang] || b.dataset.lang
+  b.addEventListener('click', () => { lang = b.dataset.lang; savePick(lang); markLang(); renderCopy() })
+}
+markLang()
+
 let audioCtx = null
-$('#start-btn').textContent = pair(STRINGS.start)
 $('#start-btn').addEventListener('click', () => {
-  $('#start-sheet').classList.add('gone') // fades away; it is the only button
-  // iOS Safari unlocks media playback only inside a user tap.
+  $('#start-sheet').classList.add('gone')
   new Audio(SILENT_WAV).play().catch(() => {})
   try {
     const Ctx = window.AudioContext || window.webkitAudioContext
@@ -287,7 +277,6 @@ $('#start-btn').addEventListener('click', () => {
   keepAwake()
 })
 
-// FAKE label: ink on paper, shown only while the practice feed is active.
 if (IS_FAKE && !ON_HUB) {
-  const el = $('#fake-label'); el.textContent = STRINGS.fake.tl; el.classList.remove('hidden')
+  const el = $('#fake-label'); el.textContent = t(STRINGS.fake, lang); el.classList.remove('hidden')
 }
