@@ -115,7 +115,7 @@ Web stack is the repo default in [../../AGENTS.md](../../AGENTS.md): React + Vit
    - Typed question: `{"mode":"typed","text":""}`. Skips VAD, Whisper, and the junk filter. Emits `heard` with that `text` as `transcript` and `dropped` false, then `decided`.
 5. **Folders:** `brain/`, `hub/`, `web/setup`, `web/caregiver`. Only `brain/` has code on `main` so far. Which folders hold `/lola` and `/backstage` is TODO: unknown (frontend pair to decide).
 
-**Contract gap (TODO: Troy + Donita):** Ask Sino about Lola (T7, Should) has code in `brain/ask.py`, which returns `{"intent","answer","source","latency_ms"}`, but no WebSocket event or HTTP route carries the caregiver's question or the answer yet. Add one additive event or route before wiring it after the freeze, and post it in the team chat.
+**Ask Sino about Lola:** the caregiver socket sends `{"event":"ask_about_lola","question":""}` and that socket alone gets `{"event":"about_lola","intent":"","answer":"","source":"","latency_ms":0}` (`answer_about_lola()`). TODO: contract gap — those event names were not in the locked list. Post them in the team chat.
 
 **Running the brain without the hub:** `SINO_MODEL=stub` (the default) never opens a socket; lines the rules and matcher miss go to the caregiver. `SINO_MODEL=ollama` posts to `{HUB_URL}/api/generate` with `qwen2.5:3b` (`HUB_URL` defaults to `http://localhost:11434`), 4 s timeout. Text test: `SINO_MODEL=stub python3 brain/tests/run_t5.py`; Ask about Lola cases: `cd brain && python3 ask.py`.
 
@@ -130,6 +130,37 @@ Changing an interface needs a post in the team chat, because every screen depend
 5. `decide()`: urgent-word rules → "sakit ng loob" idiom (caregiver) → medication (caregiver) → TV words (silent, `ignored` `tv`) → known-question matcher → Qwen only if still unclear → `decided` event.
 6. Comfort → `play_reply` to `/lola`. Caregiver → `ask_caregiver` to `/caregiver` (quiet, grouped). Urgent → hub chime + `alert` to `/caregiver`. Silent → log only.
 7. `/backstage` shows each utterance as transcript → rule or model → action, confidence, reason → ms, plus the dropped row and `TV lines ignored: N` ([backstage proof](#backstage-proof)).
+
+## Running the hub server
+
+`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, and `GET /questions`, and it calls `decide()` and `answer_about_lola()`. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
+
+TODO: contract gap — the interfaces do not name a listen port. `PORT` defaults to 8000. `HOST` defaults to `0.0.0.0`.
+
+TODO: contract gap — `/ws` does not say which socket is `/lola`, `/caregiver`, or `/backstage`. Additive query `screen` is one of `lola`, `caregiver`, `backstage`.
+
+TODO: contract gap — `decided` has no transcript. Additive field `transcript` (same string as `heard.transcript`). Silent `decided` goes to `/backstage` only. Comfort, caregiver, and urgent go to every screen.
+
+TODO: contract gap — `health` has no model mode or last event time. Additive fields `model` (`stub` or `ollama`) and `last_event_at` (ISO 8601, or `""` before the first decision). `GET /health` returns that same object. `offline` is true only when an outbound request fails (`https://example.com` by default, `OFFLINE_PROBE` overrides). `mic` stays false in this process: it does not open the microphone. `POST /listen` with `{"mode":"listen_now"}` returns 202 and emits nothing until capture exists.
+
+TODO: contract gap — no route or event for Ask Sino about Lola. Inbound on `/ws` from the caregiver socket: `{"event":"ask_about_lola","question":""}`. Reply to that socket only: `{"event":"about_lola","intent":"","answer":"","source":"","latency_ms":0}`.
+
+TODO: contract gap — the local log is not named as SQLite or JSONL. This server appends one JSON object per decision to `brain/decisions.jsonl` (`SINO_LOG` overrides the path). `answer_about_lola` reads those rows.
+
+Mac (stub, plain `ws://`):
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install fastapi 'uvicorn[standard]'
+SINO_MODEL=stub .venv/bin/python brain/server.py
+SINO_MODEL=stub .venv/bin/python brain/tests/fake_hub.py
+SINO_MODEL=stub .venv/bin/python brain/tests/test_server.py
+```
+
+Hub (M1, Ollama, mkcert `wss://`):
+
+```bash
+HOST=0.0.0.0 PORT=8000 SINO_MODEL=ollama HUB_URL=http://127.0.0.1:11434 CERT=/absolute/path/cert.pem KEY=/absolute/path/key.pem python3 brain/server.py
+```
 
 ## Offline guarantees
 
