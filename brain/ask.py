@@ -120,10 +120,22 @@ def _saying_answer(log):
     return "Her words: " + "; ".join(parts) + ". Not a diagnosis."
 
 
+def _clip_clock(offset):
+    if isinstance(offset, bool) or not isinstance(offset, (int, float)):
+        offset = 0
+    total = int(round(float(offset)))
+    if total < 0:
+        total = 0
+    return f"{total // 60}:{total % 60:02d}"
+
+
 def _where_answer(log):
     last_seen = log.get("last_seen") if isinstance(log, dict) else None
     if not isinstance(last_seen, dict) or not last_seen.get("room"):
         return NO_CAMERA_ANSWER
+    if last_seen.get("source") == "recording":
+        clock = _clip_clock(last_seen.get("clip_offset_s", 0))
+        return f"Huling nakita sa recording: {last_seen.get('room')} (clip {clock})."
     return f"Nasa {last_seen.get('room')}, {last_seen.get('minutes_ago', 0)} minuto na."
 
 

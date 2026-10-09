@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.datastructures import UploadFile
 from starlette.websockets import WebSocketDisconnect
 
+import clips as clipwhere
 from ask import answer_about_lola
 from decide import decide, load_seed
 from model import DEFAULT_HUB_URL
@@ -730,6 +731,137 @@ def main():
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", str(DEFAULT_PORT)))
     uvicorn.run(app, host=host, port=port, log_level="info", **_ssl_kwargs())
+
+
+_CLIP_BYTES = 100 * 1024 * 1024
+_plain_read_log = read_log
+
+
+def read_log():
+    log = _plain_read_log()
+    seen = clipwhere.last_seen_for_log()
+    if seen:
+        log["last_seen"] = seen
+    return log
+
+
+def _asked(raw, screen):
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return None
+    if not isinstance(data, dict) or data.get("event") != "ask_about_lola":
+        return None
+    if screen != "caregiver":
+        return None
+    question = data.get("question", "")
+    if not isinstance(question, str) or not question.strip() or len(question) > 2000:
+        return None
+    return question.strip()
+
+
+_hub_on_message = Hub.on_message
+
+
+async def _on_message_clips(self, websocket, screen, raw):
+    question = _asked(raw, screen)
+    if question is None:
+        await _hub_on_message(self, websocket, screen, raw)
+        return
+    log = read_log()
+    result = await asyncio.to_thread(answer_about_lola, question, log)
+    extra, card = clipwhere.followup(result, log)
+    reply = {
+        "event": "about_lola",
+        "intent": result["intent"],
+        "answer": result["answer"],
+        "source": result["source"],
+        "latency_ms": result["latency_ms"],
+    }
+    reply.update(extra)
+    await websocket.send_text(json.dumps(reply, ensure_ascii=False))
+    if card:
+        await websocket.send_text(json.dumps(card, ensure_ascii=False))
+
+
+Hub.on_message = _on_message_clips
+
+_base_lifespan = app.router.lifespan_context
+
+
+@asynccontextmanager
+async def _lifespan_clips(_app):
+    loop = asyncio.get_running_loop()
+    if clipwhere.has_clips():
+        threading.Thread(
+            target=clipwhere.scan_and_emit,
+            args=(loop, hub),
+            daemon=True,
+        ).start()
+    else:
+        await hub.send_to("backstage", clipwhere.scan_event(clipwhere.scan()))
+    async with _base_lifespan(_app):
+        yield
+
+
+app.router.lifespan_context = _lifespan_clips
+
+
+async def _save_clip(request):
+    content_type = request.headers.get("content-type", "")
+    if "multipart/form-data" not in content_type:
+        return None
+    try:
+        async with request.form() as form:
+            upload = form.get("clip")
+            if upload is None or not getattr(upload, "filename", None):
+                return None
+            name = Path(upload.filename).name
+            if Path(name).suffix.lower() not in clipwhere.SUFFIXES:
+                return JSONResponse({"error": "clip must be mp4, mov, or webm"}, status_code=400)
+            dest = clipwhere.media_dir() / name
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            total = 0
+            with dest.open("wb") as handle:
+                while True:
+                    chunk = await upload.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    total += len(chunk)
+                    if total > _CLIP_BYTES:
+                        break
+                    handle.write(chunk)
+            if total > _CLIP_BYTES:
+                dest.unlink(missing_ok=True)
+                return JSONResponse({"error": "clip too large"}, status_code=400)
+            if total == 0:
+                dest.unlink(missing_ok=True)
+                return JSONResponse({"error": "empty clip"}, status_code=400)
+    except Exception:
+        return JSONResponse({"error": "bad upload"}, status_code=400)
+    return None
+
+
+@app.post("/clips")
+async def post_clips(request: Request):
+    saved = await _save_clip(request)
+    if isinstance(saved, JSONResponse):
+        return saved
+    summary = await asyncio.to_thread(clipwhere.scan)
+    await hub.send_to("backstage", clipwhere.scan_event(summary))
+    return summary
+
+
+@app.get("/clips/snapshot")
+def clips_snapshot():
+    jpeg = clipwhere.snapshot_jpeg()
+    if not jpeg:
+        return Response(status_code=404)
+    return Response(
+        content=jpeg,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 if __name__ == "__main__":
