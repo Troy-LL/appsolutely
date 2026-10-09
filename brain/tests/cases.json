@@ -108,5 +108,6 @@
   {"id": "us28", "bucket": "urgent", "text": "I can't breathe", "expected": "urgent"},
   {"id": "t09", "bucket": "tv", "text": "Sateleserye si no kabatalaga.", "expected": "silent"},
   {"id": "nf06", "bucket": "new", "text": "A Thunkah Joy.", "expected": "caregiver"},
-  {"id": "nf07", "bucket": "new", "text": "Gusto ko na mo mo wei.", "expected": "caregiver"}
+  {"id": "nf07", "bucket": "new", "text": "Gusto ko na mo mo wei.", "expected": "caregiver"},
+  {"id": "nf08", "bucket": "new", "text": "This is the best day", "expected": "caregiver"}
 ]

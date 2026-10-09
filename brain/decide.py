@@ -398,7 +398,9 @@ def decide(text: str) -> dict:
     tv_hits = [phrase for phrase in TV_PHRASES if phrase in normalized]
     for token in tokens:
         for tv in TV_TOKENS:
-            if tv in token and tv not in tv_hits:
+            if tv in tv_hits:
+                continue
+            if token == tv or (len(tv) >= 5 and tv in token):
                 tv_hits.append(tv)
     if tv_hits:
         return _result("silent", "television line", tv_hits, 1.0, started, ignored="tv")
