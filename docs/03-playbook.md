@@ -26,6 +26,15 @@ All times PH. Owners per area are in [01-team.md](01-team.md).
 | 1:50 to 2:10 | **3 to 5 frames** (empty, input, loading, result, error) in Figma. Show one non-team person: "what would you tap?" Viviene drafts brand kit. Split: [designer task split](01-team.md#designer-task-split-ayen--viviene) | Ayen (flow, key frames) + Viviene (states, brand); Donita notes components |
 | 2:10 to 2:20 | **AI contract:** JSON shape, model, prompt sketch, 3 known failure cases | Troy + Donita |
 | 2:20 to 2:30 | **Lock:** spec paragraph and click-by-click demo script in 04-idea-filter. Split files by owner | Troy |
+| Right after lock | **Model smoke test** (gate below) starts in parallel with scaffolding | Troy + Donita |
+
+## Model smoke-test gate (right after idea lock)
+
+- Run the **exact model and runtime** from the AI contract on the **actual demo device in airplane mode**, with **~5 real inputs** (not invented ones).
+- Record speed (seconds per input, load time) and accuracy (how many of 5 were right) in `docs/NOTES.md`. Real numbers only.
+- **If it fails by hour 3 (~4:00 PM), pivot.** Pivot lock at 4:00 PM stays: no pivots after that.
+
+**Hardware reality:** Troy's 2017 MacBook Pro (Intel i5, 8 GB RAM, integrated graphics) runs only ~1 to 3B models at 4-bit, slowly, on CPU. A **recent Android phone in Chrome (WebGPU)** is the likely demo device. Test on it early, not at midnight.
 
 ## Full timeline to submit
 
@@ -33,7 +42,7 @@ All times PH. Owners per area are in [01-team.md](01-team.md).
 |---|---|---|
 | Fri 2:30 to 3:00 PM | Scaffold from public starters (Vite + shadcn, FastAPI). Deploy "hello" | `main` live from here on |
 | 3:00 to 7:00 PM | **Ugly end-to-end slice:** real input → real model → result card on a phone | Stub nothing that's in the demo |
-| 4:00 PM | **Pivot lock** | |
+| 4:00 PM | **Pivot lock.** Smoke test must have passed by now | |
 | 7:00 PM | **Checkpoint:** happy path works on a phone every time? If not, cut scope now. User test #1. Dinner | Visual pass starts only after this |
 | 7:30 PM to 12:00 AM | Slice 2 (wow moment), error/empty/loading states, visual pass on working screens, eval set (10 to 20 cases). User test #2 at ~10 PM | |
 | 12:00 to 1:00 AM | Judge-question drill #1, demo run #1 (timed), README draft, architecture diagram | |
@@ -71,21 +80,17 @@ Format: each person says **done / next / blocked**. Viviene keeps time and updat
 
 ## Feedback loop
 
-- **Real-user tests** at ~2 PM (paper frames), 7 PM, 10 PM, 6 AM. Hand over the phone, give one instruction, say nothing, time it, note where they hesitate. Fix the top issue before the next test. Testers only use the app; they don't build or design.
+- **Real-user tests** at ~2 PM (paper frames), 7 PM, 10 PM, 6 AM. From 7 PM on, every test runs **in airplane mode**. Hand over the phone, give one instruction, say nothing, time it, note where they hesitate. Fix the top issue before the next test. Testers only use the app; they don't build or design.
 - **Judge-question drill** (12 AM, and on the way to Makati). Each person answers 2 out loud in under 30 seconds:
   - Why AI here and not rules?
   - What happens when the model is wrong?
-  - Which model, where does it run, what does it cost per use?
+  - Which model, which runtime, where does it run, what still works offline?
+  - Why local and not cloud?
   - Show me the file you wrote.
   - What are the limits?
   - How do you know it works? (eval numbers and test-set size, never rounded up)
-- **Demo runs** at 12 AM, 7 AM, and on-site: full 5 minutes with a timer, on the demo laptop, inputs pre-loaded. Once with Wi-Fi off to test the fallback.
+- **Demo runs** at 12 AM, 7 AM, and on-site: full 5 minutes with a timer, on the demo device, inputs pre-loaded, **always in airplane mode** (turn it on visibly at the start).
 
 ## Pitch shape (5 min + 3 min Q&A)
 
-| Time | Beat |
-|---|---|
-| 0:00 to 0:30 | The user and the moment |
-| 0:30 to 3:30 | Live demo of the happy path and the wow moment |
-| 3:30 to 4:30 | Architecture and measured numbers (one slide) |
-| 4:30 to 5:00 | Limits, what's next, "scan the QR for People's Choice" |
+See [02-philosophy.md](02-philosophy.md#pitch-structure-5--3-minutes) for the official-format pitch and Q&A prep.

@@ -12,11 +12,12 @@ Build something **so simple and so visual that a stranger uses it correctly in 1
 4. **Working > pretty > more features.** Ugly slice first. Polish only screens that already work. Never add a feature to cover a weak one.
 5. **Cut before polish.** At every checkpoint, ask what to remove before asking what to add.
 6. **Everyone explains their part.** No orphan code. Git history matches `CONTRIBUTIONS.md`.
-7. **The checklist is not optional.** Public repo, video, post, and submission in by 8:30 AM. A missed item ends the run regardless of quality.
+7. **Local is the point, not a feature.** The product must lose something real if moved to the cloud (it gets harder, pricier, slower, less private, or impossible). If the cloud version is just as good, it's the wrong idea.
+8. **The checklist is not optional.** Public repo, video, post, and submission in by 8:30 AM. A missed item ends the run regardless of quality.
 
 ## How UI-first wins
 
-- Most teams will ship a chat box. A product that feels obvious in 10 seconds is something judges *feel*.
+- Most teams will ship a chat box, or a cloud app with a local model bolted on. A product that feels obvious in 10 seconds is something judges *feel*.
 - It wins **People's Choice** (audience QR vote) and demos well live on a phone.
 - Local judge pools have scored UX and real-world applicability explicitly.
 
@@ -31,7 +32,26 @@ Build something **so simple and so visual that a stranger uses it correctly in 1
 - **More than one prompt:** structured JSON output, at least one tool or retrieval step, input validation and guardrails.
 - **Bring real numbers:** a 10 to 20 case eval in the repo, with test-set size and failures listed. Never round up.
 - **Schedule it:** the 7 PM checkpoint needs real AI working end to end before the visual pass.
-- **One architecture diagram** in the README and on one slide.
+- **One architecture diagram** in the README and on one slide, marking what runs on-device and what (if anything) touches the cloud.
+
+## Pitch structure (5 + 3 minutes)
+
+Official format: 5-minute pitch + live demo, then 3-minute judge Q&A. Working product over slides.
+
+| Time | Beat |
+|---|---|
+| ~0:00 to 0:45 | Problem and the user: one person, one moment |
+| ~0:45 to 3:15 | **Live demo in airplane mode** (turn it on visibly first): happy path and wow moment |
+| ~3:15 to 4:15 | Why local (one of the five reasons, with measured numbers) and what happens when it's wrong |
+| ~4:15 to 5:00 | Close: limits, what's next, "scan the QR for People's Choice" |
+
+### Judge Q&A prep (3 min)
+
+- "Show it in airplane mode."
+- "What happens when it's wrong?"
+- "Why not paper, a calculator, or a cloud app?"
+- "Who on the team has lived this?"
+- "Who built what?"
 
 ## Design defaults (decided tonight, no components built)
 

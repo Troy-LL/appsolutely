@@ -2,9 +2,11 @@
 
 Fill this in live from 1:10 PM Fri. At 2:30 PM, sections 2 to 7 **are the spec**. Changing them after 4:00 PM needs the whole team.
 
-## Challenge (paste verbatim at 1:00 PM)
+## Challenge (official)
 
-> 
+> "Build an AI product that remains genuinely useful when the cloud disappears."
+
+Meaningful AI computation must happen **on the user's device**. Full rules and criteria: [00-event.md](00-event.md#theme-local-ai-official).
 
 ## 1. Filter
 
@@ -14,26 +16,30 @@ Fill this in live from 1:10 PM Fri. At 2:30 PM, sections 2 to 7 **are the spec**
 2. A painful moment that **happens often**
 3. AI does something a form or a list **can't**
 4. Fits the challenge statement **word for word**
+5. **Runs on the user's real device, network off.** The core AI runs on the user's actual device (their phone or their laptop) in airplane mode. A team laptop serving a phone does **not** count as the user's device unless that is the real-world setup
+6. **One-sentence "why local?"** using one of the five official reasons: difficult, expensive, slow, private, or impossible with cloud-only
+7. **Not on the generic baseline list** (plain-AI answers plus fresh Gemini chat answers) unless it has a twist those answers can't reach
+8. **Satan pressure test passed** (the idea survives a written attack on its weakest point)
 
-### Scores (1 to 5 each, for ideas that pass all gates)
+### Scores (official weights; score 1 to 5, multiply by weight, max 500)
 
-| Criterion | What a 5 looks like |
-|---|---|
-| Challenge fit | A judge sees the fit instantly, no stretching |
-| Demo in under 3 min with one wow moment | One clear "oh!" a stranger notices |
-| AI is load-bearing and explainable | Remove the AI and the product dies; Troy can explain every step |
-| Buildable in ~14 hours by 4 people | Happy path fits in one slice by 7 PM |
-| Simple and visual (our UI-first bet) | A stranger uses it right in 10 seconds on a phone |
-| Life-improving | Clear before/after for the user, felt the same day |
-| Free sponsor angle | Real Devin use, AMD hardware, or similar, without bending the idea |
+| Criterion | Weight | What a 5 looks like |
+|---|---|---|
+| Problem & Usefulness | ×25 | A clear target user with a genuine, frequent problem; felt the same day (life-improving) |
+| Local AI Implementation | ×25 | Local inference is fundamental: move it to the cloud and the product loses something real |
+| Technical Execution | ×20 | The exact model runs on the demo device reliably enough for a live demo; buildable in ~14 h by 4 people |
+| Innovation | ×15 | Meaningfully different from the baseline list; local AI enables something new |
+| Product & Demo Quality | ×15 | A stranger uses it right in 10 seconds on a phone; one clear wow moment in airplane mode |
 
-| Idea | Gates pass? | Fit | Demo | AI | Build | Simple | Life | Sponsor | **Total** |
-|---|---|---|---|---|---|---|---|---|---|
-| | | | | | | | | | |
-| | | | | | | | | | |
-| | | | | | | | | | |
+Tie-breakers (not scored): simple and visual (our UI-first bet), free sponsor angle (Devin, AMD hardware) without bending the idea.
 
-**Kill rule:** if the only AI is "chat with it", or no tester can be reached for this user, go back to the filter.
+| Idea | Gates 1-8 pass? | Why local (one sentence) | Useful ×25 | Local AI ×25 | Exec ×20 | Innov ×15 | Demo ×15 | **Total /500** |
+|---|---|---|---|---|---|---|---|---|
+| | | | | | | | | |
+| | | | | | | | | |
+| | | | | | | | | |
+
+**Kill rule:** if the only AI is "chat with it", the core only works with a cloud AI API, or no tester can be reached for this user, go back to the filter.
 
 **Pick:** highest total. Troy breaks ties.
 
@@ -57,11 +63,15 @@ Fill this in live from 1:10 PM Fri. At 2:30 PM, sections 2 to 7 **are the spec**
 
 ## 4. AI contract
 
-- **Model** (primary / fallback):
-- **Where it runs:**
+- **Model** (primary / fallback, exact name, size, quantization):
+- **Runtime** (e.g. WebGPU in the browser, ONNX, llama.cpp, Ollama, MLX):
+- **Where it runs** (which device; must be the user's own device):
+- **What happens offline** (airplane mode: what still works, what waits):
+- **What's cloud** (secondary only, optional; disclosed in README):
+- **Why local** (one sentence: difficult / expensive / slow / private / impossible with cloud-only):
 - **Prompt sketch:**
 - **Tool or retrieval step:**
-- **Endpoint:** `POST /api/<action>`
+- **Interface:** local function or on-device endpoint (no cloud AI call on the core path)
 
 Request:
 

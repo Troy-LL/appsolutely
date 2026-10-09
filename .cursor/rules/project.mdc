@@ -23,6 +23,13 @@ If the spec sections in `04-idea-filter.md` are still empty, do not write applic
 - Stack defaults: React + Vite + Tailwind + shadcn/ui (phone-first, PWA), Python FastAPI backend, Inter, Lucide icons, one accent color.
 - Don't add dependencies, services, auth, or new screens unless the human asks.
 
+## Local AI rules (event theme)
+
+- **Core inference runs locally** on the user's device. The core path must work with the network off.
+- **Never swap in a cloud AI API for the core path**, even to "make it work for now". If local is too slow or broken, stop and tell the human.
+- Any cloud use must be **optional and secondary**, and listed in the README disclosures.
+- Keep a **running disclosure list in the README**: every model, library, framework, API, cloud service, existing code or asset, and AI development tool used. Add to it in the same change that introduces the item.
+
 ## Small, explainable changes
 
 - One focused change at a time, under ~200 lines where possible.
