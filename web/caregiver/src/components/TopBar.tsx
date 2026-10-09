@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { Lang } from '../types'
 import type { T } from '../i18n/i18n'
 import { Globe } from './Icons'
@@ -13,23 +12,15 @@ interface Props {
   onToggleLang: () => void
   onPickLang: (l: Lang) => void
   onAccount: () => void
-  onFamily: () => void
-  onKnows: () => void
 }
 
-export function TopBar({ t, lang, langOpen, fake, me, onToggleLang, onPickLang, onAccount, onFamily, onKnows }: Props) {
+export function TopBar({ t, lang, langOpen, fake, me, onToggleLang, onPickLang, onAccount }: Props) {
   const langName = lang === 'tl' ? 'Tagalog' : lang === 'en' ? 'English' : 'Pareho'
-  const [menuOpen, setMenuOpen] = useState(false)
-  const pick = (fn: () => void) => { setMenuOpen(false); fn() }
   return (
     <>
       <header className="sn-top">
         <p className="sn-word">Sino{fake ? <span className="sn-fake">{t.one('fakeFeed')}</span> : null}</p>
         <div className="sn-top__tools">
-          <button type="button" className={`sn-pill${menuOpen ? ' is-on' : ''}`} onClick={() => setMenuOpen(!menuOpen)}
-            aria-expanded={menuOpen} aria-label={t.one('more')}>
-            {t.one('more')}
-          </button>
           <button type="button" className={`sn-pill${langOpen ? ' is-on' : ''}`} onClick={onToggleLang}
             aria-expanded={langOpen} aria-label={t.one('a11yLang')}>
             <Globe />{langName}
@@ -39,13 +30,6 @@ export function TopBar({ t, lang, langOpen, fake, me, onToggleLang, onPickLang, 
           </button>
         </div>
       </header>
-      {menuOpen ? (
-        <div className="sn-langpop sn-menu" role="menu" aria-label={t.one('more')}>
-          <button type="button" className="sn-btn sn-btn--quiet" onClick={() => pick(onFamily)}>{t.one('tabFamily')}</button>
-          <button type="button" className="sn-btn sn-btn--quiet" onClick={() => pick(onKnows)}>{t.one('tabKnows')}</button>
-          <button type="button" className="sn-btn sn-btn--quiet" onClick={() => pick(onAccount)}>{t.one('account')}</button>
-        </div>
-      ) : null}
       {langOpen ? (
         <div className="sn-langpop" role="dialog" aria-label={t.one('lang')}>
           <p className="sn-langpop__t">{t.one('lang')}</p>

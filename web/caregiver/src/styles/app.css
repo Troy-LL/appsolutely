@@ -282,9 +282,11 @@ html, body, #root { margin: 0; height: 100%; background: var(--paper); }
 .sn-list li > b { font: 600 calc(16px * var(--s))/1.3 var(--font-heading); }
 .sn-note .sn-dot { margin-top: 2px; }
 
-/* Four tabs: Home, Activity, Ask, Receipt */
-.sn-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 8px 8px 12px; }
-.sn-tab { min-height: 58px; padding: 6px 2px; font-size: calc(14px * var(--s)); line-height: 1.1; border-radius: 12px; }
+/* Five tabs: Home, Family, Sino AI, Activity, Knows */
+.sn-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 8px 8px 12px; }
+.sn-tab { min-height: 64px; padding: 6px 2px; font-size: calc(14px * var(--s)); line-height: 1.1; border-radius: var(--r-button); }
+.sn-tab.is-on { box-shadow: var(--shadow-flat); }
+.sn-word { display: flex; align-items: center; white-space: nowrap; min-width: 0; }
 .sn-tab__icon { position: relative; display: inline-flex; }
 .sn-tab__badge { position: absolute; top: -8px; right: -14px; box-sizing: border-box; min-width: 22px; height: 22px; padding: 0 4px; border-radius: 999px; background: var(--amber); color: var(--ink); border: 2px solid var(--ink); font: 600 14px/18px var(--font-heading); text-align: center; }
 
@@ -480,7 +482,6 @@ html, body, #root { margin: 0; height: 100%; background: var(--paper); }
 .sn-ate { width: 100%; margin: 16px 0; }
 .sn-reconnect { margin: 0; padding: 8px 16px; text-align: center; background: var(--paper); color: var(--ink); border-bottom: 2px solid var(--ink); font: 600 calc(14px * var(--s))/1.2 var(--font-heading); }
 .sn-monitor { padding: 12px 24px; border-bottom: 2px solid var(--ink); background: var(--paper); }
-.sn-menu { width: min(280px, calc(100% - 32px)); }
 .sn-shot { margin: 0 0 10px; }
 .sn-shot img { display: block; width: 100%; height: auto; border: 2px solid var(--ink); border-radius: 6px; background: var(--paper); }
 .sn-shot__label { display: inline-block; margin-top: 8px; padding: 4px 10px; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); color: var(--ink); font: 600 calc(14px * var(--s))/1.2 var(--font-heading); }

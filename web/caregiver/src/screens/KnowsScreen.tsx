@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import type { Person, Question } from '../types'
 import type { T } from '../i18n/i18n'
 import { Heading } from '../components/bits'
+import { Trash } from '../components/Icons2'
 import { SAFETY_WORDS } from '../data/safetyWords'
 
 interface Props {
@@ -12,9 +14,10 @@ interface Props {
   onOpenLog: () => void
 }
 
-// "What Sino knows": read-only for now. The hub has no delete route yet, so there are
-// no Remove buttons here (TODO: contract gap, post in the team chat before adding one).
+// "What Sino knows". The hub has no delete route yet, so the trash button only says so
+// on screen and deletes nothing (TODO: contract gap, post in the team chat before wiring it).
 export function KnowsScreen({ t, questions, loadError, people, todayCount, onOpenLog }: Props) {
+  const [cantRemove, setCantRemove] = useState('')
   const colorOf = (name: string) => people.find((p) => p.name === name)?.color ?? 'green'
   const hQ = t.head('questions')
   const hS = t.head('safety')
@@ -27,6 +30,7 @@ export function KnowsScreen({ t, questions, loadError, people, todayCount, onOpe
       <Heading main={hQ.main} sub={hQ.sub}>{questions ? <span className="sn-tag sn-tag--ink">{questions.length}</span> : null}</Heading>
       {loadError ? <p className="sn-calm pl">{t.two('loadFailed', { why: loadError })}</p> : null}
       {!questions && !loadError ? <p className="sn-calm">{t.one('loading')}</p> : null}
+      {cantRemove ? <p className="sn-calm sn-calm--small pl" role="status">{t.two('cantRemove', { q: cantRemove })}</p> : null}
       <div className="sn-stack">
         {(questions ?? []).map((q) => (
           <div className="sn-qcard" key={q.id}>
@@ -38,6 +42,8 @@ export function KnowsScreen({ t, questions, loadError, people, todayCount, onOpe
                 <span className="sn-tag">{t.one('phrasings', { n: q.phrasings.length })}</span>
               </div>
             </div>
+            <button type="button" className="sn-trash" aria-label={t.one('removeQ', { q: q.question })}
+              onClick={() => setCantRemove(q.question)}><Trash /></button>
           </div>
         ))}
       </div>
