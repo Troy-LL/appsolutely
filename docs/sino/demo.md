@@ -18,7 +18,7 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 | 0:30–1:00 | Show there's no internet. Point at the OFFLINE badge. If the M2 is unplugged, say it runs on battery (only if it really is unplugged) | Backstage |
 | 1:00–1:30 | **Live quick setup:** add "Nasaan si Joy?", two phrasings, hold to record a reply, add a photo, test (~20 s). Proof that the family writes every reply | Setup → iPad |
 | 1:30–3:00 | "Lola" asks "Nasaan si Nanay?" in 2 phrasings → the family's validation reply + photo plays. Backstage shows transcript, decision, latency. Then the "Sino ka?" roleplay | iPad + backstage |
-| 3:00–3:30 | Play the TV clip: Sino stays silent (backstage shows why). Ask a new question: a quiet yellow card appears; ask again and it groups | Backstage + iPhone |
+| 3:00–3:30 | Point judges at `/backstage` and say "Silence is a decision." Then play the TV clip: Sino stays silent (backstage shows why). Ask a new question: a quiet yellow card appears; ask again and it groups | Backstage + iPhone |
 | 3:30–4:00 | "Masakit dibdib ko" → the hub chimes and a red card appears on the phone. Lola's screen stays calm. A medication question goes to the caregiver | Hub + iPhone |
 | 4:00–5:00 | Why local + close + scan-to-vote | Slide |
 

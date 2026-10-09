@@ -73,8 +73,10 @@ Web stack follows the repo defaults in [../../AGENTS.md](../../AGENTS.md) (React
    ```
 2. **Events (WebSocket):** `heard`, `decided`, `play_reply`, `alert`, `ask_caregiver`, `meal_logged`, `health`
 3. **Questions file:** `{id, question, phrasings[], reply_audio, photo, speaker}`
+4. **`/listen`:** named in the MVP plan (D4). Request and response body: TODO: unknown.
+5. **Folders** (from the MVP plan): `brain/`, `hub/`, `web/setup`, `web/caregiver`.
 
-Changing an interface needs a post in the team chat, because every screen depends on it. TODO (Troy + Donita): decide whether dropped junk lines get their own event or ride on `heard`.
+Changing an interface needs a post in the team chat, because every screen depends on it. TODO: unknown (Troy + Donita) whether dropped junk lines get their own event or ride on `heard`. No event name is written.
 
 ## Data flow
 

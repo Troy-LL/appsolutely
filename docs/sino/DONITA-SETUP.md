@@ -80,7 +80,7 @@ mkcert -CAROOT
 Note the folder it prints. We'll AirDrop `rootCA.pem` from there to the iPad and iPhone at the café. Don't generate the site certificate yet, because we need the hub's network IP first.
 
 ## 5. Network test: Internet Sharing with no upstream
-Tonight's checkpoint (11:15 PM). Turn on System Settings → General → Sharing → Internet Sharing, sharing to Wi-Fi, with **no** internet connection on the Mac. Check that the iPad and iPhone can join the network and open a page served by the M2. If macOS won't share with no upstream, use an Android hotspot with mobile data off, or a travel router. Write down which one works.
+Tonight's checkpoint (11:15 PM). Turn on System Settings → General → Sharing → Internet Sharing, sharing to Wi-Fi, with **no** internet connection on the Mac. Check that the iPad and iPhone can join the network and open a page served by the M2. If macOS won't share with no upstream, use an Android hotspot with mobile data off, or a travel router. Write down which one works. Lock that network and the hub's fixed IP, then generate the site certificate for that IP only. Do not change the IP after the certificate exists. All three 7 AM no-internet rehearsals stay on that same network.
 
 ## 6. Offline test (important)
 Turn **Wi-Fi off**, then rerun Check 2 (whisper-cli on `test.wav`) and the Ollama check.

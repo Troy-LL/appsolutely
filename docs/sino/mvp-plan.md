@@ -8,8 +8,8 @@ Time estimates are rough and not benchmarked: **MVP ≈ 3.5 h of parallel work**
 
 | Who | Part | Owns |
 |---|---|---|
-| **Troy** | Backend: decision engine | `decide()`: matcher, urgent rules, Qwen prompt and JSON, silent rule, medication/meals logic, seed replies, 30-clip test; add-on (a) face match |
-| **Donita** | Backend: M2 hub | Network + no-upstream test, HTTPS, Whisper + model timing, Ollama, VAD, junk-line filter, throttle, `/listen` + WebSocket events, storage, `start.sh` + health light, urgent chime; add-ons (b) detector and (c) voice ID |
+| **Troy** | Backend: decision engine | `decide()`: matcher, urgent rules, Qwen prompt and JSON, silent rule, medication logic, seed replies, 30-clip test; meals logic after the 2 AM freeze; add-on (a) face match |
+| **Donita** | Backend: M2 hub | Network + no-upstream test, HTTPS, Whisper + model timing, Ollama, VAD, junk-line filter, throttle, `/listen` + WebSocket events, storage, `start.sh` + health light, urgent chime; add-on (b) detector only if stable by 5:00 AM; (c) voice ID is cut |
 | **Ayen** | Frontend: setup + Lola | Design system, Lola's iPad screen, quick setup (the onboarding), recording and photo upload; add-on (a) greeting view |
 | **Viviene** | Frontend: caregiver + judges | Fake event feed, caregiver iPhone app, behind-the-scenes screen (incl. "listen now" and typed question), Should items (Kumain na, recap counts); add-on (b) view |
 
@@ -47,9 +47,9 @@ Each sprint ends with something demoable. If you finish early, pull the next spr
 |---|---|---|---|
 | S1 | 10:30–11:15 | I0 interfaces + T1 matcher + urgent rules | `decide("Si Mama asan?")` = comfort, `"masakit dibdib"` = urgent |
 | S2 | 11:15–12:15 | T2 record seed replies (incl. "Nasaan si Nanay?" and "Nasaan si Joy?") + 30 test clips (with the team) | Clips labeled in `brain/tests/clips` |
-| S3 | 12:15–1:15 | T3 Qwen JSON decision + silent rule, T4 medication/meals | Unclear lines go to caregiver; chatter stays silent; medication never answered |
+| S3 | 12:15–1:15 | T3 Qwen JSON decision + silent rule, T4 medication | Unclear lines go to caregiver; chatter stays silent; medication never answered |
 | S4 | 1:15–2:00 | T5 pass/fail test, tune thresholds | Gate above passes, or fallback chosen |
-| S5 | 2:00–4:30 | Add-on (a): T6 face match + greeting rule | Troy's face + greeting → his photo and line; stranger → no name |
+| S5 | 2:00–4:30 | Should: meals logic, then add-on (a): T6 face match + greeting rule | "Kumain na ba ako?" answers from the log; then Troy's face + greeting → his photo and line; stranger → no name |
 | Sleep | 4:30–7:00 | | |
 
 ### Donita: M2 hub
@@ -57,10 +57,10 @@ Each sprint ends with something demoable. If you finish early, pull the next spr
 | Sprint | Time | Deliver | Done when |
 |---|---|---|---|
 | S1 | 10:30–11:15 | D1 network + HTTPS + no-upstream test, D3 Ollama warm | iPad + iPhone open the https page with no internet; fallback chosen if not |
-| S2 | 11:15–12:30 | D2 Whisper + model timing (by 11:30), D4 VAD → junk filter → throttle → /listen → WebSocket | Speaking near the M2 shows the transcript on backstage; TV sign-off lines are dropped |
-| S3 | 12:30–1:00 | D5 seed loader + storage, D6 `start.sh` + health light + urgent chime | Anyone can restart the hub; urgent plays the chime |
+| S2 | 11:15–12:15 | D2 Whisper + model timing (by 11:30), D4 VAD → junk filter → throttle → /listen → WebSocket, D5 seed loader + storage | Speaking near the M2 shows the transcript on backstage; TV sign-off lines are dropped; seed loader done before 12:15 (A3 needs it) |
+| S3 | 12:15–1:00 | D6 `start.sh` + health light + urgent chime | Anyone can restart the hub; urgent plays the chime |
 | Sleep | 1:00–4:30 | | Hub left running; handoff note in `docs/NOTES.md` |
-| S4 | 4:30–6:30 | Add-on (b): D7 CCTV detector, then (c): D8 voice ID only if time | "Nasa kusina" answer computed from the clip |
+| S4 | 4:30–5:00 | Add-on (b): D7 CCTV detector, only if stable by 5:00. (c) D8 voice ID is cut | "Nasa kusina" answer computed from the clip only if (b) is stable; otherwise cut |
 | S5 | 6:30–8:30 | Rehearse, README disclosures, submit | Submitted |
 
 ### Ayen: setup + Lola's screen
@@ -83,7 +83,7 @@ Each sprint ends with something demoable. If you finish early, pull the next spr
 | S2 | 11:00–12:15 | V2 caregiver phone: red card with sound, quiet yellow with grouped repeats + record-a-reply, green log | Works on the iPhone with the fake feed |
 | S3 | 12:15–1:00 | V3 backstage: transcript, dropped lines, decision, ms, OFFLINE, health light, "listen now", typed question | Updates live from the real hub |
 | Sleep | 1:00–4:30 | | Handoff note in `docs/NOTES.md` |
-| S4 | 4:30–6:30 | V4 Should: Kumain na + recap counts; then add-on (b) V5 "Nasaan si Lola?" view if D7 works | Recap shows real counts; last-seen room shows |
+| S4 | 4:30–5:00 | V4 Should: Kumain na + recap counts; add-on (b) V5 "Nasaan si Lola?" only if D7 is stable by 5:00 | Recap shows real counts; last-seen room shows only if (b) is stable |
 | S5 | 6:30–8:30 | Pitch visuals, submission post graphic, rehearse | Post ready |
 
 **Sync points (5 min each):** 11:15 PM (interfaces + network), 11:30 PM (speech model), 1:00 AM (MVP wired + restart works, before Donita and Viviene sleep), 2:00 AM (freeze), 4:30 AM (handoff), 7:00 AM (rehearse).
@@ -108,7 +108,8 @@ flowchart TD
     T1[T1 Matcher + urgent rules]
     T2[T2 Record seed replies + 30 test clips]
     T3[T3 Qwen JSON decision + silent rule]
-    T4[T4 Medication + meals logic]
+    T4[T4 Medication]
+    T4m[Meals logic · after 2 AM]
     T5[T5 30-clip pass/fail test]
     T6[T6 a: Face match + greeting rule]
   end
@@ -117,10 +118,10 @@ flowchart TD
     D2[D2 Whisper server · model timing 11:30 PM]
     D3[D3 Ollama loaded + warm]
     D4[D4 VAD → junk filter → throttle → WebSocket]
-    D5[D5 Seed loader + storage]
+    D5[D5 Seed loader + storage · done before 12:15]
     D6[D6 start.sh + health light + urgent chime]
-    D7[D7 b: CCTV person detector on clip]
-    D8[D8 c: Voice ID]
+    D7[D7 b: CCTV detector · only if stable by 5 AM]
+    D8[D8 c: Voice ID · cut]
   end
   subgraph Ayen["Ayen · setup + Lola screen"]
     A1[A1 Design system]
@@ -133,7 +134,7 @@ flowchart TD
     V2[V2 Caregiver iPhone: red, quiet yellow, log]
     V3[V3 Backstage + listen now + typed question]
     V4[V4 Should: Kumain na + recap counts]
-    V5[V5 b: 'Nasaan si Lola?' view]
+    V5[V5 b: 'Nasaan si Lola?' · only if D7 stable by 5 AM]
   end
 
   I0 --> T1 & D4 & D5 & V1
@@ -148,15 +149,13 @@ flowchart TD
   D4 & D5 & D6 & T3 & A2 & V2 & V3 --> W[W1 MVP wired · 12:30–1:15 AM]
   W --> T5 --> F[F1 MVP freeze · 2 AM]
   T4 & A3 --> F
-  F --> V4
+  F --> T4m --> V4
   F --> T6 & A4
   T6 & A4 --> XA[a: face greeting works]
   XA -.-> D7
   F --> D7 & V5
-  D7 & V5 --> XB[b: CCTV works]
-  XB -.-> D8
-  F --> D8
-  XA & XB & D8 & V4 --> C[C1 Add-ons cut-off · 5 AM]
+  D7 & V5 --> XB[b: CCTV works · else cut]
+  XA & XB & V4 --> C[C1 Add-ons cut-off · 5 AM]
   C --> R[R1 Rehearse ×3 + backup video · 7 AM]
   R --> S[S1 Submit · 8:30 AM]
 ```
