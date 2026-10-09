@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sino's log · Backstage</title>
+<style>
+@font-face { font-family: "Fredoka"; src: url("fonts/Fredoka-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Fredoka"; src: url("fonts/Fredoka-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("fonts/DMSans-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("fonts/DMSans-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("fonts/DMSans-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+:root {
+  --paper: #f4ede0; --ink: #2b2420; --green: #2f5e4e; --amber: #e9a83a; --red: #c23232; --white: #ffffff;
+  --tap-min: 48px;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px;
+  --r-card: 18px; --r-button: 14px; --r-round: 999px;
+  --outline: 2px; --focus-width: 3px; --focus-offset: 2px;
+  --shadow-flat: 0 4px 0 #2b2420; --shadow-flat-s: 0 2px 0 #2b2420;
+  --font-heading: "Fredoka", "DM Sans", system-ui, sans-serif;
+  --font-text: "DM Sans", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-text); line-height: 1.4; -webkit-font-smoothing: antialiased; }
+:focus-visible { outline: var(--focus-width) solid var(--ink); outline-offset: var(--focus-offset); }
+[hidden] { display: none !important; }
+
+.page { max-width: 1240px; margin: 0 auto; padding: 0 var(--space-8); }
+.fold { min-height: 100vh; padding: var(--space-6) 0 var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+
+.top { display: flex; align-items: center; gap: var(--space-6); flex-wrap: wrap; padding-right: 180px; }
+.wordmark { font: 600 40px/1 var(--font-heading); margin: 0; }
+.tags { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
+.tag { display: inline-flex; align-items: center; gap: var(--space-2); font: 600 18px/1 var(--font-heading); border: var(--outline) solid var(--ink); border-radius: var(--r-button); padding: 6px 12px; background: var(--paper); color: var(--ink); }
+.tag--count { font-size: 22px; padding: 8px 14px; box-shadow: var(--shadow-flat-s); }
+
+.offline { position: fixed; top: var(--space-6); right: var(--space-6); z-index: 10; font: 600 22px/1 var(--font-heading); background: var(--ink); color: var(--paper); border-radius: var(--r-button); padding: 12px 18px; letter-spacing: 0.04em; }
+
+.node { flex: none; width: 24px; height: 24px; border-radius: var(--r-round); border: var(--outline) solid var(--ink); display: inline-flex; align-items: center; justify-content: center; font: 700 14px/1 var(--font-text); background: var(--paper); color: var(--ink); }
+.node--up, .node--comfort { background: var(--green); color: var(--white); }
+.node--caregiver { background: var(--amber); color: var(--ink); }
+.node--urgent { background: var(--red); color: var(--white); }
+.node--down, .node--dropped { border-style: dashed; }
+
+.controls { display: grid; gap: var(--space-3); max-width: 760px; }
+.btn { min-height: var(--tap-min); padding: 0 var(--space-6); border: var(--outline) solid var(--ink); border-radius: var(--r-button); background: var(--green); color: var(--white); font: 600 20px/1 var(--font-heading); box-shadow: var(--shadow-flat); cursor: pointer; }
+.btn--quiet { background: var(--paper); color: var(--ink); }
+.btn:active { box-shadow: none; transform: translateY(4px); }
+.listen { justify-self: start; }
+.ask { display: flex; gap: var(--space-3); align-items: center; }
+.ask label { font: 600 18px/1 var(--font-heading); white-space: nowrap; }
+.ask input { flex: 1; min-width: 0; min-height: var(--tap-min); padding: 0 var(--space-4); border: var(--outline) solid var(--ink); border-radius: var(--r-button); background: var(--paper); color: var(--ink); font: 400 20px/1.4 var(--font-text); }
+.status { font: 500 16px/1.3 var(--font-text); margin: 0; min-height: 1.3em; }
+
+.info { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--space-4); flex-wrap: wrap; }
+.info li { font: 500 16px/1.3 var(--font-heading); border: var(--outline) dashed var(--ink); border-radius: var(--r-button); padding: 6px 12px; }
+
+.tl { list-style: none; margin: 0; padding: 0; }
+.row { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 0 var(--space-4); padding: var(--space-4) 0; border-top: var(--outline) dashed var(--ink); }
+.row .node { width: 36px; height: 36px; font-size: 18px; margin-top: 2px; }
+.row__heard { font: 700 24px/1.25 var(--font-text); margin: 0 0 var(--space-1); overflow-wrap: anywhere; }
+.row__chain { font: 600 22px/1.25 var(--font-heading); margin: 0; }
+.row__why { font: 400 17px/1.4 var(--font-text); margin: var(--space-1) 0 0; }
+.row__caption { font: 500 15px/1.3 var(--font-heading); margin: var(--space-1) 0 0; }
+.row--dropped .row__heard { font-weight: 400; }
+
+#recent > .row:first-child { border: var(--outline) solid var(--ink); border-radius: var(--r-card); box-shadow: var(--shadow-flat); padding: var(--space-6); margin-bottom: var(--space-3); grid-template-columns: 48px minmax(0, 1fr); }
+#recent > .row:first-child .node { width: 48px; height: 48px; font-size: 24px; }
+#recent > .row:first-child .row__heard { font-size: 35px; margin-bottom: var(--space-2); }
+#recent > .row:first-child .row__chain { font-size: 35px; }
+#recent > .row:first-child .row__why { font-size: 20px; }
+#recent > .row:first-child .row__caption { font-size: 18px; }
+
+.row--new { animation: slide-in 0.6s ease-out; }
+@keyframes slide-in { from { opacity: 0; transform: translateY(-24px); } }
+@media (prefers-reduced-motion: reduce) {
+  .row--new { animation: none; }
+  .btn:active { transform: none; }
+}
+
+.empty { font: 400 22px/1.45 var(--font-text); padding: var(--space-6) 0; border-top: var(--outline) dashed var(--ink); }
+#older { padding-bottom: var(--space-12); }
+</style>
+</head>
+<body>
+<div class="offline" id="offline" hidden>OFFLINE</div>
+
+<main class="page">
+  <div class="fold">
+    <header class="top">
+      <h1 class="wordmark">Sino's log</h1>
+      <div class="tags" id="tags">
+        <span class="tag" id="mode-tag">Model: …</span>
+        <span class="tag" data-part="whisper"><span class="node node--down" aria-hidden="true">?</span>Whisper</span>
+        <span class="tag" data-part="ollama"><span class="node node--down" aria-hidden="true">?</span>Ollama</span>
+        <span class="tag" data-part="server"><span class="node node--down" aria-hidden="true">?</span>Server</span>
+        <span class="tag" data-part="mic"><span class="node node--down" aria-hidden="true">?</span>Mic</span>
+        <span class="tag tag--count" id="ignored-tag">TV lines ignored: 0</span>
+        <span class="tag" id="fake-tag" hidden>FAKE</span>
+        <span class="tag" id="t5-badge" hidden>T5</span>
+      </div>
+    </header>
+
+    <section class="controls" aria-label="Controls">
+      <button class="btn listen" id="listen-btn" type="button">Listen now</button>
+      <form class="ask" id="ask-form">
+        <label for="q">Type a question</label>
+        <input id="q" type="text" autocomplete="off" maxlength="2000" placeholder="Si Mama asan?">
+        <button class="btn btn--quiet" type="submit">Send</button>
+      </form>
+      <p class="status" id="status" role="status"></p>
+    </section>
+
+    <ul class="info" id="info" aria-label="Camera and clips"></ul>
+
+    <ol class="tl" id="recent" aria-label="Newest decisions">
+      <li class="empty" id="empty">Connecting…</li>
+    </ol>
+  </div>
+  <ol class="tl" id="older" aria-label="Older decisions"></ol>
+</main>
+
+<script type="module">
+const RECENT_MAX = 3;
+const BACKOFF_MS = [500, 1000, 2000, 4000, 8000];
+const ACTION_WORD = { comfort: "Comfort", caregiver: "Caregiver", urgent: "Urgent", silent: "Silent" };
+const ACTION_GLYPH = { comfort: "✓", caregiver: "●", urgent: "▲", silent: "·" };
+const SOURCE_WORD = { rule: "Rule", model: "Model" };
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const pendingById = new Map();
+const pendingFifo = [];
+const committedIds = new Set();
+let ignoredCount = 0;
+
+function seconds(latencyMs) {
+  return typeof latencyMs === "number" && Number.isFinite(latencyMs) ? (latencyMs / 1000).toFixed(1) + " s" : "";
+}
+
+function droppedRowHtml(transcript, why) {
+  return '<li class="row row--dropped row--new">' +
+    '<span class="node node--dropped" aria-hidden="true">–</span>' +
+    "<div>" +
+      '<p class="row__heard">' + (transcript ? esc(transcript) : "(no words)") + "</p>" +
+      '<p class="row__chain">dropped</p>' +
+      '<p class="row__why">' + esc(why) + "</p>" +
+    "</div></li>";
+}
+
+function decidedRowHtml(transcript, d) {
+  const action = ACTION_WORD[d.action] ? d.action : "";
+  const parts = [esc(ACTION_WORD[action] || d.action)];
+  if (typeof d.confidence === "number") parts.push(Math.round(d.confidence * 100) + "%");
+  const secs = seconds(d.latency_ms);
+  if (secs) parts.push(secs);
+  return '<li class="row row--new">' +
+    '<span class="node node--' + action + '" aria-hidden="true">' + (ACTION_GLYPH[action] || "?") + "</span>" +
+    "<div>" +
+      '<p class="row__heard">' + esc(transcript) + "</p>" +
+      '<p class="row__chain">' + esc(SOURCE_WORD[d.source] || d.source || "?") + " → " + parts.join(" · ") + "</p>" +
+      '<p class="row__why">' + esc(d.reason) + "</p>" +
+      '<p class="row__caption">on the M1 hub</p>' +
+    "</div></li>";
+}
+
+function placeRow(html) {
+  $("empty")?.remove();
+  const recent = $("recent");
+  recent.insertAdjacentHTML("afterbegin", html);
+  while (recent.children.length > RECENT_MAX) $("older").prepend(recent.lastElementChild);
+}
+
+function commit(heard, decided) {
+  const id = decided?.utterance_id || heard?.utterance_id;
+  if (id) {
+    if (committedIds.has(id)) return;
+    committedIds.add(id);
+  }
+  const transcript = heard ? heard.transcript : decided.transcript;
+  if (heard?.drop_reason === "junk line" || decided?.ignored === "tv") {
+    ignoredCount += 1;
+    $("ignored-tag").textContent = "TV lines ignored: " + ignoredCount;
+  }
+  if (heard?.dropped) placeRow(droppedRowHtml(transcript, heard.drop_reason));
+  else if (decided.ignored === "tv") placeRow(droppedRowHtml(transcript, "TV line"));
+  else placeRow(decidedRowHtml(transcript, decided));
+}
+
+function onHeard(h) {
+  if (h.dropped) return commit(h, null);
+  if (h.utterance_id) pendingById.set(h.utterance_id, h);
+  else pendingFifo.push(h);
+}
+
+function onDecided(d) {
+  let heard = null;
+  if (d.utterance_id) {
+    heard = pendingById.get(d.utterance_id) || null;
+    pendingById.delete(d.utterance_id);
+  } else {
+    heard = pendingFifo.shift() || null;
+  }
+  commit(heard, d);
+}
+
+function setPart(part, up) {
+  const tag = document.querySelector('[data-part="' + part + '"]');
+  if (!tag) return;
+  const node = tag.querySelector(".node");
+  node.className = "node " + (up ? "node--up" : "node--down");
+  node.textContent = up ? "✓" : "×";
+}
+
+function onHealth(h) {
+  for (const part of ["whisper", "ollama", "server", "mic"]) setPart(part, h[part] === true);
+  if (typeof h.model === "string") $("mode-tag").textContent = "Model: " + h.model;
+  $("offline").hidden = h.offline !== true;
+}
+
+function setInfo(kind, text) {
+  let item = document.querySelector('#info [data-kind="' + kind + '"]');
+  if (!item) {
+    item = document.createElement("li");
+    item.dataset.kind = kind;
+    $("info").append(item);
+  }
+  item.textContent = text;
+}
+
+function onEvent(msg) {
+  if (!msg || typeof msg !== "object") return;
+  switch (msg.event) {
+    case "heard": return onHeard(msg);
+    case "decided": return onDecided(msg);
+    case "health": return onHealth(msg);
+    case "face_seen":
+      return setInfo("face", "Face seen: " + (msg.who || "nobody") + " · " + Number(msg.score || 0).toFixed(2));
+    case "clip_scan": {
+      const rooms = Array.isArray(msg.rooms) && msg.rooms.length ? msg.rooms.join(", ") : "no rooms";
+      return setInfo("clips", "Clip scan: " + rooms + " · " + (msg.detections ?? 0) + " detections · " + seconds(msg.ms));
+    }
+  }
+}
+
+function showStatus(text) { $("status").textContent = text; }
+function showEmpty(text) { const empty = $("empty"); if (empty) empty.textContent = text; }
+
+function openHubSocket() {
+  let attempt = 0;
+  const connect = () => {
+    const ws = new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws?screen=backstage`);
+    ws.onopen = () => {
+      attempt = 0;
+      showEmpty("Nothing heard yet. Sino is listening.");
+    };
+    ws.onmessage = (e) => {
+      let msg;
+      try { msg = JSON.parse(e.data); } catch { return; }
+      onEvent(msg);
+    };
+    ws.onclose = () => {
+      const wait = BACKOFF_MS[Math.min(attempt, BACKOFF_MS.length - 1)];
+      attempt += 1;
+      showEmpty("Hub not reachable. Retrying in " + wait / 1000 + " s.");
+      setTimeout(connect, wait);
+    };
+  };
+  connect();
+}
+
+async function openFakeFeed() {
+  $("fake-tag").hidden = false;
+  try {
+    const { openFeed } = await import("../fake-feed/index.js");
+    showEmpty("Nothing heard yet. Sino is listening.");
+    openFeed("backstage", onEvent);
+  } catch {
+    showEmpty("The fake feed did not load. Add ?feed=hub to use the hub.");
+  }
+}
+
+async function postListen(body) {
+  try {
+    const res = await fetch("/listen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (res.status !== 202) throw new Error(String(res.status));
+    return true;
+  } catch {
+    showStatus("The hub did not take that. Check the server light.");
+    return false;
+  }
+}
+
+function setTest(t5) {
+  if (!t5) return;
+  const badge = $("t5-badge");
+  badge.textContent = "T5 passed " + t5.time;
+  badge.hidden = false;
+}
+
+$("listen-btn").addEventListener("click", async () => {
+  if (await postListen({ mode: "listen_now" })) showStatus("Listening on the hub mic.");
+});
+
+$("ask-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = $("q");
+  const text = input.value.trim();
+  if (!text) return;
+  if (await postListen({ mode: "typed", text })) {
+    input.value = "";
+    showStatus("Sent to the hub.");
+  }
+});
+
+if (new URLSearchParams(location.search).get("feed") === "hub") openHubSocket();
+else openFakeFeed();
+</script>
+</body>
+</html>
