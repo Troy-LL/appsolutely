@@ -1,6 +1,6 @@
-"""Joy's committed replies in brain/media/ reach /lola through play_reply and /media.
+"""Committed replies in brain/media/ reach /lola through play_reply and /media.
 
-Starts from an old hub working copy (every reply_audio empty, two caregiver recordings),
+Starts from an old hub working copy (reply fields empty, plus caregiver recordings),
 like a hub that ran before the clips were committed. Run from the repo root:
 
     SINO_MODEL=stub .venv/bin/python brain/tests/test_media.py
@@ -28,7 +28,14 @@ LOG = TMP / "decisions.jsonl"
 OWN = {
     "nasaan-ako-reply.m4a": b"caregiver re-recorded under the default name",
     "nasaan-si-joy-reply.wav": b"caregiver recording in another format",
+    "sino-ka-donita-reply.wav": b"caregiver sino-ka donita",
 }
+SINO_AUDIO = {
+    "troy": "/media/sino-ka-troy-reply.m4a",
+    "joy": "/media/sino-ka-joy-reply.m4a",
+    "donita": "/media/sino-ka-donita-reply.m4a",
+}
+SINO_SPEAKER = {"troy": "Troy", "joy": "Joy", "donita": "Donita"}
 os.environ["HUB_DATA"] = str(DATA)
 os.environ["SINO_SEED"] = str(DATA / "questions.json")
 os.environ["SINO_MODEL"] = "stub"
@@ -46,10 +53,14 @@ def _old_working_copy():
         entry["reply_audio"] = ""
         for sub in (entry.get("replies") or {}).values():
             sub["reply_audio"] = ""
+        for person in (entry.get("by_person") or {}).values():
+            person["reply_audio"] = ""
         if entry["id"] == "nasaan-ako":
             entry["reply_audio"] = "/media/nasaan-ako-reply.m4a"
         if entry["id"] == "nasaan-si-joy":
             entry["reply_audio"] = "/media/nasaan-si-joy-reply.wav"
+        if entry["id"] == "sino-ka":
+            entry["by_person"]["donita"]["reply_audio"] = "/media/sino-ka-donita-reply.wav"
     (DATA / "media").mkdir(parents=True)
     for name, data in OWN.items():
         (DATA / "media" / name).write_bytes(data)
@@ -108,17 +119,28 @@ async def _play_reply(ws):
             return msg
 
 
+def _identify(who, score):
+    def identify(_gallery, _jpeg):
+        return {"who": who, "score": score, "faces": 0 if who is None else 1, "ms": 4}
+
+    return identify
+
+
 def _seed_paths():
-    # Every non-empty seed path names a committed file; sino-ka and photos stay empty.
+    # Every non-empty seed path names a committed file. sino-ka's top-level reply and every photo stay empty.
     entries = {e["id"]: e for e in json.loads(SEED.read_text(encoding="utf-8"))}
     ids = [reply_id for _, reply_id, _ in COMFORT]
     paths = [entries[i]["reply_audio"] for i in ids] + [entries["meal-check"]["reply_audio"]]
     paths += [v["reply_audio"] for v in entries["meal-check"]["replies"].values()]
+    paths += list(SINO_AUDIO.values())
     for path in paths:
         _check("seed", path.startswith("/media/") and (SEED_MEDIA / path[7:]).is_file(), path)
     sino = entries["sino-ka"]
-    _check("seed", sino["reply_audio"] == "" and all(
-        p["reply_audio"] == "" for p in sino["by_person"].values()), sino)
+    _check("seed", sino["reply_audio"] == "" and sino["photo"] == "", sino)
+    for name, path in SINO_AUDIO.items():
+        person = sino["by_person"][name]
+        _check("seed", person["reply_audio"] == path and person["photo"] == "", person)
+        _check("seed", person["speaker"] == SINO_SPEAKER[name], person)
     _check("seed", all(e["photo"] == "" for e in entries.values()))
 
 
@@ -134,6 +156,13 @@ async def _cases(port):
            working["nasaan-si-joy"])
     _check("fill", working["meal-check"]["replies"]["ate"]["reply_audio"]
            == "/media/meal-check-ate-reply.m4a", working["meal-check"])
+    people = working["sino-ka"]["by_person"]
+    _check("fill", people["troy"]["reply_audio"] == SINO_AUDIO["troy"], people["troy"])
+    _check("fill", people["joy"]["reply_audio"] == SINO_AUDIO["joy"], people["joy"])
+    _check("fill", people["donita"]["reply_audio"] == "/media/sino-ka-donita-reply.wav", people["donita"])
+    _check("fill", all(person["photo"] == "" for person in people.values()), people)
+    kept = (DATA / "media" / "sino-ka-donita-reply.wav").read_bytes()
+    _check("fill", kept == OWN["sino-ka-donita-reply.wav"], kept)
     done.append("old working copy filled, caregiver recording kept")
 
     async with websockets.connect(f"ws://127.0.0.1:{port}/ws?screen=lola") as lola:
@@ -160,6 +189,43 @@ async def _cases(port):
             _check(variant, body == (SEED_MEDIA / audio[7:]).read_bytes(), f"{len(body)} bytes")
             done.append(f"meal {variant} plays {audio}")
 
+        real_grab, real_identify = server.grab_jpeg, server.identify_jpeg
+        try:
+            server.grab_jpeg = lambda: b"\xff\xd8\xff\xd9"
+            played = dict(SINO_AUDIO)
+            played["donita"] = "/media/sino-ka-donita-reply.wav"
+            for name, audio in played.items():
+                server.identify_jpeg = _identify(name, 0.91)
+                _ask(port, "Sino ka?")
+                play = await _play_reply(lola)
+                _check(name, play["reply_id"] == "sino-ka" and play["reply_audio"] == audio
+                       and play["photo"] == "" and play["speaker"] == SINO_SPEAKER[name], play)
+                status, kind, body = _get(port, audio)
+                want = OWN.get(audio[7:]) or (SEED_MEDIA / audio[7:]).read_bytes()
+                _check(name, status == 200 and kind.startswith("audio/") and body == want,
+                       (status, kind, len(body)))
+                done.append(f"sino-ka {name} plays {audio}")
+            for name, audio in SINO_AUDIO.items():
+                status, kind, body = _get(port, audio)
+                want = (SEED_MEDIA / audio[7:]).read_bytes()
+                _check(name, status == 200 and kind.startswith("audio/") and body == want,
+                       (status, kind, len(body)))
+            done.append("sino-ka clips match brain/media")
+            server.identify_jpeg = _identify("joy", 0.54)
+            _ask(port, "Sino ka?")
+            play = await _play_reply(lola)
+            _check("fallback", play == {
+                "event": "play_reply",
+                "reply_id": "sino-ka",
+                "reply_audio": "",
+                "photo": "",
+                "speaker": "Troy",
+            }, play)
+            done.append("sino-ka no match falls back")
+        finally:
+            server.grab_jpeg = real_grab
+            server.identify_jpeg = real_identify
+
     status, kind, _ = _get(port, "/media/nasaan-si-joy-reply.m4a")
     _check("copy", status == 200 and kind.startswith("audio/"), (status, kind))
     done.append("missing default clips copied next to the caregiver's")
@@ -173,7 +239,7 @@ async def _run():
     thread = threading.Thread(target=runner.run, daemon=True)
     thread.start()
     done = []
-    total = 10
+    total = 15
     try:
         deadline = time.monotonic() + 5
         while True:

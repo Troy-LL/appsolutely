@@ -481,8 +481,13 @@ def _check_seed_people():
     people = sino.get("by_person")
     if not isinstance(people, dict) or set(people) != {"troy", "joy", "donita"}:
         raise AssertionError(people)
+    expected_audio = {
+        "troy": "/media/sino-ka-troy-reply.m4a",
+        "joy": "/media/sino-ka-joy-reply.m4a",
+        "donita": "/media/sino-ka-donita-reply.m4a",
+    }
     for name, person in people.items():
-        if person.get("reply_audio") != "" or person.get("photo") != "":
+        if person.get("reply_audio") != expected_audio[name] or person.get("photo") != "":
             raise AssertionError(name)
         if not isinstance(person.get("speaker"), str) or not person["speaker"]:
             raise AssertionError(person)

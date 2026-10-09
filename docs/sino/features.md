@@ -67,17 +67,17 @@ Judges see the local AI decide. Each utterance is one row: transcript → rule h
 
 ### M8. Demo seed data, `seed.json` (Troy + team)
 
-What `brain/seed.json` holds today: **6 questions** (`nasaan-si-nanay`, `nasaan-si-joy`, `sino-ka`, `nasaan-ako`, `gusto-ko-nang-umuwi`, `meal-check`), each with Tagalog and English phrasings and a `speaker`. `reply_audio` points at Joy's recordings in `brain/media/` for the four comfort questions and the three meal variants; `sino-ka` and every `photo` stay empty strings until those exist. `meal-check` also has `dynamic` `meal` and `replies` for `ate`, `ate_repeat`, and `unknown`; the top-level `reply_audio` and `photo` stay the fallback. Disclosed in the README as demo data.
+What `brain/seed.json` holds today: **6 questions** (`nasaan-si-nanay`, `nasaan-si-joy`, `sino-ka`, `nasaan-ako`, `gusto-ko-nang-umuwi`, `meal-check`), each with Tagalog and English phrasings and a `speaker`. `reply_audio` points at Joy's recordings in `brain/media/` for the four comfort questions and the three meal variants. `sino-ka` `by_person` points at Troy's, Joy's, and Donita's own lines (`sino-ka-troy-reply.m4a`, `sino-ka-joy-reply.m4a`, `sino-ka-donita-reply.m4a`); that question's top-level `reply_audio` stays empty, and every `photo` stays empty. `meal-check` also has `dynamic` `meal` and `replies` for `ate`, `ate_repeat`, and `unknown`; the top-level `reply_audio` and `photo` stay the fallback. Disclosed in the README as demo data.
 
 Not in `seed.json` yet: the household name (Lola Cora) and earlier log entries (the T7 fake log lives in `brain/tests/ask_cases.json`). A meal is not a seed row. The caregiver's tap is a `meal_logged` line in the decisions log. The urgent, medication, and TV words live in `brain/decide.py`, not in the seed.
 
-**Recordings still needed (TODO):** Troy's "Sino ka?" line and the `by_person` lines. Until they exist, "Sino ka?" has no audio to play. Joy's four replies and three meal clips are recorded (`brain/media/`).
+**Recordings still needed (TODO):** photos. The three "Sino ka?" lines are recorded in `brain/media/` (`by_person` for troy, joy, and donita). Joy's four replies and three meal clips are recorded there too. A "Sino ka?" miss still uses the empty top-level `reply_audio`.
 
 | Question | Reply (recorded by a teammate) | Speaker | Why |
 |---|---|---|---|
 | "Nasaan si Nanay?" (Lola's late mother) | "Ma, kwento mo nga ulit si Nanay mo." | Joy | Validation: invites the memory, no correction, no false claim. Recorded |
 | "Nasaan si Joy?" | "Nasa trabaho pa ako, Ma. Uuwi ako mamaya, kain ka muna." | Joy | Joy is alive and at work, so this is true. Recorded |
-| "Sino ka?" | "Lola, ako 'to, si Troy. Pamangkin mo. Ito tayo nung pasko." | Troy | The iPad shows Troy's photo and plays this line ([demo.md](demo.md)). On stage, Troy then talks to "Lola" in person. There is no live call. Audio not recorded yet |
+| "Sino ka?" | "Lola, ako 'to, si Troy. Pamangkin mo. Ito tayo nung pasko." Troy, Joy, and Donita each have their own line in `by_person`. | Troy | A high-confidence face match plays that person's line ([demo.md](demo.md)). On stage, Troy then talks to "Lola" in person. There is no live call. Recorded. Photos not recorded yet |
 | "Nasaan ako?" | "Dito ka lang, Ma. Kasama mo ako." | Joy | She is here with Joy. No room and no destination. Recorded |
 | "Gusto ko nang umuwi" | "Ma, dito muna tayo ha." | Joy | Does not promise a trip home. Recorded |
 

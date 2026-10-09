@@ -8,7 +8,7 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 - iPad opens `https://<hub>:8000/lola/?feed=hub` and the family taps Start ("Simulan") once. iPhone on `/caregiver`, open on the hub's network (no push without internet). Backstage on the projected screen.
 - The hub's LAN-only firewall is on and the OFFLINE badge is visible (it comes from a real outbound check failing). On rung 1 the house network is Troy's iPhone hotspot, which has cellular, so the claim is "the hub is firewalled to the house network", not "every device is offline". The iPhone cannot go to airplane mode, because that turns the hotspot off ([architecture.md](architecture.md#network)).
 - Clips ready: the 20 s teleserye clip (TODO below). No live CCTV and no voice ID: both stay cut. The recorded-clip demo is optional, below.
-- Recordings loaded: Joy's four replies and Troy's "Sino ka?" line (TODO: not recorded yet as of Sat 2:00 AM).
+- Recordings loaded: Joy's four replies and three meal clips, and the three "Sino ka?" lines (Troy, Joy, Donita) in `brain/media/`. Photos are still empty.
 - Hub volume up for the urgent chime.
 
 ## Run of show
@@ -69,7 +69,7 @@ Joy asks "Nasaan si Lola?" on the caregiver phone. Sino answers "Huling nakita s
 
 ## Optional: meals check
 
-The caregiver taps "Kumain na". Lola asks "Kumain na ba ako?". The `ate` clip plays. Skip this beat if Joy's three meal clips are not recorded.
+The caregiver taps "Kumain na". Lola asks "Kumain na ba ako?". The `ate` clip plays. Joy's three meal clips are recorded.
 
 ## Fallbacks (internet stays off)
 
