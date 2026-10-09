@@ -1,5 +1,7 @@
 # Sino design system
 
+**Owner:** Viviene.
+
 > **Spec alignment (Sat 2:20 AM).** This file is the visual source of truth. Where it disagrees with the product spec ([README.md](README.md), [features.md](features.md), [architecture.md](architecture.md)), the spec wins on *behavior* and this file wins on *look*. Known gaps, to resolve before building the affected screen:
 >
 > 1. **"Call Lola / Tawagan si Lola" on the urgent card.** Lola has no phone and calling is cut tonight ([features.md](features.md) Next steps). Until decided, the urgent card's one action is **"Mark as read / Nabasa na"**. TODO: Troy.
