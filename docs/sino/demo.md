@@ -4,7 +4,7 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 
 ## Setup before going on stage
 
-- Hub (M2) running from `start.sh`, seed loaded, health light green.
+- Hub (M1, 8 GB) running from `start.sh`, seed loaded, health light green.
 - iPad on `/lola`, "Simulan" already tapped. iPhone on `/caregiver`, open on the hub's network (no push without internet). Backstage on the projected screen.
 - Internet off on every device. The OFFLINE badge is visible.
 - Clips ready: the 20 s teleserye clip (TODO below), and the recorded CCTV clip only if add-on (b) is stable by 5:00 AM. Voice ID is cut and has no clip.
@@ -15,7 +15,7 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 | Time | What happens | Screen |
 |---|---|---|
 | 0:00–0:30 | Opener (below) | Lola's iPad |
-| 0:30–1:00 | Show there's no internet. Point at the OFFLINE badge. If the M2 is unplugged, say it runs on battery (only if it really is unplugged) | Backstage |
+| 0:30–1:00 | Show there's no internet. Point at the OFFLINE badge: "the hub is firewalled to the house network." If the hub is unplugged, say it runs on battery (only if it really is unplugged) | Backstage |
 | 1:00–1:50 | **Live quick setup.** Ask "Nasaan yung aso?" (not in the seed) → quiet yellow card on `/caregiver` → on the iPhone, `/setup` adds the question, two phrasings, a held recording, and a photo → ask again → the family voice answers on the iPad. "Nasaan si Joy?" stays in the seed and is not added live | iPhone `/setup` + `/caregiver` → iPad |
 | 1:50–2:20 | "Sino ka?" Lola asks who Troy is. Face match sees he is registered. The iPad shows his photo and calls him only while he is on the house Wi-Fi (no internet). If he is not on that network, the iPad shows his photo and plays the "Sino ka?" line he recorded in setup. | iPad + Troy |
 | 2:20–3:30 | **TV test, its own beat.** Play the 20 s teleserye clip: a full dialogue that contains "nasaan si nanay" mid-sentence, not as the whole line. Sino stays silent. `/backstage` shows a dropped row and `TV lines ignored: N` ticks. Then Lola asks "Nasaan si Nanay?" plainly → the comfort reply and photo. The row shows transcript → rule or model → action, confidence, reason → ms | Backstage + iPad |
@@ -58,7 +58,7 @@ If face match is not up and Troy is on the house Wi-Fi, he still talks to her li
 
 ## "Nasaan si Lola?" (add-on b)
 
-Only if it is stable by 5:00 AM. A registered person asks Sino, "Nasaan si Lola?" The M2 runs the person detector on a **recorded clip** of "Lola" moving between sala and kusina; backstage shows the detection box, and the phone answers from the last-seen log ("Nasa kusina, 1 minuto na"). Say out loud that it is a recorded clip. The answer is never hardcoded. "Kamusta si Lola?" and "Ano ang mga tanong niya?" pull the log already on `/caregiver`. That answer is the counts and her words. It is not a diagnosis.
+Only if it is stable by 5:00 AM. A registered person asks Sino, "Nasaan si Lola?" The hub runs the person detector on a **recorded clip** of "Lola" moving between sala and kusina; backstage shows the detection box, and the phone answers from the last-seen log ("Nasa kusina, 1 minuto na"). Say out loud that it is a recorded clip. The answer is never hardcoded. "Kamusta si Lola?" and "Ano ang mga tanong niya?" pull the log already on `/caregiver`. That answer is the counts and her words. It is not a diagnosis.
 
 ## Fallbacks (internet stays off)
 
@@ -67,7 +67,7 @@ Only if it is stable by 5:00 AM. A registered person asks Sino, "Nasaan si Lola?
 | Always-listening misses Lola | Hidden "listen now" button on backstage |
 | The mic or Whisper fails | Type Lola's question into the hidden box on backstage; it goes through the same `decide()` |
 | The model is slow or wrong | Rules + matcher still answer known questions; backstage shows the decision |
-| The hub's network | Switch to the backup network chosen at the 11:15 PM checkpoint; last resort, USB-C cable to the iPad |
+| The hub's network | Primary is the iPhone hotspot + hub LAN-only firewall (keep the iPhone on the hotspot screen). Then down the ladder ([architecture.md](architecture.md#network)): spare router/pocket Wi-Fi with no WAN → iPhone USB + Internet Sharing + firewall → venue Wi-Fi + firewall. Regenerate the mkcert cert if the hub IP changes. Last resort, USB-C cable to the iPad |
 | The hub crashes | `start.sh`, wait for the health light |
 | The whole live demo | Play the backup video (recorded at the 7 AM rehearsals, internet off in the first 10 s) |
 | Any add-on | Skip it; it goes on the next-steps slide |

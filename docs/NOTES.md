@@ -63,6 +63,7 @@ TBD.
 | Fri Oct 9 10:30 PM | Build plan reset: MVP freeze 2:00 AM, add-ons cut-off 5:00 AM, submit 8:30 AM. See `docs/sino/mvp-plan.md` | Troy |
 | Fri Oct 9 10:40 PM | Spec hardened: quick setup is the MVP onboarding (9-step wizard dropped); junk-line filter + throttle + hidden "listen now"; speech model picked by timing at 11:30 PM with a RAM rule; urgent = hub chime + red card (no push offline); quiet grouped yellow cards; recap is counts only; "Nasaan si Nanay?" gets a validation reply; Internet Sharing no-upstream test at 11:15 PM; add-ons a → b → c behind a cut line; why-local leads with the always-on mic | Troy |
 | Fri Oct 9 11:20 PM | Interfaces locked for the build: WebSocket payloads, `POST /listen`, `GET`/`POST /questions`, and junk lines riding on `heard`. Shapes are in `docs/sino/architecture.md`. M2 RAM and measured latencies stay to verify | Troy |
+| Sat Oct 10 1:20 AM | Hub is an M1 (8 GB), macOS 26.5.1, not an M2. Models: Whisper small + qwen2.5:3b (medium + qwen2.5:1.5b only if small's Tagalog is unusable; medium + 3B and large-v3-turbo out). Internet Sharing failed (needs an active upstream; `bridge100` never appeared); no Android on the team. Network ladder changed (Troy, 1:23 AM): primary iPhone 15 hotspot + hub LAN-only `pf` firewall → spare router/pocket Wi-Fi with no WAN → iPhone USB + Internet Sharing + firewall → venue Wi-Fi + firewall. See `docs/sino/architecture.md#network` | Donita, Troy |
 
 ## Pass/fail gate (T5)
 

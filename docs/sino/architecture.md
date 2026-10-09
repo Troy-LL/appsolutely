@@ -6,7 +6,7 @@ How the devices, screens, models, and data fit together. Hardware facts come fro
 
 | Device | Role | Owner |
 |---|---|---|
-| Donita's M2 MacBook | **Home hub / brain:** mic, speaker (urgent chime), whisper.cpp, Ollama + Qwen2.5, the web server, the behind-the-scenes screen | Donita |
+| Donita's MacBook Air M1 (8 GB), macOS 26.5.1 | **Home hub / brain:** mic, speaker (urgent chime), whisper.cpp, Ollama + Qwen2.5, the web server, the behind-the-scenes screen | Donita |
 | A16 iPad | Lola's screen and speaker | Ayen (screen) |
 | Troy's iPhone 15 | Caregiver phone | Viviene (screen) |
 | Viviene's Windows laptop (optional) | Extra behind-the-scenes view in a browser | Viviene |
@@ -14,16 +14,23 @@ How the devices, screens, models, and data fit together. Hardware facts come fro
 
 - **Mic:** on the hub, to avoid iPad Safari's mic limits. The iPad needs one "Simulan" tap at start because iOS blocks audio autoplay.
 - **Restart:** `start.sh` brings up the whole hub; a health light on `/backstage` shows each part (Whisper, Ollama, server, mic). Anyone on the team can restart it while Donita sleeps (1:00 to 4:30 AM).
-- TODO (Donita): RAM of the M2, from the setup report. It decides the model pair below.
+- Hub RAM is **8 GB** (Donita, Sat 1:20 AM). The model pair below follows the 8 GB rule.
 
 ## Network
 
-| Option | Status |
-|---|---|
-| **Primary:** the M2's own Wi-Fi via macOS Internet Sharing, fixed IP, mkcert HTTPS | **To verify tonight:** does Internet Sharing work with no upstream connection? Checkpoint 11:15 PM ([mvp-plan.md](mvp-plan.md)) |
-| Fallback 1: an Android phone hotspot with mobile data off | Use if Internet Sharing fails without upstream |
-| Fallback 2: a travel router with no internet | Same |
-| Last resort for the iPad: USB-C cable to the M2 | Demo only |
+macOS Internet Sharing failed on the hub (Sat 1:20 AM): it needs an active upstream connection, `bridge100` never appeared, and Wi-Fi can't be both the upstream and the shared network. No one on the team has an Android phone. Ladder (decided by Troy, Sat 1:23 AM):
+
+| Rung | Network | Notes |
+|---|---|---|
+| **1 (primary, tonight and the demo)** | Troy's iPhone 15 Personal Hotspot (Maximize Compatibility on) + LAN-only `pf` firewall on the hub | The hotspot itself has cellular, so the hub blocks every non-local destination. Hub IP is usually 172.20.10.x |
+| 2 | A spare Wi-Fi router or pocket Wi-Fi with no WAN / SIM data off | Swap in on stage if someone brings one: an offline LAN with no internet anywhere |
+| 3 | iPhone USB-cabled into the M1, retry Internet Sharing from "iPhone USB" to Wi-Fi + the same firewall | Gives Internet Sharing the active upstream it needs |
+| 4 | Venue Wi-Fi + the same firewall | Last resort |
+| Last resort for the iPad | USB-C cable to the hub | Demo only |
+
+**Firewall:** a `pf` anchor on the hub allows only loopback, private LAN ranges, link-local, multicast, and DHCP/mDNS out, and drops everything else. Exact files and commands: [DONITA-SETUP.md](DONITA-SETUP.md#5-network-d1). Test before relying on it. Pitch line: **"the hub is firewalled to the house network."** The OFFLINE badge on backstage must come from a real outbound check failing (for example a request to a public address timing out), not a hardcoded label.
+
+**HTTPS:** `mkcert <hub-ip> localhost` for the hub's LAN IP on whichever rung is used (`ipconfig getifaddr en0`); regenerate if the IP changes. The mkcert root CA (`rootCA.pem`) is installed and trusted on the iPad and iPhone.
 
 All screens are served by the hub over this local network. There is no internet on the core path.
 
@@ -35,9 +42,9 @@ Each route is designed for its own device only (no responsive juggling).
 |---|---|---|---|---|---|---|
 | **Lola's screen** | A16 iPad (landscape, ~1180×820) | Lola | `/lola` | Big clock, idle family photo, full-screen photo while the family voice plays. **Nothing else.** Never red. Calm colors only | Photo of a registered person, then a call only while that person is on the house Wi-Fi (no internet). If they are not on that network, their photo and the "Sino ka?" line they recorded in setup (add-on a) | Ayen |
 | **Caregiver phone** | iPhone 15 (portrait, ~393×852) | Caregiver / family | `/caregiver` | Live log; red cards (sound); quiet yellow cards with grouped repeats and record-a-reply; green log entries. A registered person can ask about Lola. "How is she" and "what has she been saying" are this log (counts and her words, not a diagnosis). Should: "Kumain na" button, recap counts | "Where is she" is the recorded-clip answer if add-on (b) is on, and "no camera answer, no room guessed" if it is off | Viviene |
-| **Behind the scenes** | M2 MacBook (~1440×900) | Judges / presenters | `/backstage` | Per-utterance proof ([below](#backstage-proof)): transcript → rule or model → action, confidence, reason → ms; a dropped row; `TV lines ignored: N`; T5 badge; OFFLINE badge; health light; hidden "listen now" and typed-question box | Face match panel (a). CCTV clip with detection box (b), only if stable by 5:00 AM. No voice match panel: voice ID is cut | Viviene |
+| **Behind the scenes** | M1 MacBook Air (8 GB) (~1440×900) | Judges / presenters | `/backstage` | Per-utterance proof ([below](#backstage-proof)): transcript → rule or model → action, confidence, reason → ms; a dropped row; `TV lines ignored: N`; T5 badge; OFFLINE badge; health light; hidden "listen now" and typed-question box | Face match panel (a). CCTV clip with detection box (b), only if stable by 5:00 AM. No voice match panel: voice ID is cut | Viviene |
 | **Setup** | iPhone 15 or iPad | Family | `/setup` | Quick setup: add question, two phrasings, hold to record, photo, test | n/a | Ayen |
-| (optional) Extra backstage | Viviene's Windows laptop | Audience | `/backstage` | Mirror of the M2 view | n/a | Viviene |
+| (optional) Extra backstage | Viviene's Windows laptop | Audience | `/backstage` | Mirror of the hub view | n/a | Viviene |
 
 Viewport sizes are approximate CSS sizes; confirm on the real devices.
 
@@ -58,13 +65,13 @@ The small T5 badge is specified in [mvp-plan.md](mvp-plan.md). The fake feed emi
 
 `source` is `rule` when urgent-word rules, the medication rule, or the known-question matcher decided. `source` is `model` when Qwen decided, including a model error or timeout (that path already goes to the caregiver). `ignored` is `tv` or `""`. The hub sets `tv` when it treats the line as television. The demo clip in [demo.md](demo.md) expects `ignored` `tv` so this counter ticks. The token `decide()` uses to separate television from in-room chatter is `TODO: unknown` until the decision engine names it. This screen only reads the field.
 
-## Models and runtimes (all on the M2, all local)
+## Models and runtimes (all on the M1 (8 GB) hub, all local)
 
 | Job | Model | Runtime | Notes |
 |---|---|---|---|
 | Voice activity detection | Silero VAD | hub | Starts capture only when someone speaks |
-| Speech to text | Whisper small, medium, or large-v3-turbo (picked by measurement) | whisper.cpp (`-l tl`) | See the selection rule below |
-| Decision for unclear lines | Qwen2.5-3B (`qwen2.5:3b`) or Qwen2.5-1.5B (`qwen2.5:1.5b`) | Ollama | Must return JSON matching the decision interface. No AI phrasing for the recap |
+| Speech to text | Whisper small (default); medium only as the fallback below | whisper.cpp (`-l tl`) | See the selection rule below |
+| Decision for unclear lines | Qwen2.5-3B (`qwen2.5:3b`) (default); Qwen2.5-1.5B (`qwen2.5:1.5b`) only with the medium fallback | Ollama | Must return JSON matching the decision interface. No AI phrasing for the recap |
 | Add-on a: face match | face-api.js or MobileFaceNet ONNX | browser or hub | 3 enrolled family members only |
 | Add-on b: person detection | MediaPipe or YOLO | hub | Runs on a pre-recorded clip |
 | Add-on c: speaker match | sherpa-onnx speaker embeddings or SpeechBrain ECAPA | hub | **Cut. Not built** ([mvp-plan.md](mvp-plan.md)) |
@@ -73,9 +80,10 @@ No text-to-speech or voice-cloning model is used anywhere: Lola only hears the f
 
 ### Speech model selection (by 11:30 PM)
 
-1. Time Whisper **small**, **medium**, and **large-v3-turbo** on the same 4 s Tagalog clip on the M2.
-2. Use **medium if it transcribes the clip in under about 1.5 s**; otherwise the fastest model whose transcript is usable.
-3. RAM rule: **16 GB → medium + Qwen2.5-3B. 8 GB → small + Qwen2.5-3B, or medium + Qwen2.5-1.5B.**
+The hub is an M1 with 8 GB RAM, so:
+1. **Default: Whisper small + `qwen2.5:3b`.** Time small on a 4 s Tagalog clip on the hub.
+2. **Fallback: Whisper medium + `qwen2.5:1.5b`**, only if the timing test shows small's Tagalog transcript is unusable.
+3. **Out on this hub:** medium + 3B, and large-v3-turbo (too heavy for 8 GB alongside the LLM).
 4. Log the real times and the choice in `docs/NOTES.md` (Model smoke test).
 
 **Published accuracy reference** (Whisper paper, Radford et al. 2022, FLEURS Tagalog word error rate): base 45.8%, small 27.7%, medium 19.1%. This is read speech from a benchmark, not our measurement. Lola's real Taglish will likely be worse, which is why the matcher, the urgent rules, the junk-line filter, and silent-if-unsure exist.
@@ -110,7 +118,7 @@ Changing an interface needs a post in the team chat, because every screen depend
 ## Data flow
 
 1. The hub mic hears speech; Silero VAD cuts the clip. (Or: "listen now" on backstage forces a capture; the typed-question box skips steps 1 to 3.)
-2. whisper.cpp transcribes it on the M2 → `heard` event.
+2. whisper.cpp transcribes it on the hub → `heard` event.
 3. Junk-line filter: quiet clips, likely-no-speech clips, and known junk lines are dropped. Backstage shows them as `heard` with `dropped` true. They never reach Lola or the caregiver.
 4. Throttle: one model call at a time. Stale clips are discarded and emit no event.
 5. `decide()`: urgent-word rules → known-question matcher → Qwen only if still unclear → `decided` event.
@@ -140,11 +148,12 @@ None of these are facts yet. Log real results in `docs/NOTES.md` (Model smoke te
 |---|---|---|
 | Speech-to-reply latency, known question | about 2 s | to verify at smoke test |
 | Speech-to-reply latency, model decides | about 4 to 5 s | to verify at smoke test |
-| Whisper small / medium / large-v3-turbo on a 4 s Tagalog clip | medium under about 1.5 s? | to verify by 11:30 PM |
+| Whisper small on a 4 s Tagalog clip (medium only if small is unusable) | small's transcript usable | to verify |
 | Transcript quality on Taglish speech | usable for the matcher | to verify at smoke test |
 | `qwen2.5:3b` / `1.5b` JSON validity and time | valid JSON every time | to verify at smoke test |
-| M2 RAM | 8 or 16 GB | TODO (Donita) |
-| Internet Sharing with no upstream | iPad and iPhone reach the hub | to verify by 11:15 PM |
+| Hub RAM | 8 GB (M1) | confirmed by Donita, Sat 1:20 AM |
+| Offline network (rung 1: iPhone hotspot + firewall) | iPad and iPhone reach the hub over HTTPS | to verify |
+| LAN-only firewall | outbound check fails, LAN still works | to verify |
 | Junk-line filter | drops TV sign-offs and silence, keeps real questions | to verify at smoke test |
 | Hub chime audible across a room | yes | to verify at smoke test |
 | Hub cold start with `start.sh` | under 2 min with seed loaded | to verify at smoke test |
