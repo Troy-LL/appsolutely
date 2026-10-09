@@ -142,6 +142,8 @@ def _unit_cases(done, whisper_up):
         ("Nasaan si Nanay?", -10.0, ""),
         ("Masakit ang dibdib ko", -10.0, ""),
         ("Salamat sa panonood po", -10.0, ""),  # extra words: decide()'s TV rule handles it
+        ("Salamat sa panunod.", -10.0, "junk line"),  # how Whisper small wrote t02.wav
+        ("Salamat sa panunod, nasaan si Nanay?", -10.0, ""),  # a real question after it stays
     )
     for text, peak, want in cases:
         got = listen.junk_reason(text, peak)

@@ -56,6 +56,16 @@ Hub: M1 MacBook Air, 8 GB (MacBookAir10,1), macOS 26.5.1. whisper.cpp built with
 | Ollama under the LAN-only firewall | Hub, firewall on, internet blocked (Sat 2:00 AM) | `curl http://127.0.0.1:11434/api/version` | `{"version":"0.40.2"}` | n/a | Yes. Whisper not run under the firewall yet |
 | Whisper small, `whisper-server` (D2), `-l tl`, `127.0.0.1:8080`. Model 487.01 MB, server memory 560 MB | Hub, Wi-Fi on (Sat ~2:20 AM). System memory 15% free with Ollama `qwen2.5:3b` also loaded | `test.wav`: Donita saying "Nasaan si Nanay?", 3.55 s (1 clip, 1 voice). Plain request, temperature 0, 3 runs | No: "nasa ang zina na iy." | 0.596 s, 0.505 s, 0.559 s (curl total) | No: wrong transcript |
 | same, with hint prompt "Nasaan si Nanay? Nasaan si Joy? Sino ka?" | same | same `test.wav`, 2 runs | Yes: "Nasaan si Nanay?" | run 1: 1.053 s; run 2: 0.540 s (curl total) | Correct on 1 clip, 1 voice. The hint may make TV lines sound like known questions, so T5's TV rows must check it |
+| Whisper small, `whisper-server`, VAD on, temperature 0. **A: `language=tl`** (current) | Hub, Wi-Fi on (Sat ~4:45 AM) | 32 synthetic Lola clips in `brain/tests/audio/lola/` (Troy's PR #18, one take each). Each transcript then went through `hub/listen.py`'s junk filter and `decide()` in stub mode (no model call; lines the rules and matcher miss go to caregiver) | Transcript exact (same words after lowercasing and removing punctuation) 13/32, mean WER (word error rate) 0.35. Decision right 27/32, urgent missed 0. Misses: cf01, c18, c28, v01 (comfort → caregiver), t02 (silent → caregiver). English clips came out in English, not translated: "Where am I?", "I want to go home.", "Who is this?", "Thank you for watching."; "Where is Nanay?" came out "Where is Nani?" (still comfort) | median 0.51 s, max 0.67 s | Keep: only setting with 0 urgent missed |
+| same, **B: `language=auto`** | same | same 32 clips | Exact 7/32, WER 0.63. Decision right 18/32, urgent missed 4 (u09, us03, us14, us18) | median 0.88 s, max 3.16 s | No |
+| same, **C: `language=tl` + a generic Taglish style prompt** ("Uy, kumain ka na ba? Okay lang ako, medyo tired lang. Saan na yung remote? Wait lang, tatawag ako mamaya.") | same | same 32 clips | Exact 10/32, WER 0.54. Decision right 25/32, urgent missed 2 (u04, us14) | median 0.52 s, max 0.88 s | No |
+| same, **D: `language=tl` + known-questions prompt** (`WHISPER_HINT=1` style) | same | same 32 clips | Exact 14/32, WER 0.31. Decision right 28/32, urgent missed 1 (u04 "Nahulog ako" heard "Na hula ko"). Also "Where am I?" heard "Sa kong isang?" | median 0.57 s, max 0.91 s | No: missed an urgent clip. Keep `WHISPER_HINT` off |
+
+The A–D clips are synthetic voices (one take each). They have whole-English or whole-Tagalog lines but no mixed Taglish sentences, so TODO: real mixed Taglish recordings from teammates.
+
+The `t02` miss in A is fixed by adding Whisper's spelling "salamat sa panunod" to `JUNK_LINES` in `hub/listen.py` (same PR as these rows).
+
+Raw per-clip output of A–D is on the hub at `~/sino/taglish-compare.txt` (not in the repo).
 
 Raw outputs of the JSON check are on the hub at `~/sino/d3-json-check.txt` (not in the repo). Troy's `brain/model.py` on main already sends `format: "json"`.
 
