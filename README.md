@@ -16,7 +16,7 @@ Sino is a small home hub that answers a lola's repeated questions in her family'
   - TODO, add the rest as each is introduced.
 - **APIs and cloud services:** none at runtime. Test clips in brain/tests/audio/lola/ were generated before the event with ElevenLabs (synthetic, test input only; Sino itself runs offline).
 - **Existing code and assets:** open-source libraries only. Demo data (`brain/seed.json` and the teammate-recorded replies and photos) is labeled as demo data.
-- **AI development tools:** Claude Code, Cursor, Grok Bot (plus the Figma MCP if used).
+- **AI development tools:** Claude Code, Cursor, Grok Bot, Kiro (plus the Figma MCP if used). Kiro built Lola's iPad screen (`web/lola/`).
 
 ## Key dates (PH time, UTC+8)
 

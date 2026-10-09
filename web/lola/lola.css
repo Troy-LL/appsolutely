@@ -1,0 +1,290 @@
+/* lola.css — Lola's iPad wall. Ink on paper only.
+ *
+ * Design system: docs/sino/design-system.md (look) + the task spec (behavior).
+ * Only two colours ever appear here: paper #F4EDE0 and ink #2B2420.
+ * The one exception is the Start sheet's button, which may be green.
+ * No green/amber/red, gradients, shadows, blur, glow, icons or buttons
+ * anywhere else. One object on the wall at a time, 48px margins.
+ */
+
+/* ---- Local fonts (offline). Files live in fonts/. If a file is missing,
+ * font-display: swap falls back to system-ui, so text still shows. ---- */
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('fonts/Fredoka-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('fonts/Fredoka-SemiBold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/DMSans-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('fonts/DMSans-Bold.woff2') format('woff2');
+}
+
+:root {
+  --paper: #f4ede0;
+  --ink: #2b2420;
+  --green: #2f5e4e; /* Start button only */
+  --white: #ffffff; /* text on the Start button only */
+
+  --heading: 'Fredoka', 'DM Sans', system-ui, sans-serif;
+  --text: 'DM Sans', system-ui, sans-serif;
+
+  --margin: 48px; /* space-12 */
+  --fade: 400ms;
+  --breathe: 4s;
+
+  /* Default type sizes. The ?big option overrides these on <html class="big">. */
+  --time-l: 56px;
+  --text-l: 35px;
+  --text-m: 22px;
+  --name-m: 22px;
+  --name-l: 35px;
+}
+
+html.big {
+  --time-l: 72px;
+  --text-l: 44px;
+  --text-m: 28px;
+  --name-m: 28px;
+  --name-l: 44px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The whole screen. One object centred, wide margins. */
+#stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--margin);
+  overflow: hidden;
+}
+
+/* Each state is a layer stacked in the same place; we fade between them. */
+.state {
+  position: absolute;
+  inset: var(--margin);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--fade) ease;
+}
+.state.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---- Waiting: wall clock, time, day-part, reassurance ---- */
+#waiting .clock {
+  width: min(34vh, 300px);
+  height: min(34vh, 300px);
+  display: block;
+}
+#waiting .time {
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: var(--time-l);
+  line-height: 1.05;
+  margin-top: 24px;
+}
+#waiting .daypart {
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.25;
+  margin-top: 4px;
+}
+#waiting .reassure {
+  font-family: var(--text);
+  font-weight: 400;
+  font-size: var(--text-m);
+  line-height: 1.45;
+  margin-top: 16px;
+}
+
+/* ---- Listening: a thick ink ring that breathes ---- */
+#listening .ring {
+  width: min(30vh, 260px);
+  height: min(30vh, 260px);
+  border: 22px solid var(--ink);
+  border-radius: 999px;
+  transform-origin: center;
+  animation: breathe var(--breathe) ease-in-out infinite;
+}
+#listening .caption {
+  font-family: var(--text);
+  font-weight: 400;
+  font-size: var(--text-m);
+  line-height: 1.45;
+  margin-top: 32px;
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+
+/* ---- Answer: one picture frame, name under it, reply beside it ---- */
+#answer .answer-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  max-width: 100%;
+  max-height: 100%;
+}
+#answer .frame-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+/* The frame: 12px ink moulding, 6px corners, 12px paper mat, no shadow. */
+#answer .frame {
+  background: var(--ink);         /* the moulding */
+  border-radius: 6px;             /* r-frame */
+  padding: 12px;                  /* frame-l moulding thickness */
+  display: inline-block;
+}
+#answer .mat {
+  background: var(--paper);       /* the mat */
+  padding: 12px;                  /* mat */
+  border-radius: 2px;
+}
+/* The photo is 4:5 with a 2px ink hairline. */
+#answer .photo-box {
+  width: min(40vh, 340px);
+  aspect-ratio: 4 / 5;
+  border: 2px solid var(--ink);   /* hairline */
+  border-radius: 2px;             /* r-photo */
+  background: var(--paper);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#answer .photo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* No-photo fallback: the name inside the empty frame (never a gray box). */
+#answer .photo-box .fallback-name {
+  font-family: var(--heading);
+  font-weight: 500;              /* name-l weight */
+  font-size: var(--name-l);
+  color: var(--ink);
+  padding: 8px;
+  text-align: center;
+  line-height: 1.2;
+}
+/* Name plate under the frame. Hidden when the no-photo fallback is used. */
+#answer .name {
+  font-family: var(--heading);
+  font-weight: 500;              /* name-m weight */
+  font-size: var(--name-m);
+  line-height: 1.25;
+  margin-top: 16px;
+}
+/* The reply line beside the frame. */
+#answer .reply {
+  font-family: var(--text);
+  font-weight: 400;
+  font-size: var(--text-l);
+  line-height: 1.35;
+  text-align: left;
+  max-width: 42ch;
+}
+
+/* ---- Start sheet: the one button, fades away after the tap ---- */
+#start-sheet {
+  position: fixed;
+  inset: 0;
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: opacity var(--fade) ease;
+}
+#start-sheet.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+#start-sheet button {
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 28px;
+  color: var(--white);
+  background: var(--green);
+  border: 2px solid var(--ink);
+  border-radius: 14px;         /* r-button */
+  padding: 20px 48px;
+  min-height: 48px;            /* tap-min */
+  cursor: pointer;
+}
+
+/* ---- FAKE label: ink on paper, small, in a corner ---- */
+#fake-label {
+  position: fixed;
+  bottom: 12px;
+  right: 16px;
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 16px;             /* heading-s */
+  color: var(--ink);
+  z-index: 5;
+}
+#fake-label.hidden { display: none; }
+
+/* ---- Portrait (820x1180). Must not break. Reply goes under the frame. ---- */
+@media (orientation: portrait) {
+  #answer .answer-wrap {
+    flex-direction: column;
+    gap: 24px;
+  }
+  #answer .reply {
+    text-align: center;
+    max-width: 32ch;
+  }
+}
+
+/* ---- Reduced motion: no breathing, no fades. ---- */
+@media (prefers-reduced-motion: reduce) {
+  #listening .ring { animation: none; }
+  .state { transition: none; }
+  #start-sheet { transition: none; }
+}
