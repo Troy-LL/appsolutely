@@ -120,5 +120,8 @@
   {"id": "mc08", "bucket": "comfort", "text": "Did I eat?", "expected": "comfort", "reply_id": "meal-check"},
   {"id": "mc09", "bucket": "comfort", "text": "Have I eaten?", "expected": "comfort", "reply_id": "meal-check"},
   {"id": "n11", "bucket": "new", "text": "Kumain na ba ako? Uminom na ba ako ng gamot?", "expected": "caregiver", "reply_id": "", "reason": "medication"},
-  {"id": "us29", "bucket": "urgent", "text": "Masakit dibdib ko, kumain na ba ako", "expected": "urgent", "reply_id": ""}
+  {"id": "us29", "bucket": "urgent", "text": "Masakit dibdib ko, kumain na ba ako", "expected": "urgent", "reply_id": ""},
+  {"id": "us30", "bucket": "urgent", "text": "Too long, I can't breathe.", "expected": "urgent"},
+  {"id": "us31", "bucket": "urgent", "text": "Too long.", "expected": "urgent"},
+  {"id": "us32", "bucket": "urgent", "text": "Too long!", "expected": "urgent"}
 ]
