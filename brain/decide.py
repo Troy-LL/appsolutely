@@ -272,6 +272,8 @@ def _solo_hits(piece):
         return []
     ranked = []
     for canon in FUZZY_SOLO:
+        if piece[0] != canon[0]:
+            continue
         limit = _urgent_limit(piece, canon)
         if not limit:
             continue
@@ -288,7 +290,7 @@ def _solo_hits(piece):
 def _near_canon(piece, canon):
     if piece == canon or URGENT_TYPOS.get(piece) == canon:
         return True
-    if len(piece) < 4:
+    if len(piece) < 4 or piece[0] != canon[0]:
         return False
     limit = _urgent_limit(piece, canon)
     return bool(limit) and _levenshtein(piece, canon, limit) <= limit
