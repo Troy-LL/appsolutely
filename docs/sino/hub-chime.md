@@ -14,6 +14,10 @@ From `hub/`, use macOS built-in `afplay`. No downloaded sound and no extra audio
 afplay -v 1 /System/Library/Sounds/Glass.aiff
 ```
 
+One alarm plays Glass 5 times back to back, with no gap: each play starts right after the previous one ends. Glass is 1.65 s long (measured with `afinfo`), so one alarm lasts about 8.25 s. `play_chime()` in `hub/chime.py` starts it in the background and returns at once. If a second urgent line comes while an alarm is still playing, no second alarm starts, so the sounds never pile up.
+
+Changed Sat ~4:10 AM at Donita's request after testing: a single Glass was too easy to miss. The gap between plays was removed at Donita's request (~4:20 AM) so the dings are closer.
+
 `-v 1` is `afplay`'s full scale. Louder than that is the Mac's output volume. Turn the hub volume up before the demo ([demo.md](demo.md)).
 
 `/lola` does not play this file and does not turn red.

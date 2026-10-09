@@ -179,6 +179,20 @@ Hub (M1, Ollama, mkcert `wss://`):
 HOST=0.0.0.0 PORT=8000 SINO_MODEL=ollama HUB_URL=http://127.0.0.1:11434 CERT=/absolute/path/cert.pem KEY=/absolute/path/key.pem python3 brain/server.py
 ```
 
+**One command (D6): `hub/start.sh`.** Run it from the repo on the hub. Anyone on the team can.
+
+```bash
+hub/start.sh          # start what is not answering, warm qwen2.5:3b, print the health light
+hub/start.sh status   # health light only: Whisper, AI model, server, mic, offline, plus the hub URL
+hub/start.sh stop     # stop only what hub/start.sh started
+```
+
+- A part that already answers is left alone: Ollama (`127.0.0.1:11434`), whisper-server (`127.0.0.1:8080`), the hub server (`https://localhost:8000/health`). A part that does not is started in the background: `ollama serve` with `OLLAMA_KEEP_ALIVE=-1`, whisper-server with `-l tl` (plus `--vad` when the Silero model file is there), and `brain/server.py` with the hub line above and the certificates in `~/sino/certs/`. It waits up to 60 s in total. If a part did not come up, it names it and its log and exits non-zero. Don't press Ctrl+C while it starts things.
+- Logs are `~/sino/logs/<part>.log` and PID files are `~/sino/run/<part>.pid`. `stop` only stops the PIDs in those files, and leaves processes started by hand alone. Every setting at the top of the script can be overridden with an environment variable.
+- Keep-warm: start loads `qwen2.5:3b` (`keep_alive` -1), then a loop sends a one-token request every 60 s. Reason: after ~35 min idle the first request took 9.00 s because macOS swapped the model out (`docs/NOTES.md`, model smoke test).
+- It does not touch the firewall. It prints the enable command (`sudo pfctl -f /etc/pf.sino.conf -e`), and warns when the certificate does not include the hub's current IP.
+- Urgent chime: `hub/chime.py` runs `afplay -v 1 /System/Library/Sounds/Glass.aiff` 5 times, back to back (about 8.25 s, never two alarms at once), at the moment `alert` goes to `/caregiver` ([hub-chime.md](hub-chime.md)). Only `brain/server.py` `main()` turns it on, so tests make no sound. `CHIME=0` keeps it off. Audible across a room: to verify at smoke test.
+
 ## Offline guarantees
 
 - No cloud API, model download, or internet request on the core path at runtime. Models are downloaded once during setup.
