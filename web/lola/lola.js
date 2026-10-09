@@ -10,7 +10,8 @@ import { startMic } from './mic.js'
 // TODO: decision D5 — the real volume is set together on the iPad at test time.
 const MAX_VOLUME = 0.8
 const FADE_IN_MS = 300
-const HOLD_MS = 8000
+const AFTER_CLIP_MS = 1000 // after a family reply finishes, back to the clock this soon
+const HOLD_MS = 8000 // no recording, or the iPad blocked the sound: keep the answer up so a tap can play it
 const BACKOFF_MS = [500, 1000, 2000, 4000, 8000]
 const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA='
 const params = new URLSearchParams(location.search)
@@ -93,6 +94,15 @@ let pending = null
 let blocked = null
 let hold = null
 
+// One audio element for every reply. iPadOS only plays sound from an element that was first
+// played inside a tap, so the Simulan tap unlocks this one and every reply reuses it. A new
+// Audio() made later, outside a tap, can stay silent (the answer showed but no voice played).
+const player = new Audio()
+player.preload = 'auto'
+player.addEventListener('ended', clipDone)
+player.addEventListener('error', clipDone)
+let clipId = 0 // so a late answer from an older play() can't touch the current clip
+
 function speakerName(msg) {
   if (typeof msg.speaker === 'string' && msg.speaker) return msg.speaker
   return speakers.get(msg.reply_id) || ''
@@ -139,33 +149,34 @@ function startClip(msg) {
   cancelHold()
   blocked = null
   renderAnswer(msg)
-  if (!msg.reply_audio) { current = null; afterClip(); return }
-  const audio = new Audio(`${hubBase()}${msg.reply_audio}`)
-  audio.volume = 0
-  current = audio
-  audio.addEventListener('ended', () => clipDone(audio))
-  audio.addEventListener('error', () => clipDone(audio))
-  audio.play().then(() => fadeIn(audio)).catch(() => {
-    if (current !== audio) return
+  if (!msg.reply_audio) { current = null; afterClip(HOLD_MS); return }
+  const id = ++clipId
+  player.src = `${hubBase()}${msg.reply_audio}`
+  player.volume = 0
+  current = player
+  player.play().then(() => { if (id === clipId) fadeIn(player) }).catch(() => {
+    if (id !== clipId || current !== player) return
     current = null
-    blocked = audio
-    afterClip()
+    blocked = player
+    afterClip(HOLD_MS)
   })
 }
 
-function clipDone(audio) {
-  if (audio !== current && audio !== blocked) return
+function clipDone() {
+  if (current !== player && blocked !== player) return // e.g. the silent unlock clip ending
   blocked = null
-  afterClip()
+  afterClip(AFTER_CLIP_MS)
 }
 
 function retryBlocked() {
   if (!blocked) return
-  const audio = blocked
   blocked = null
-  current = audio
+  current = player
   cancelHold()
-  audio.play().then(() => fadeIn(audio)).catch(() => { if (current === audio) afterClip() })
+  const id = clipId
+  player.play().then(() => { if (id === clipId) fadeIn(player) }).catch(() => {
+    if (id === clipId && current === player) afterClip(HOLD_MS)
+  })
 }
 document.addEventListener('pointerdown', retryBlocked)
 document.addEventListener('click', retryBlocked)
@@ -179,11 +190,11 @@ function fadeIn(audio) {
   }, FADE_IN_MS / steps)
 }
 
-function afterClip() {
+function afterClip(delay = AFTER_CLIP_MS) {
   current = null
   if (pending) { const next = pending; pending = null; startClip(next); return }
   cancelHold()
-  hold = setTimeout(() => { hold = null; blocked = null; show('waiting') }, HOLD_MS)
+  hold = setTimeout(() => { hold = null; blocked = null; show('waiting') }, delay)
 }
 
 function onEvent(msg) {
@@ -267,7 +278,8 @@ markLang()
 let audioCtx = null
 $('#start-btn').addEventListener('click', () => {
   $('#start-sheet').classList.add('gone')
-  new Audio(SILENT_WAV).play().catch(() => {})
+  // Unlock the reply player inside this tap (iPadOS rule) by playing a silent clip on it.
+  if (!current) { player.src = SILENT_WAV; player.play().catch(() => {}) }
   try {
     const Ctx = window.AudioContext || window.webkitAudioContext
     if (Ctx) {
