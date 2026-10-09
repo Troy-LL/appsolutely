@@ -17,7 +17,7 @@ Sino is a small home hub that answers a lola's repeated questions in her family'
   - `curl` and `openssl` (macOS built-ins) and `mkcert` (local HTTPS certificates), used by `hub/start.sh` for the health light and the certificate check.
   - TODO, add the rest as each is introduced.
 - **APIs and cloud services:** none at runtime. Test clips in brain/tests/audio/lola/ were generated before the event with ElevenLabs (synthetic, test input only; Sino itself runs offline).
-- **Existing code and assets:** open-source libraries only. Demo data (`brain/seed.json` and the teammate-recorded replies and photos) is labeled as demo data. `/backstage` serves the Fontsource OFL files already in `web/backstage/fonts/` (Fredoka 500/600, DM Sans 400/500/700). No new runtime dependency.
+- **Existing code and assets:** open-source libraries only. Demo data (`brain/seed.json` and the teammate-recorded replies and photos) is labeled as demo data. The default replies in `brain/media/` are real human recordings by Joy (no ElevenLabs, no text-to-speech). `/backstage` serves the Fontsource OFL files already in `web/backstage/fonts/` (Fredoka 500/600, DM Sans 400/500/700). No new runtime dependency.
 - **AI development tools:** Claude Code, Cursor, Grok Bot, Kiro (plus the Figma MCP if used). Kiro built Lola's iPad screen (`web/lola/`).
 
 ## Key dates (PH time, UTC+8)
