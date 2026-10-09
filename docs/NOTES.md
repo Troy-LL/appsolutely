@@ -64,20 +64,32 @@ TBD.
 | Fri Oct 9 10:40 PM | Spec hardened: quick setup is the MVP onboarding (9-step wizard dropped); junk-line filter + throttle + hidden "listen now"; speech model picked by timing at 11:30 PM with a RAM rule; urgent = hub chime + red card (no push offline); quiet grouped yellow cards; recap is counts only; "Nasaan si Nanay?" gets a validation reply; Internet Sharing no-upstream test at 11:15 PM; add-ons a → b → c behind a cut line; why-local leads with the always-on mic | Troy |
 | Fri Oct 9 11:20 PM | Interfaces locked for the build: WebSocket payloads, `POST /listen`, `GET`/`POST /questions`, and junk lines riding on `heard`. Shapes are in `docs/sino/architecture.md`. M2 RAM and measured latencies stay to verify | Troy |
 | Sat Oct 10 1:20 AM | Hub is an M1 (8 GB), macOS 26.5.1, not an M2. Models: Whisper small + qwen2.5:3b (medium + qwen2.5:1.5b only if small's Tagalog is unusable; medium + 3B and large-v3-turbo out). Internet Sharing failed (needs an active upstream; `bridge100` never appeared); no Android on the team. Network ladder changed (Troy, 1:23 AM): primary iPhone 15 hotspot + hub LAN-only `pf` firewall → spare router/pocket Wi-Fi with no WAN → iPhone USB + Internet Sharing + firewall → venue Wi-Fi + firewall. See `docs/sino/architecture.md#network` | Donita, Troy |
+| Sat Oct 10 2:00 AM | **Hub and models (locked).** Hub = Donita's MacBook Air M1 (8 GB). Whisper small + qwen2.5:3b; Whisper medium + qwen2.5:1.5b only if small's Tagalog is unusable. Network: Troy's iPhone 15 hotspot + LAN-only `pf` firewall on the hub. Internet Sharing failed; no Android. Hub not up yet; firewall untested | Troy |
+| Sat Oct 10 2:00 AM | **Pairs changed (at 1:51 AM).** Troy + Donita on the backend (hub + brain), Ayen + Viviene on the frontend (`/lola`, `/setup`, `/caregiver`, `/backstage`). The cross-pair sleep shifts in `docs/01-team.md` are TODO: re-decide | Troy |
+| Sat Oct 10 2:00 AM | **Recorded family voices are the core reply** for every known question. No text-to-speech, no cloning. Still to record (TODO): Joy's four replies and Troy's "Sino ka?" line | Troy |
+| Sat Oct 10 2:00 AM | **Live call cut** from tonight's build. Next step: calling a registered person on the house Wi-Fi (WebRTC). "Sino ka?" = the iPad shows the registered person's photo and plays their recorded line; on stage Troy then talks to "Lola" in person. Replaces the 12:57 AM "live call instead of the recording" change | Troy |
+| Sat Oct 10 2:00 AM | **MVP freeze moved from 2:00 AM to 3:30 AM.** Core to protect: hub hears, transcribes, `decide()`; known question gets the recorded voice + photo on the iPad; urgent gets the hub chime + red card; TV silent and `/backstage` shows decisions; quick setup with "Nasaan yung aso?" live. After the freeze: T7 Ask Sino about Lola (code already in `brain/ask.py`), meals, recap counts. Cut now: T6 face match and add-on (b) CCTV (next steps; "Nasaan si Lola?" answers "no camera answer"). Voice ID already cut. 5 AM add-ons cut-off: n/a. 7 AM rehearse and 8:30 AM submit unchanged. See `docs/sino/mvp-plan.md` | Troy |
+| Sat Oct 10 2:00 AM | **Status.** PRs #10 (triage hardening), #11 (T7 `ask.py`), #12 (T5 runner) merged. Stub-mode text run on Troy's Mac: urgent 34/34, comfort 37/37, TV false triggers 0, new 11/11, ask 9/9. Latency TODO (hub). Hub not up yet; firewall untested. Details under Pass/fail gate (T5) | Troy |
 
 ## Pass/fail gate (T5)
 
-Filled from a real 1:45 AM run. Until then every figure is TODO. Do not mark a pass, and do not show `Test: passed 1:45 AM` on `/backstage`, before this table is filled from a run. Spec: [sino/mvp-plan.md](sino/mvp-plan.md).
+The gate is met only by a hub run in `ollama` mode, before the 3:30 AM freeze (was 1:45 AM). Do not mark a pass, and do not show a `Test: passed` badge on `/backstage`, until the hub column is filled from a real run. Spec: [sino/mvp-plan.md](sino/mvp-plan.md#passfail-gate-t5-before-the-330-am-freeze).
 
-| Result | Value |
-|---|---|
-| urgent | TODO/10 |
-| comfort | TODO/10 |
-| TV false triggers | TODO |
-| mode | TODO (`ollama` or `stub`) |
+| Result | Stub mode, text only (Troy's Mac, Sat ~2:00 AM, after PRs #10–#12) | Hub, `ollama` mode |
+|---|---|---|
+| urgent | 34/34 | TODO |
+| comfort | 37/37 | TODO |
+| TV false triggers | 0 (8/8 TV rows silent) | TODO |
+| new questions | 11/11 | TODO |
+| Ask Sino about Lola (`brain/ask.py`) | 9/9 | TODO |
+| speech-to-reply latency | TODO: unknown (no audio) | TODO |
+| verdict | `PENDING (latency TODO: unknown)`, **not a pass** | TODO |
+| mode | `stub` | `ollama` |
+
+Stub mode checks the rules and the matcher only: the model is never called, so lines the rules and matcher miss go to the caregiver. A long TV dialogue that hits no TV word (for example one with "nasaan si nanay" mid-sentence) comes out caregiver in stub mode; only the hub run can show the model keeping it silent. `cases.json` has 96 text rows, not the 30 audio clips the gate names (clip mix TODO, Troy).
 
 ## Handoffs
 
 (Use the template in [01-team.md](01-team.md#handoff-note-write-it-in-docsnotesmd-at-100-am-and-430-am).)
 
-- Sat Oct 10, T5 stub run (`SINO_MODEL=stub python3 brain/tests/run_t5.py`, text only): mode stub; urgent 11/11; comfort 33/33; TV false triggers 8; model-path rows 15; verdict FAIL on the TV gate (0 required). Stub `classify()` returns no model action, so every TV line falls to caregiver. Speech-to-reply and model-path latency: TODO: unknown. Clip mix TODO (Troy); `cases.json` has 62 rows and the gate says 30 clips. This is not a pass; the badge stays off until a real hub run is logged.
+- Sat Oct 10, T5 stub run on the `troy/t5-harness` branch before PR #10 was merged (`SINO_MODEL=stub python3 brain/tests/run_t5.py`, text only): mode stub; urgent 11/11; comfort 33/33; TV false triggers 8; model-path rows 15; verdict FAIL on the TV gate. **Superseded:** after PRs #10–#12 merged, the same run on `main` gives urgent 34/34, comfort 37/37, TV false triggers 0, new 11/11 (Pass/fail gate above). Still not a pass; the badge stays off until a real hub run is logged.

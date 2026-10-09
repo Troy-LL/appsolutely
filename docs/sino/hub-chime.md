@@ -20,12 +20,12 @@ afplay -v 1 /System/Library/Sounds/Glass.aiff
 
 Whether the chime is audible across a room is to verify at smoke test ([architecture.md](architecture.md#to-verify-at-smoke-test)).
 
-## 1:00 AM test
+## Pre-freeze test (was the 1:00 AM test)
 
-Run this before Donita sleeps. The 1:00 AM handoff is in [mvp-plan.md](mvp-plan.md).
+Planned for 1:00 AM, before Donita slept. The hub was not up by then, so run it as soon as the hub is up and before the 3:30 AM MVP freeze ([mvp-plan.md](mvp-plan.md)). Not run yet as of Sat 2:00 AM.
 
 1. The hub is up from `start.sh`. The health light is up. The hub volume is up.
 2. On `/backstage`, type `Masakit dibdib ko` into the typed-question box (or speak that line).
 3. Pass: the hub speaker plays `Glass.aiff` through `afplay`, and `/caregiver` shows a red card with those words.
 4. Pass: `/lola` stays calm and does not turn red.
-5. Fail: no sound, sound from the iPad, or any red on `/lola`. Fix it before the handoff.
+5. Fail: no sound, sound from the iPad, or any red on `/lola`. Fix it before the freeze.

@@ -9,6 +9,8 @@
 | **UI / UX** | Ayen | `@AyenMejorada` | **UX/UI lead**: flow, design system, hero screen, front-end screens, README |
 | | Viviene | `@jwiwooyang` | UI/UX with Ayen, plus state screens, icons and assets, brand kit, ~1 min video, post graphic, pitch visuals, submission checklist, timekeeper |
 
+**Sino pairs since 1:51 AM Sat (Troy):** Troy + Donita on the backend (hub + brain), Ayen + Viviene on the frontend (`/lola`, `/setup`, `/caregiver`, `/backstage`). Per-person tasks: [sino/mvp-plan.md](sino/mvp-plan.md#owners).
+
 Ayen is listed as "Yen" on the official participant list (confirmed). Use "Ayen" on the submission form and in `CONTRIBUTIONS.md`.
 
 ## Availability
@@ -62,9 +64,7 @@ A starting point. We adjust it after the 1 PM reveal, once we know the screens.
 | 3:00 to 7:00 PM: devs build the ugly slice | Build front-end screens from frames; answer dev questions | Finish state screens and assets; video shot list; post graphic draft |
 | 7:00 PM checkpoint | Polish starts **only** if real AI works end to end | Same |
 | 7:30 PM to 1:00 AM: polish | Visual pass on working screens, wow-moment screen | Polish state screens and illustrations; pitch visuals; user test #2 |
-| 1:00 AM (Viviene sleeps) | | Before sleeping: everything exported in Figma, handoff note written |
-| 1:00 to 4:30 AM | Final visual QA, demo screen look. Before sleeping: handoff note | Asleep |
-| 4:30 to 7:00 AM | Asleep | Phone review of overnight fixes, video capture prep, post graphic final |
+| 1:00 to 7:00 AM | TODO: re-decide. The rows here assumed the old cross-pair sleep shifts; since 1:51 AM Ayen and Viviene work together on the frontend | TODO: re-decide |
 | Sat 7:00 to 8:30 AM | Demo screen final check | Record and edit the 1-min video, publish post graphic |
 
 **Optional stretch: mascot (Ayen).** Only if the core works after the 7 PM checkpoint, and only if it does a job in the UI (for example an empty or loading state). Not decoration. First thing cut if time is tight.
@@ -77,6 +77,8 @@ A starting point. We adjust it after the 1 PM reveal, once we know the screens.
 - Each designer hands off before their sleep window, so nothing is stuck waiting on someone asleep.
 
 ## Sleep shifts (cross-pair)
+
+**TODO: re-decide (Sat 2:00 AM).** These shifts were built on the cross-pairing (Troy + Ayen, Donita + Viviene). Pairs changed at 1:51 AM to Troy + Donita (backend) and Ayen + Viviene (frontend), and Donita and Viviene were still working at 1:51 AM, so the 1:00 AM switch did not happen. Kept below for history until the team picks new times.
 
 Each shift has one backend person and one UI person, so both sides of the app are covered at all hours.
 
