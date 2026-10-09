@@ -1,9 +1,10 @@
 // lola.js — Lola's wall. Plain ES module, no build step. States: Waiting
 // (clock) -> Listening (ring) -> Answer (framed photo). One language at a time.
 // Behavior: task spec; look: docs/sino/design-system.md.
-// Options: ?lang=tl|en, ?big, ?time=17:15, ?hub=host:port, ?feed=hub.
+// Options: ?lang=tl|en, ?big, ?time=17:15, ?hub=host:port, ?feed=hub, ?mic=off.
 import { openFeed, IS_FAKE } from '../fake-feed/index.js'
 import { STRINGS, LANGS, DEFAULT_LANG, LANG_NAMES, t, dayPartKey } from './strings.js'
+import { startMic } from './mic.js'
 
 // SAFETY (sound): never louder than MAX_VOLUME; clips fade in over FADE_IN_MS.
 // TODO: decision D5 — the real volume is set together on the iPad at test time.
@@ -275,6 +276,11 @@ $('#start-btn').addEventListener('click', () => {
     }
   } catch {}
   keepAwake()
+  // The iPad listens (real hub only, mic.js). The mic prompt must come from this tap.
+  // isPlaying: a family reply is playing, so the mic must not send it to the hub.
+  if (ON_HUB && params.get('mic') !== 'off') {
+    startMic({ ctx: audioCtx, hubBase, isPlaying: () => !!current && !current.paused })
+  }
 })
 
 if (IS_FAKE && !ON_HUB) {

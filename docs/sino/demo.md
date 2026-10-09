@@ -5,7 +5,7 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 ## Setup before going on stage
 
 - Hub (M1, 8 GB) running from `start.sh`, seed loaded, health light green.
-- iPad opens `https://<hub>:8000/lola/?feed=hub` and the family taps Start ("Simulan") once. iPhone on `/caregiver`, open on the hub's network (no push without internet). Backstage on the projected screen.
+- iPad opens `https://<hub>:8000/lola/?feed=hub` (the hub's mkcert HTTPS URL; Safari allows the mic only on HTTPS) and the family taps Start ("Simulan") once, then **allows the microphone** when the iPad asks. The iPad is Lola's main mic ([architecture.md](architecture.md#devices)). Set the iPad's Auto-Lock to Never (Settings → Display & Brightness → Auto-Lock) so the screen stays on. iPhone on `/caregiver`, open on the hub's network (no push without internet). Backstage on the projected screen.
 - The hub's LAN-only firewall is on and the OFFLINE badge is visible (it comes from a real outbound check failing). On rung 1 the house network is Troy's iPhone hotspot, which has cellular, so the claim is "the hub is firewalled to the house network", not "every device is offline". The iPhone cannot go to airplane mode, because that turns the hotspot off ([architecture.md](architecture.md#network)).
 - Clips ready: the 20 s teleserye clip (TODO below). No live CCTV and no voice ID: both stay cut. The recorded-clip demo is optional, below.
 - Recordings loaded: Joy's four replies and three meal clips, and the three "Sino ka?" lines (Troy, Joy, Donita) in `brain/media/`. Photos are still empty.
@@ -76,6 +76,7 @@ The caregiver taps "Kumain na". Lola asks "Kumain na ba ako?". The `ate` clip pl
 | If this fails on stage | Do this |
 |---|---|
 | Always-listening misses Lola | Hidden "listen now" button on backstage |
+| The iPad mic fails (permission denied, or nothing reaches the hub) | Reload the iPad on `/lola/?feed=hub&mic=off` (replies still play), then use the hub's "listen now" on backstage or the typed box |
 | The mic or Whisper fails | Type Lola's question into the hidden box on backstage; it goes through the same `decide()` |
 | The model is slow or wrong | Rules + matcher still answer known questions; backstage shows the decision |
 | The hub's network | Primary is the iPhone hotspot + hub LAN-only firewall (keep the iPhone on the hotspot screen). Then down the ladder ([architecture.md](architecture.md#network)): spare router/pocket Wi-Fi with no WAN → iPhone USB + Internet Sharing + firewall → venue Wi-Fi + firewall. Regenerate the mkcert cert if the hub IP changes. Last resort, USB-C cable to the iPad |

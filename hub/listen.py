@@ -200,15 +200,17 @@ def junk_reason(text, peak):
     return "junk line" if not line.strip() else ""
 
 
-async def process_clip(hub, path, label="listen now"):
+async def process_clip(hub, path, label="listen now", hub_mic=True):
     """Peak level, Whisper, junk filter; the clip is deleted. Junk goes to backstage only; real
-    speech goes to decide(). Shared by listen now and always-listening (hub/always.py)."""
+    speech goes to decide(). Shared by listen now, always-listening (hub/always.py) and iPad
+    uploads (hub/upload.py, hub_mic=False: those leave the hub mic's health light alone)."""
     global MIC_OK
     text = ""
     try:
         peak = await asyncio.to_thread(peak_dbfs, path)
         # All zeros means the mic is muted or macOS blocked it; a real room is never that quiet.
-        MIC_OK = peak > float("-inf")
+        if hub_mic:
+            MIC_OK = peak > float("-inf")
         if peak >= quiet_dbfs():
             text = await asyncio.to_thread(transcribe, path)
     except Exception as exc:
