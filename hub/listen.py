@@ -30,10 +30,13 @@ MARKERS = re.compile(r"\[[^\]]*\]|\([^)]*\)|\*[^*]*\*|[♪♫]")
 # Lines Whisper "hears" in TV sign-offs and silence. Lowercase, no punctuation, longest first.
 JUNK_LINES = (
     "maraming salamat sa panonood",
+    # Whisper small spells "panonood" as "panunod" (t02.wav, every language setting tried).
+    "maraming salamat sa panunod",
     "thank you so much for watching",
     "please like and subscribe",
     "thank you for watching",
     "salamat sa panonood",
+    "salamat sa panunod",
     "thanks for watching",
     "like and subscribe",
     "please subscribe",
@@ -222,7 +225,8 @@ async def listen_once(hub):
     reason = junk_reason(text, peak)
     if reason:
         await hub.send_to("backstage", {"event": "heard", "transcript": text,
-                                        "dropped": True, "drop_reason": reason})
+                                        "dropped": True, "drop_reason": reason,
+                                        "utterance_id": uuid.uuid4().hex})
     else:
         await hub.submit(spoken(text))
 

@@ -44,7 +44,8 @@ def run_mode():
 
 
 def is_model_path(decision):
-    return "model" in decision["reason"]
+    # source, not reason: in ollama mode Qwen writes its own reason (QA D-11).
+    return decision.get("source") == "model"
 
 
 def _show_ms(value):
@@ -208,8 +209,18 @@ def run_text():
     def bucket(name):
         return [(row, d) for row, d in checked if row["bucket"] == name]
 
+    def matches(row, decision):
+        # also_ok: a second right answer, e.g. chatter may be silent (README safety rule 3, QA D-12).
+        if decision["action"] != row["expected"] and decision["action"] not in row.get("also_ok", ()):
+            return False
+        if "reply_id" in row and decision["reply_id"] != row["reply_id"]:
+            return False
+        if "reason" in row and decision["reason"] != row["reason"]:
+            return False
+        return True
+
     def passed(pairs):
-        return sum(1 for row, d in pairs if d["action"] == row["expected"])
+        return sum(1 for row, decision in pairs if matches(row, decision))
 
     def ratio(pairs):
         return f"{passed(pairs)}/{len(pairs)}"
@@ -217,14 +228,14 @@ def run_text():
     urgent, comfort, tv, new = bucket("urgent"), bucket("comfort"), bucket("tv"), bucket("new")
     tv_false = [row["id"] for row, d in tv if d["action"] != "silent"]
     model_ids = [row["id"] for row, d in checked if is_model_path(d)]
-    failed_ids = [row["id"] for row, d in checked if d["action"] != row["expected"]]
+    failed_ids = [row["id"] for row, decision in checked if not matches(row, decision)]
 
     urgent_met = passed(urgent) == len(urgent)
     comfort_met = passed(comfort) >= COMFORT_MIN_RATIO * len(comfort)
     tv_met = not tv_false
     verdict = "PENDING (latency TODO: unknown)" if all((urgent_met, comfort_met, tv_met)) else "FAIL"
 
-    model_count = str(len(model_ids)) if mode == "stub" else UNKNOWN
+    model_count = str(len(model_ids))
 
     print(f"mode: {mode}")
     print(f"rows: {len(rows)} ({CASES.relative_to(HERE.parent.parent)})")
@@ -242,7 +253,7 @@ def run_text():
     print(f"| verdict | {verdict} | | |")
     print()
     print(f"TV false trigger ids: {', '.join(tv_false) or 'none'}")
-    print(f"model-path ids (reason contains 'model'): {', '.join(model_ids) or 'none'}")
+    print(f"model-path ids (source model): {', '.join(model_ids) or 'none'}")
     print(f"rows where action != expected: {', '.join(failed_ids) or 'none'}")
     print("TODO: audio path not run (text only).")
 

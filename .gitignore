@@ -7,5 +7,9 @@ hub/data/
 brain/face/models/
 brain/face/gallery/*
 !brain/face/gallery/README.md
+brain/clips/media/*
+!brain/clips/media/README.md
 *.jpg
 *.jpeg
+!web/lola/practice.jpg
+web/lola/shots/

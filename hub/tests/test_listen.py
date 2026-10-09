@@ -142,6 +142,8 @@ def _unit_cases(done, whisper_up):
         ("Nasaan si Nanay?", -10.0, ""),
         ("Masakit ang dibdib ko", -10.0, ""),
         ("Salamat sa panonood po", -10.0, ""),  # extra words: decide()'s TV rule handles it
+        ("Salamat sa panunod.", -10.0, "junk line"),  # how Whisper small wrote t02.wav
+        ("Salamat sa panunod, nasaan si Nanay?", -10.0, ""),  # a real question after it stays
     )
     for text, peak, want in cases:
         got = listen.junk_reason(text, peak)
@@ -202,6 +204,8 @@ async def _e2e_cases(port, done, whisper_up):
         source["wav"] = HUSH
         _check("b", _post_listen(port) == (202, b""))
         heard = await _recv_event(ws, "heard")
+        utterance_id = heard.pop("utterance_id", None)
+        _check("b", isinstance(utterance_id, str) and utterance_id, "utterance_id missing")
         _check("b", heard == {"event": "heard", "transcript": "", "dropped": True,
                               "drop_reason": "too quiet"}, (heard["dropped"], heard["drop_reason"]))
         _check("b", await _count_events(ws, ("decided", "heard"), 1.0) == 0, "extra event")

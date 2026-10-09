@@ -10,7 +10,7 @@ flowchart TD
       T4[T4 Medication<br/>✓ routes to caregiver, tests in cases.json]
       T5[T5 30-clip pass/fail test<br/>✓ stub runner PR #12 · audio mode PR #21 · hub run not logged]
       T7[T7 Ask Sino about Lola · after 3:30 AM<br/>✓ ask.py PR #11 · socket events PR #16 · /caregiver UI left]
-      T4m[Meals logic · after 3:30 AM]
+      T4m[T4m Meals logic · in review<br/>ate / ate_repeat / unknown from the tap<br/>recordings TODO: Joy's three meal clips]
       T6[T6 a: Face match · after freeze<br/>todo · after core on hub + T5 pass · hard stop 5 AM]
     end
     subgraph Donita["Donita · M1 (8 GB) hub"]
@@ -27,7 +27,7 @@ flowchart TD
   subgraph Frontend["Frontend pair · Ayen + Viviene"]
     subgraph Ayen["Ayen · setup + Lola screen"]
       A1[A1 Design system<br/>spec merged PR #15 · theme code not in repo]
-      A2[A2 Lola iPad: clock, photo, recorded reply<br/>not started in repo]
+      A2[A2 Lola iPad: clock, photo, recorded reply<br/>built in web/lola/ · fake feed works · branch AyenMejorada/lola-screen · not tested on the hub or iPad]
       A3[A3 Quick setup: question, phrasings, record, photo, test<br/>not started in repo]
       A4[A4 a: Face-match frame<br/>cut · next step]
     end
@@ -56,7 +56,7 @@ flowchart TD
   A1 --> A2 & A3 & V2 & V3
   V1 --> A2 & V2 & V3
   D5 --> A3
-  D4 & D5 & D6 & T3 & A2 & V2 & V3 --> W[W1 MVP wired on the hub · before 3:30 AM<br/>server glue PR #16 · mic path + screens missing]
+  D4 & D5 & D6 & T3 & A2 & V2 & V3 --> W[W1 MVP wired on the hub · before 3:30 AM<br/>server glue PR #16 · mic path missing · Lola screen: branch ready, not merged]
   W --> T5 --> F[F1 MVP freeze · 3:30 AM<br/>moved from 2 AM]
   T4 & A3 --> F
   F --> T7 & T4m & T6
@@ -74,7 +74,7 @@ flowchart TD
   classDef todo fill:#ffffff,stroke:#6b7280,color:#111
   classDef cut fill:#f3f4f6,stroke:#9ca3af,stroke-dasharray:5 5,color:#6b7280
   class I0,T1,T2,T3,T4,T5,T7,D1,D3,V1,L1 done
-  class D2,D4,D5,D6,A1,L2 doing
+  class D2,D4,D5,D6,A1,L2,T4m,A2 doing
   class W,L3 hub
-  class T4m,T6,C,A2,A3,V2,V3,V4,F,R,S,L4 todo
+  class T6,C,A3,V2,V3,V4,F,R,S,L4 todo
   class A4,D7,V5,D8,L5 cut

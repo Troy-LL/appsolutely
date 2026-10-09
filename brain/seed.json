@@ -3,7 +3,7 @@
     "id": "nasaan-si-nanay",
     "question": "Nasaan si Nanay?",
     "phrasings": ["Si Mama asan?", "Si Nanay, asan?", "Nasaan si Nanay?", "Nasaan si Mama?", "Nasaan na si Nanay?", "Asan si Mama?", "Where is Nanay?", "Where is Mama?", "Where is my mother?", "Where's Nanay?", "Where's Mama?"],
-    "reply_audio": "",
+    "reply_audio": "/media/nasaan-si-nanay-reply.m4a",
     "photo": "",
     "speaker": "Joy"
   },
@@ -11,7 +11,7 @@
     "id": "nasaan-si-joy",
     "question": "Nasaan si Joy?",
     "phrasings": ["Nasaan si Joy?", "Asan si Joy?", "Nasaan ka Joy?", "Asan ka, Joy?", "Where is Joy?", "Where are you, Joy?", "Where's Joy?"],
-    "reply_audio": "",
+    "reply_audio": "/media/nasaan-si-joy-reply.m4a",
     "photo": "",
     "speaker": "Joy"
   },
@@ -32,7 +32,7 @@
     "id": "nasaan-ako",
     "question": "Nasaan ako?",
     "phrasings": ["Nasaan ako?", "Asan ako?", "Nasaan ba ako?", "Where am I?"],
-    "reply_audio": "",
+    "reply_audio": "/media/nasaan-ako-reply.m4a",
     "photo": "",
     "speaker": "Joy"
   },
@@ -40,8 +40,32 @@
     "id": "gusto-ko-nang-umuwi",
     "question": "Gusto ko nang umuwi",
     "phrasings": ["Gusto ko nang umuwi", "Gusto ko na umuwi", "Gusto kong umuwi", "Uuwi na ako", "I want to go home", "Take me home"],
-    "reply_audio": "",
+    "reply_audio": "/media/gusto-ko-nang-umuwi-reply.m4a",
     "photo": "",
     "speaker": "Joy"
+  },
+  {
+    "id": "meal-check",
+    "question": "Kumain na ba ako?",
+    "phrasings": [
+      "Kumain na ba ako?",
+      "Kumain na ako?",
+      "Nakakain na ba ako?",
+      "Kumain na ba ko",
+      "kumaen na ba ko",
+      "ku main na ba ako",
+      "kumayn na ba ako",
+      "Did I eat?",
+      "Have I eaten?"
+    ],
+    "reply_audio": "/media/meal-check-unknown-reply.m4a",
+    "photo": "",
+    "speaker": "Joy",
+    "dynamic": "meal",
+    "replies": {
+      "ate": {"reply_audio": "/media/meal-check-ate-reply.m4a", "photo": "", "speaker": "Joy"},
+      "ate_repeat": {"reply_audio": "/media/meal-check-ate-repeat-reply.m4a", "photo": "", "speaker": "Joy"},
+      "unknown": {"reply_audio": "/media/meal-check-unknown-reply.m4a", "photo": "", "speaker": "Joy"}
+    }
   }
 ]
