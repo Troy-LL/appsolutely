@@ -24,6 +24,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
+import decide as decide_mod  # noqa: E402
 from decide import decide  # noqa: E402
 
 CASES = HERE / "cases.json"
@@ -180,10 +181,29 @@ def main(argv=None):
     return 0
 
 
+def _stub_model_checks():
+    probes = (
+        ("m-urgent", {"action": "urgent", "confidence": 1.0, "reason": "model urgent"}, "caregiver"),
+        ("m-silent", {"action": "silent", "confidence": 0.85, "reason": "model silent"}, "caregiver"),
+    )
+    saved = decide_mod.classify
+    found = []
+    try:
+        for case_id, output, expected in probes:
+            decide_mod.classify = lambda _text, output=output: output
+            row = {"id": case_id, "bucket": "new", "text": "hello there", "expected": expected}
+            found.append((row, decide("hello there")))
+    finally:
+        decide_mod.classify = saved
+    return found
+
+
 def run_text():
     mode = run_mode()
     rows = json.loads(CASES.read_text(encoding="utf-8"))
     checked = [(row, decide(row["text"])) for row in rows]
+    if mode == "stub":
+        checked.extend(_stub_model_checks())
 
     def bucket(name):
         return [(row, d) for row, d in checked if row["bucket"] == name]

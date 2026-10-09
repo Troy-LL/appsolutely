@@ -65,7 +65,7 @@ The small T5 badge is specified in [mvp-plan.md](mvp-plan.md). The fake feed emi
 
 `source` is `rule` when the urgent-word rules, the "sakit ng loob" idiom, the medication rule, the TV-word rule, or the known-question matcher decided. `source` is `model` when Qwen decided, including a model error or timeout (that path already goes to the caregiver). `ignored` is `tv` or `""`. This screen only reads the field.
 
-What `brain/decide.py` does today: the TV-word rule (`TV_PHRASES` and `TV_TOKENS`: "thank you for watching", "salamat sa panonood", abangan, kabanata, palabas, teleserye, dula, bes) returns `silent` with `ignored` `tv` and `source` `rule`. The model path never sets `ignored`: a model `silent` comes back with `ignored` `""`. So the demo clip in [demo.md](demo.md), a long dialogue the TV-word rule may not catch, only ticks this counter if its words hit the rule. **TODO (Troy): decide whether a model `silent` should set `ignored` `tv`, or add the clip's words to the rule, before the TV beat is rehearsed.**
+What `brain/decide.py` does today: the TV-word rule (`TV_PHRASES` and `TV_TOKENS`: "thank you for watching", "salamat sa panonood", abangan, kabanata, palabas, teleserye, dula, bes, balita, commercial; a TV word inside a longer word still counts) returns `silent` with `ignored` `tv` and `source` `rule`. The model path never sets `ignored`: a model `silent` comes back with `ignored` `""`. So the demo clip in [demo.md](demo.md), a long dialogue the TV-word rule may not catch, only ticks this counter if its words hit the rule. **TODO (Troy): decide whether a model `silent` should set `ignored` `tv`, or add the clip's words to the rule, before the TV beat is rehearsed.**
 
 ## Models and runtimes (all on the M1 (8 GB) hub, all local)
 
