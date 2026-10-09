@@ -20,6 +20,7 @@ MAX_BYTES = 10 * 1024 * 1024
 MAX_TEXT = 300
 MAX_PHRASINGS = 10
 MAX_SPEAKER = 60
+MAX_QUESTIONS = 50
 
 
 class BadInput(ValueError):
@@ -131,6 +132,8 @@ def save_question(fields, audio=None, photo=None):
             raise BadInput("question is required for a new question")
         if audio is None:
             raise BadInput("reply_audio is required for a new question")
+        if len(entries) >= MAX_QUESTIONS:
+            raise BadInput(f"at most {MAX_QUESTIONS} questions")
         qid = qid or _new_id(question, {e.get("id") for e in entries})
         entry = {"id": qid, "question": question, "phrasings": phrasings,
                  "reply_audio": "", "photo": "", "speaker": speaker}

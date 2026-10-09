@@ -7,6 +7,9 @@ Judges ask about how it works, decisions made, architecture, the AI implementati
 **"How is this different from any offline dementia assistant?"**
 (a) The voices are real recordings by the family, never cloned or synthetic. Cloning a relative's voice for a confused elder is an ethics problem. (b) Silence is a decision: Sino ignores TV and chatter, only speaks to known questions, and escalates new or urgent ones to a human. (c) The family writes and records every reply in quick setup, so the AI never invents facts about the family. (d) The backstage screen shows each decision and its reason live.
 
+**"You have cameras in the house. Isn't that a privacy problem, and does it still work offline?"**
+The cameras are optional add-ons, and they work like the mic: every frame goes only to the hub on the house network, behind the same LAN-only firewall, and is processed in memory. Nothing is written to disk or sent out. Face match (OpenCV YuNet + SFace, a few MB, on the hub CPU) only knows the 3 family members enrolled on the hub; their photos never leave it. The "where is Lola" snapshot lives in memory for 2 minutes and only the caregiver phone sees it. With the internet off, it all still works. If nobody is recognised, Sino plays the default reply; if no camera saw her, it says it doesn't know and never guesses a room. It assumes one person in the house for now. Only claim this if the add-ons were built and shown.
+
 **"Isn't this just a Google Home routine?"**
 Lola won't say a wake word, so Sino listens without one and decides on its own. The replies are the family's own recorded voices, not a synthetic assistant. And it triages every line: comfort, caregiver, urgent, or silent.
 
@@ -62,8 +65,8 @@ See the owners table in [mvp-plan.md](mvp-plan.md#owners). Everyone explains the
 | Hub owner asleep when the hub breaks | `start.sh` + health light, so anyone can restart it; handoff notes | Donita |
 | Alert fatigue for the caregiver | Yellow cards are quiet and grouped; only red makes sound | Viviene |
 | Lola is distressed by the system | Lola's iPad stays calm and never red; it never quizzes her or announces names as a test | Ayen |
-| Overnight scope creep | MVP frozen at 3:30 AM (moved from 2:00 AM); all add-ons (a) face match, (b) CCTV, (c) voice ID and the live call are cut to next steps | Troy |
-| "Sino ka?" names the wrong person | No face match tonight (cut), so "Sino ka?" always plays the one seeded reply. The demo uses only Troy's recorded line, and Troy is the one on stage | Troy |
+| Overnight scope creep | MVP frozen at 3:30 AM (moved from 2:00 AM); (a) face match and (b) CCTV are after-freeze add-ons, started only after T5 passes on the hub; (c) voice ID and the live call are cut to next steps | Troy |
+| "Sino ka?" names the wrong person | Without face match, "Sino ka?" plays Troy's seeded line. With face match (after-freeze add-on), only the 3 enrolled family members are recognised; no match falls back to Troy's line. The iPad never quizzes Lola | Troy |
 | Overclaiming in the pitch | Unmeasured numbers labeled "to verify"; no "faster than cloud"; battery only if shown unplugged; stub-mode numbers labeled as stub; seed data disclosed | Everyone |
 | Privacy of voices, faces, and transcripts | Everything stays on the hub; no audio stored by default; family can delete the log | Donita |
 | Being read as a medical device | Recap is counts only and says "not a diagnosis"; always escalates to a human | Viviene |
