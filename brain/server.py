@@ -7,6 +7,7 @@ import asyncio
 import json
 import os
 import sys
+import threading
 import time
 import urllib.request
 from contextlib import asynccontextmanager
@@ -23,6 +24,19 @@ from starlette.websockets import WebSocketDisconnect
 from ask import answer_about_lola
 from decide import decide, load_seed
 from model import DEFAULT_HUB_URL
+
+# brain/face ships on troy/face-engine and may be absent. Script launch also tries face.
+try:
+    from brain.face import load_gallery, identify_jpeg
+except ImportError:
+    try:
+        from face import load_gallery, identify_jpeg
+    except ImportError:
+        def load_gallery():
+            return None
+
+        def identify_jpeg(_gallery, _jpeg):
+            return {"who": None, "score": 0.0, "faces": 0, "ms": 0}
 
 # hub/questions.py (Donita, D5) stores new questions and their files. Appended last so brain/ wins.
 sys.path.append(str(Path(__file__).resolve().parent.parent / "hub"))
@@ -185,13 +199,26 @@ class Hub:
             "ignored": result["ignored"],
             "transcript": text,
         }
+        matched = None
+        if result["action"] == "comfort" and result.get("reply_id") == "sino-ka":
+            matched = await asyncio.to_thread(look_at_camera)
+            decided["who"] = matched["who"]
         await self.send_to("backstage", heard)
         action = result["action"]
         screens = ("backstage",) if action == "silent" else SCREENS
         for screen in screens:
             await self.send_to(screen, decided)
+        if matched is not None:
+            await self.send_to("backstage", {
+                "event": "face_seen",
+                "who": matched["seen_who"],
+                "score": matched["score"],
+            })
         if action == "comfort":
-            audio, photo = media_for(result["reply_id"])
+            if matched is not None and matched["use_person"]:
+                audio, photo = matched["audio"], matched["photo"]
+            else:
+                audio, photo = media_for(result["reply_id"])
             await self.send_to("lola", {
                 "event": "play_reply",
                 "reply_id": result["reply_id"],
@@ -372,6 +399,181 @@ async def socket(websocket: WebSocket):
         pass
     finally:
         hub.clients.pop(websocket, None)
+
+
+# One webcam frame when "Sino ka?" is comfort. cv2 may be absent; the server still starts.
+
+FRAME_TIMEOUT = 1.5
+
+
+def face_threshold():
+    raw = os.environ.get("FACE_THRESHOLD_HIGH", "0.55")
+    try:
+        value = float(raw)
+    except ValueError:
+        return 0.55
+    if isinstance(value, bool):
+        return 0.55
+    return value
+
+
+def _camera_read():
+    import cv2
+    cap = cv2.VideoCapture(0)
+    try:
+        if not cap.isOpened():
+            return None
+        ok, frame = cap.read()
+        if not ok or frame is None:
+            return None
+        good, buf = cv2.imencode(".jpg", frame)
+        if not good:
+            return None
+        return buf.tobytes()
+    finally:
+        cap.release()
+
+
+def grab_jpeg():
+    box = {}
+
+    def run():
+        try:
+            jpeg = _camera_read()
+        except Exception:
+            return
+        if jpeg:
+            box["jpeg"] = jpeg
+
+    worker = threading.Thread(target=run, daemon=True)
+    worker.start()
+    worker.join(FRAME_TIMEOUT)
+    return box.get("jpeg")
+
+
+def _person_entry(who):
+    try:
+        entries = load_seed()
+    except (OSError, ValueError):
+        return None
+    for entry in entries:
+        if not isinstance(entry, dict) or entry.get("id") != "sino-ka":
+            continue
+        people = entry.get("by_person")
+        if not isinstance(people, dict):
+            return None
+        person = people.get(who)
+        if not isinstance(person, dict):
+            return None
+        audio = person.get("reply_audio") or ""
+        photo = person.get("photo") or ""
+        if not isinstance(audio, str):
+            audio = ""
+        if not isinstance(photo, str):
+            photo = ""
+        return audio, photo
+    return None
+
+
+def look_at_camera():
+    started = time.monotonic()
+    jpeg = grab_jpeg()
+    if not jpeg:
+        return {
+            "who": "",
+            "seen_who": None,
+            "score": 0.0,
+            "audio": "",
+            "photo": "",
+            "use_person": False,
+            "ms": int((time.monotonic() - started) * 1000),
+        }
+    seen = recognize(jpeg)
+    who = ""
+    audio, photo = "", ""
+    use_person = False
+    score = seen["score"]
+    name = seen["who"]
+    if isinstance(name, str) and name and score >= face_threshold():
+        person = _person_entry(name)
+        if person is not None:
+            who = name
+            audio, photo = person
+            use_person = True
+    return {
+        "who": who,
+        "seen_who": who or None,
+        "score": score,
+        "audio": audio,
+        "photo": photo,
+        "use_person": use_person,
+        "ms": int((time.monotonic() - started) * 1000),
+    }
+
+
+_gallery = None
+_gallery_tried = False
+
+
+def _gallery_or_none():
+    global _gallery, _gallery_tried
+    if _gallery_tried:
+        return _gallery
+    _gallery_tried = True
+    try:
+        _gallery = load_gallery()
+    except Exception:
+        _gallery = None
+    return _gallery
+
+
+def recognize(jpeg):
+    try:
+        result = identify_jpeg(_gallery_or_none(), jpeg)
+    except Exception:
+        return {"who": None, "score": 0.0, "faces": 0, "ms": 0}
+    if not isinstance(result, dict):
+        return {"who": None, "score": 0.0, "faces": 0, "ms": 0}
+    who = result.get("who")
+    if not isinstance(who, str) or not who.strip():
+        who = None
+    else:
+        who = who.strip()
+    score = result.get("score", 0.0)
+    if isinstance(score, bool) or not isinstance(score, (int, float)):
+        score = 0.0
+    faces = result.get("faces", 0)
+    if isinstance(faces, bool) or not isinstance(faces, int) or faces < 0:
+        faces = 0
+    ms = result.get("ms", 0)
+    if isinstance(ms, bool) or not isinstance(ms, int) or ms < 0:
+        ms = 0
+    return {"who": who, "score": float(score), "faces": faces, "ms": ms}
+
+
+@app.post("/face/frame")
+async def face_frame(request: Request):
+    length = request.headers.get("content-length")
+    if length is not None:
+        try:
+            if int(length) > MAX_BYTES:
+                return Response("frame too large", status_code=400)
+        except ValueError:
+            return Response("bad content-length", status_code=400)
+    chunks = []
+    total = 0
+    async for chunk in request.stream():
+        total += len(chunk)
+        if total > MAX_BYTES:
+            return Response("frame too large", status_code=400)
+        chunks.append(chunk)
+    result = await asyncio.to_thread(recognize, b"".join(chunks))
+    await hub.send_to("backstage", {
+        "event": "face_seen",
+        "who": result["who"],
+        "score": result["score"],
+    })
+    return result
 
 
 def _ssl_kwargs():

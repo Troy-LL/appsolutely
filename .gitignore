@@ -4,3 +4,5 @@ __pycache__/
 brain/decisions.jsonl
 brain/tests/_test_decisions.jsonl
 hub/data/
+*.jpg
+*.jpeg

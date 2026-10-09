@@ -21,7 +21,12 @@
     "phrasings": ["Sino ka?", "Sino ka ba?", "Sino po kayo?", "Sino ba kayo?", "Who are you?"],
     "reply_audio": "",
     "photo": "",
-    "speaker": "Troy"
+    "speaker": "Troy",
+    "by_person": {
+      "troy": {"reply_audio": "", "photo": "", "speaker": "Troy"},
+      "joy": {"reply_audio": "", "photo": "", "speaker": "Joy"},
+      "donita": {"reply_audio": "", "photo": "", "speaker": "Donita"}
+    }
   },
   {
     "id": "nasaan-ako",
