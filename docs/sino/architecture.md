@@ -128,13 +128,19 @@ Changing an interface needs a post in the team chat, because every screen depend
 2. whisper.cpp transcribes it on the hub → `heard` event.
 3. Junk-line filter: quiet clips, likely-no-speech clips, and known junk lines are dropped. Backstage shows them as `heard` with `dropped` true. They never reach Lola or the caregiver.
 4. Throttle: one model call at a time. Stale clips are discarded and emit no event, except a line with an urgent word: it is always decided (README safety rule 1).
-5. `decide()`: urgent-word rules → "sakit ng loob" idiom (caregiver) → medication (caregiver) → TV words (silent, `ignored` `tv`) → known-question matcher → Qwen only if still unclear → `decided` event.
+5. `decide()`: urgent-word rules (built-in stems, then a custom safety word when the line is not a TV line) → "sakit ng loob" idiom (caregiver) → medication (caregiver) → TV words (silent, `ignored` `tv`) → known-question matcher → Qwen only if still unclear → `decided` event. A custom word is urgent by rule. It does not override a TV line.
 6. Comfort → `play_reply` to `/lola`. Caregiver → `ask_caregiver` to `/caregiver` (quiet, grouped). Urgent → hub chime + `alert` to `/caregiver`. Silent → log only.
 7. `/backstage` shows each utterance as transcript → rule or model → action, confidence, reason → ms, plus the dropped row and `TV lines ignored: N` ([backstage proof](#backstage-proof)).
 
 ## Running the hub server
 
-`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `POST /listen/audio`, `GET /questions`, `POST /questions`, `POST /clips`, `GET /clips/snapshot`, and `/media`, and it calls `decide()` and `answer_about_lola()`. When `web/caregiver/dist` exists it also serves that build at `/caregiver` (`index.html` with `Cache-Control: no-cache`); the phone opens `https://<hub>:8000/caregiver/?feed=hub` so `/ws`, `/questions`, `/media` and `/clips/snapshot` share one origin. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
+`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `POST /listen/audio`, `GET /questions`, `POST /questions`, `GET /safety-words`, `POST /safety-words`, `POST /clips`, `GET /clips/snapshot`, and `/media`, and it calls `decide()` and `answer_about_lola()`. When `web/caregiver/dist` exists it also serves that build at `/caregiver` (`index.html` with `Cache-Control: no-cache`); the phone opens `https://<hub>:8000/caregiver/?feed=hub` so `/ws`, `/questions`, `/media` and `/clips/snapshot` share one origin. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
+
+TODO: contract gap — custom safety words. Additive, nothing renamed. The built-in stems stay in `brain/decide.py` (`URGENT_STEMS`). The caregiver card can add a word; it cannot remove a built-in.
+
+- `GET /safety-words` returns `{"builtin":[],"custom":[]}`. `builtin` is `URGENT_STEMS`. `custom` is the family's list.
+- `POST /safety-words` accepts `{"word":""}`. The hub trims, lowercases, and strips punctuation the same way `normalize()` does. Empty is 400 `{"error":"empty"}`. Under 4 letters is `{"error":"short"}`. Over 40 characters is `{"error":"long"}`. A duplicate of a built-in stem (including the English urgent phrases and the fuzzy solos such as `dibdib`) or of a saved word is `{"error":"duplicate"}`. Otherwise the word is appended to `hub/data/safety-words.json` and the response is `{"word":""}` with the stored spelling. `SINO_SAFETY_WORDS` overrides that file. `HUB_DATA` overrides the folder, same as the questions working copy.
+- `safety_word`: `{"event":"safety_word","word":""}` goes to the caregiver and backstage sockets when a word is saved, so other open screens show it. `decide()` reads the file on the next line. A custom hit is urgent, same fuzzy rules as the built-ins, unless the line is already a TV line: then the TV rule still wins and `ignored` stays `tv`.
 
 TODO: contract gap — the interfaces do not name a listen port. `PORT` defaults to 8000. `HOST` defaults to `0.0.0.0`.
 

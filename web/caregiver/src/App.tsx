@@ -2,7 +2,8 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { AskIntent, ChatMsg, Entry, Lang, MemberColor, Person, Question, Scale, Screen } from './types'
 import { makeT } from './i18n/i18n'
 import { initialLog, logReducer } from './data/log'
-import { loadQuestions, useFeed, USING_HUB } from './data/hub'
+import { loadQuestions, loadSafetyWords, useFeed, USING_HUB } from './data/hub'
+import { SAFETY_WORDS } from './data/safetyWords'
 import { readAbout } from './feed/events'
 import { startMonitoring } from './feed/monitor'
 import type { LinkStatus } from './feed/connect'
@@ -40,6 +41,8 @@ export default function App() {
   const [added, setAdded] = useState<Person[]>([])
   const [justAdded, setJustAdded] = useState<Person | null>(null)
   const [questions, setQuestions] = useState<Question[] | null>(null)
+  const [builtinWords, setBuiltinWords] = useState<string[]>(SAFETY_WORDS)
+  const [customWords, setCustomWords] = useState<string[]>([])
   const [loadError, setLoadError] = useState('')
   const [now, setNow] = useState(Date.now())
   const [log, dispatch] = useReducer(logReducer, initialLog)
@@ -62,8 +65,16 @@ export default function App() {
   const refreshQuestions = () => {
     loadQuestions().then(setQuestions).catch((e: unknown) => setLoadError(e instanceof Error ? e.message : String(e)))
   }
+  const rememberWord = (word: string) => {
+    if (!word || builtinWords.includes(word)) return
+    setCustomWords((words) => (words.includes(word) ? words : [...words, word]))
+  }
   // live events from /ws (fake feed unless ?feed=hub)
   const send = useFeed((event) => {
+    if (event.event === 'safety_word' && typeof event.word === 'string') {
+      rememberWord(event.word)
+      return
+    }
     const about = readAbout(event)
     if (about) {
       answer(about)
@@ -74,7 +85,13 @@ export default function App() {
     onStatus: setLink,
     onVisible: refreshQuestions,
   })
-  useEffect(() => { refreshQuestions() }, [])
+  useEffect(() => {
+    refreshQuestions()
+    loadSafetyWords().then((list) => {
+      setBuiltinWords(list.builtin)
+      setCustomWords(list.custom)
+    }).catch(() => undefined)
+  }, [])
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 60_000); return () => window.clearInterval(id) }, [])
   useUrgentSound(log.entries.some((e) => e.kind === 'urgent'))
 
@@ -190,6 +207,7 @@ export default function App() {
 
       {screen === 'knows' ? (
         <KnowsScreen t={t} questions={questions} loadError={loadError} people={people} todayCount={today.length}
+          builtinWords={builtinWords} customWords={customWords} onAdded={rememberWord}
           onOpenLog={() => go('activity')} />
       ) : null}
 

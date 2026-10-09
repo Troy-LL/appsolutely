@@ -25,7 +25,9 @@ from starlette.websockets import WebSocketDisconnect
 
 import clips as clipwhere
 from ask import answer_about_lola
-from decide import decide, load_seed, urgent_words
+from decide import (
+    SafetyWordError, add_custom_safety_word, decide, load_seed, safety_words_payload, urgent_words,
+)
 from model import DEFAULT_HUB_URL
 
 # brain/face ships on troy/face-engine and may be absent. Script launch also tries face.
@@ -528,6 +530,32 @@ async def add_question(request: Request):
         return save_question(fields, audio, photo)
     except BadInput as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
+
+
+@app.get("/safety-words")
+def get_safety_words():
+    return safety_words_payload()
+
+
+@app.post("/safety-words")
+async def post_safety_word(request: Request):
+    try:
+        payload = await request.json()
+    except Exception:
+        return JSONResponse({"error": "empty"}, status_code=400)
+    if not isinstance(payload, dict):
+        return JSONResponse({"error": "empty"}, status_code=400)
+    raw = payload.get("word", "")
+    if not isinstance(raw, str):
+        return JSONResponse({"error": "empty"}, status_code=400)
+    try:
+        word = add_custom_safety_word(raw)
+    except SafetyWordError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    event = {"event": "safety_word", "word": word}
+    await hub.send_to("caregiver", event)
+    await hub.send_to("backstage", event)
+    return {"word": word}
 
 
 @app.post("/listen")
