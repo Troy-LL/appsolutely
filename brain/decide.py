@@ -31,6 +31,10 @@ _ENGLISH_URGENT = (
     (re.compile(r"\bfell down\b"), "fell down"),
     (re.compile(r"\bchest pain\b"), "chest pain"),
     (re.compile(r"\bmy chest hurts\b"), "my chest hurts"),
+    # Whisper small writes "Tulong!" as "Too long" once VAD padding keeps the word (Donita's real
+    # clip, docs/NOTES.md Sat ~6:55 AM). Safer to over-alert than miss a cry for help, so the
+    # two-word phrase ("too long", "toolong", "too-long") is urgent; "too" or "long" alone is not.
+    (re.compile(r"\btoo\s*long\b"), "too long"),
 )
 MATCH_FILLER = {"po", "opo", "lola", "ma", "na", "ba"}
 MATCH_ALIASES = {"asan": "nasaan"}

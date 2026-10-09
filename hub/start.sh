@@ -16,9 +16,11 @@ PY="${PY:-$HOME/sino/hub-venv/bin/python}"
 WHISPER_DIR="${WHISPER_DIR:-$HOME/sino/whisper.cpp}"
 WHISPER_MODEL="${WHISPER_MODEL:-models/ggml-small.bin}"   # relative to WHISPER_DIR
 VAD_MODEL="${VAD_MODEL:-models/ggml-silero-v6.2.0.bin}"   # relative to WHISPER_DIR; skipped if missing
+VAD_PAD_MS="${VAD_PAD_MS:-200}"   # audio kept around speech; Whisper's default 30 ms cut "Tulong" off Donita's real clip, 200 kept it (docs/NOTES.md, Sat ~6:55 AM)
 CERT="${CERT:-$HOME/sino/certs/hub.pem}"
 KEY="${KEY:-$HOME/sino/certs/hub-key.pem}"
 PORT="${PORT:-8000}"
+ALWAYS_LISTEN="${ALWAYS_LISTEN:-0}"   # 1 = the hub mic listens all the time (hub/always.py)
 RUN_DIR="${RUN_DIR:-$HOME/sino/run}"    # PID files of what this script started
 LOG_DIR="${LOG_DIR:-$HOME/sino/logs}"   # one log file per part
 
@@ -144,7 +146,7 @@ do_start() {
       cd "$WHISPER_DIR" || exit 1
       if [ -f "$VAD_MODEL" ]; then
         launch whisper ./build/bin/whisper-server -m "$WHISPER_MODEL" -l tl --vad -vm "$VAD_MODEL" \
-          --host 127.0.0.1 --port 8080 --convert
+          --vad-speech-pad-ms "$VAD_PAD_MS" --host 127.0.0.1 --port 8080 --convert
       else
         say "  whisper: no $VAD_MODEL, starting without --vad"
         launch whisper ./build/bin/whisper-server -m "$WHISPER_MODEL" -l tl \
@@ -162,7 +164,7 @@ do_start() {
     fail "Hub server" "certificate missing ($CERT, $KEY)"
   else
     (cd "$ROOT" && launch server env HOST=0.0.0.0 PORT="$PORT" SINO_MODEL=ollama \
-      HUB_URL="$OLLAMA_URL" CERT="$CERT" KEY="$KEY" "$PY" brain/server.py)
+      ALWAYS_LISTEN="$ALWAYS_LISTEN" HUB_URL="$OLLAMA_URL" CERT="$CERT" KEY="$KEY" "$PY" brain/server.py)
   fi
 
   # 4. Wait for each part to answer (WAIT_SECONDS in total, not per part).
@@ -228,6 +230,11 @@ do_status() {
     say "  ?     Microphone (unknown while the hub server is down)"
     say "  ?     Offline (unknown while the hub server is down)"
     down=1
+  fi
+  if [ "$ALWAYS_LISTEN" = "1" ]; then
+    say "  Always-listening: ON"
+  else
+    say "  Always-listening: OFF (set ALWAYS_LISTEN=1 and restart to turn on)"
   fi
   if pid="$(running_pid keep-warm)"; then
     say "  OK    Keep-warm loop (pid $pid)"
