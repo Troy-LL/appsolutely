@@ -312,9 +312,9 @@ async def _run():
             try:
                 await _stale(port, clients)
                 passed += 1
-                print("stale newest wins: PASS")
+                print("stale newest wins, urgent kept: PASS")
             except (AssertionError, asyncio.TimeoutError) as exc:
-                print(f"stale newest wins: FAIL {exc}")
+                print(f"stale newest wins, urgent kept: FAIL {exc}")
 
             face_passed, face_total = await _face(port, clients)
             passed += face_passed
@@ -355,7 +355,23 @@ async def _stale(port, clients):
         _post(port, {"mode": "typed", "text": "Tulong"})
         _post(port, {"mode": "typed", "text": "Nasaan yung susi?"})
         gate.set()
-        await _expect_line(clients, "Nasaan yung susi?", "caregiver", "model", "")
+        # "Nasaan si Nanay?" is stale and dropped, but "Tulong" is urgent and is never dropped (QA D-01).
+        # The two lines left arrive back to back, so read each screen in order.
+        backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
+        seen_b = [await _recv(backstage) for _ in range(4)]
+        seen_c = [await _recv(caregiver) for _ in range(4)]
+        seen_l = [await _recv(lola) for _ in range(2)]
+        if [(m["event"], m["transcript"], m.get("action")) for m in seen_b] != [
+            ("heard", "Tulong", None), ("decided", "Tulong", "urgent"),
+            ("heard", "Nasaan yung susi?", None), ("decided", "Nasaan yung susi?", "caregiver"),
+        ]:
+            raise AssertionError(seen_b)
+        if [m["event"] for m in seen_c] != ["decided", "alert", "decided", "ask_caregiver"]:
+            raise AssertionError(seen_c)
+        if seen_c[1]["transcript"] != "Tulong" or [m["action"] for m in seen_l] != ["urgent", "caregiver"]:
+            raise AssertionError((seen_c, seen_l))
+        await _quiet(lola)
+        await _quiet(caregiver)
         await _quiet(clients["backstage"])
     finally:
         gate.set()

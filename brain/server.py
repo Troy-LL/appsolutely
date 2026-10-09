@@ -23,7 +23,7 @@ from starlette.websockets import WebSocketDisconnect
 
 import clips as clipwhere
 from ask import answer_about_lola
-from decide import decide, load_seed
+from decide import decide, load_seed, urgent_words
 from model import DEFAULT_HUB_URL
 
 # brain/face ships on troy/face-engine and may be absent. Script launch also tries face.
@@ -262,27 +262,33 @@ class Hub:
             gen, text = await self.queue.get()
             while True:
                 try:
-                    gen, text = self.queue.get_nowait()
+                    newer = self.queue.get_nowait()
                 except asyncio.QueueEmpty:
                     break
-            try:
-                result = await asyncio.to_thread(self.decide_call, text)
-            except Exception:
-                if gen != self.generation:
-                    continue
-                result = {
-                    "action": "caregiver",
-                    "reply_id": "",
-                    "reason": "model unavailable",
-                    "trigger_words": [],
-                    "confidence": 0.0,
-                    "latency_ms": 0,
-                    "source": "model",
-                    "ignored": "",
-                }
-            if gen != self.generation:
+                # The throttle drops older lines, but never one with an urgent word (QA D-01).
+                if urgent_words(text):
+                    await self.publish(text, await self._decide(text))
+                gen, text = newer
+            result = await self._decide(text)
+            # A newer line came in while deciding: drop this one, unless it is urgent.
+            if gen != self.generation and result["action"] != "urgent":
                 continue
             await self.publish(text, result)
+
+    async def _decide(self, text):
+        try:
+            return await asyncio.to_thread(self.decide_call, text)
+        except Exception:
+            return {
+                "action": "caregiver",
+                "reply_id": "",
+                "reason": "model unavailable",
+                "trigger_words": [],
+                "confidence": 0.0,
+                "latency_ms": 0,
+                "source": "model",
+                "ignored": "",
+            }
 
     async def publish(self, text, result):
         meal = None
