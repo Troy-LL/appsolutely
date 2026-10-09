@@ -549,7 +549,21 @@ def recognize(jpeg):
 
 @app.post("/face/frame")
 async def face_frame(request: Request):
-    result = await asyncio.to_thread(recognize, await request.body())
+    length = request.headers.get("content-length")
+    if length is not None:
+        try:
+            if int(length) > MAX_BYTES:
+                return Response("frame too large", status_code=400)
+        except ValueError:
+            return Response("bad content-length", status_code=400)
+    chunks = []
+    total = 0
+    async for chunk in request.stream():
+        total += len(chunk)
+        if total > MAX_BYTES:
+            return Response("frame too large", status_code=400)
+        chunks.append(chunk)
+    result = await asyncio.to_thread(recognize, b"".join(chunks))
     await hub.send_to("backstage", {
         "event": "face_seen",
         "who": result["who"],
