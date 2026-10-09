@@ -26,7 +26,7 @@ Read this first. It tells you which file owns what and when to open it.
 | [docs/sino/mvp-plan.md](sino/mvp-plan.md) | Timeline, pass/fail gate, sprints per person, sync points, task graph | Troy | 10:30 PM Fri, then at every sync |
 | [docs/sino/demo.md](sino/demo.md) | Pitch run of show, why-local close, "Sino ka?" roleplay, "Nasaan si Lola?", fallbacks, video | Troy (script), Viviene (visuals) | 7:00 AM Sat rehearsals |
 | [docs/sino/judge-qa.md](sino/judge-qa.md) | Judge Q&A answers, risks and mitigations | Troy | Before rehearsals and Demo Day |
-| [docs/sino/DONITA-SETUP.md](sino/DONITA-SETUP.md) | M2 hub installs and offline smoke test | Donita | Before the build; results go to NOTES |
+| [docs/sino/DONITA-SETUP.md](sino/DONITA-SETUP.md) | M1 (8 GB) hub installs and offline smoke test | Donita | Before the build; results go to NOTES |
 | `docs/sino/task-graph.mmd`, `task-graph.png` | Task dependencies (source and image) | Troy | With mvp-plan |
 | [docs/NOTES.md](NOTES.md) | Links, briefing summary, model smoke-test results, decision log, handoffs | Viviene (briefing), anyone (decisions) | 12:45 PM briefing; whenever a decision is made |
 | `CONTRIBUTIONS.md` (created after 1 PM) | Who built what, tools used | Viviene | Sat 7:00 AM |
@@ -72,10 +72,10 @@ Read this first. It tells you which file owns what and when to open it.
 | **Smoke test** | Right after idea lock: the exact model on the actual demo device, airplane mode, ~5 real inputs, speed and accuracy logged in NOTES. Fail by ~4 PM means pivot. |
 | **Why-local answer** | One sentence on why the product needs local AI, using one of the five official reasons: difficult, expensive, slow, private, impossible. Required at submission. |
 | **Sino** | Our project: a home hub that answers Lola's repeated questions in her family's recorded voice, and alerts the caregiver when needed. Fully offline. See sino/README |
-| **Hub** | Donita's M2 MacBook running the mic, whisper.cpp, Ollama, and the server for all screens |
+| **Hub** | Donita's M1 (8 GB) MacBook Air running the mic, whisper.cpp, Ollama, and the server for all screens |
 | **Lola's screen** | The A16 iPad, route `/lola`. Big clock, idle photo, full-screen photo with the family voice. Nothing else. Never red |
 | **Caregiver phone** | Troy's iPhone 15, route `/caregiver`. Log, red cards (sound), quiet grouped yellow cards, record-a-reply |
-| **Backstage** | The behind-the-scenes screen on the M2, route `/backstage`, where judges watch the AI decide |
+| **Backstage** | The behind-the-scenes screen on the hub, route `/backstage`, where judges watch the AI decide |
 | **Decision** | `decide()` output: one of comfort, caregiver, urgent, silent, plus reason, trigger words, confidence, latency |
 | **Comfort / caregiver / urgent / silent** | Play a family reply / send Lola's question to the caregiver / red alert now / stay quiet and log it |
 | **Escalate-only** | The AI can raise a decision (e.g. to urgent) but never lower one set by the urgent-word rules |

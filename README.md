@@ -8,7 +8,7 @@ Sino is a small home hub that answers a lola's repeated questions in her family'
 
 ## Disclosures (running list, updated as we build)
 
-- **Models:** Whisper via whisper.cpp (small, medium, or large-v3-turbo; final pick logged in docs/NOTES.md), Qwen2.5-3B or Qwen2.5-1.5B (Ollama), Silero VAD. Added only if an add-on ships: face (face-api.js or MobileFaceNet ONNX), person detection (MediaPipe or YOLO), speaker (sherpa-onnx or SpeechBrain ECAPA). Update this list to what was actually used.
+- **Models:** Whisper small via whisper.cpp + Qwen2.5-3B (Ollama) on an M1 (8 GB) hub; fallback Whisper medium + Qwen2.5-1.5B only if small's Tagalog is unusable (final pick logged in docs/NOTES.md), Silero VAD. Added only if an add-on ships: face (face-api.js or MobileFaceNet ONNX), person detection (MediaPipe or YOLO), speaker (sherpa-onnx or SpeechBrain ECAPA). Update this list to what was actually used.
 - **Frameworks and tools:** TODO, add as each is introduced.
 - **APIs and cloud services:** none at runtime.
 - **Existing code and assets:** open-source libraries only. Demo data (`seed.json`, teammate-recorded replies and photos, and the recorded CCTV clip if used) is labeled as demo data.

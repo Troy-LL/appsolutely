@@ -70,7 +70,7 @@ Official "why local" reasons this maps to ([../00-event.md](../00-event.md)): **
 | [mvp-plan.md](mvp-plan.md) | Timeline, checkpoints, sprints per person, sync points, task graph | Troy |
 | [demo.md](demo.md) | 5-minute pitch script, "Sino ka?" roleplay, "Nasaan si Lola?", airplane-mode fallbacks | Viviene (visuals), Troy (script) |
 | [judge-qa.md](judge-qa.md) | Judge Q&A answers, risks and mitigations | Troy |
-| [DONITA-SETUP.md](DONITA-SETUP.md) | M2 hub installs and offline smoke test | Donita |
+| [DONITA-SETUP.md](DONITA-SETUP.md) | M1 (8 GB) hub installs and offline smoke test | Donita |
 | [task-graph.mmd](task-graph.mmd), [task-graph.png](task-graph.png) | Task dependencies (source and rendered image) | Troy |
 
 ## Source of truth / do not invent

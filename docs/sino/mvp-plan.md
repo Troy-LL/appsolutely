@@ -9,7 +9,7 @@ Time estimates are rough and not benchmarked: **MVP ≈ 3.5 h of parallel work**
 | Who | Part | Owns |
 |---|---|---|
 | **Troy** | Backend: decision engine | `decide()`: matcher, urgent rules, Qwen prompt and JSON, silent rule, medication logic, seed replies, 30-clip test; meals logic after the 2 AM freeze; add-on (a) face match |
-| **Donita** | Backend: M2 hub | Network + no-upstream test, HTTPS, Whisper + model timing, Ollama, VAD, junk-line filter, throttle, `/listen` + WebSocket events, storage, `start.sh` + health light, urgent chime; add-on (b) detector only if stable by 5:00 AM; (c) voice ID is cut |
+| **Donita** | Backend: M1 (8 GB) hub | Network + no-upstream test, HTTPS, Whisper + model timing, Ollama, VAD, junk-line filter, throttle, `/listen` + WebSocket events, storage, `start.sh` + health light, urgent chime; add-on (b) detector only if stable by 5:00 AM; (c) voice ID is cut |
 | **Ayen** | Frontend: setup + Lola | Design system, Lola's iPad screen, quick setup (the onboarding), recording and photo upload; add-on (a) greeting view |
 | **Viviene** | Frontend: caregiver + judges | Fake event feed, caregiver iPhone app, behind-the-scenes screen (incl. "listen now" and typed question), Should items (Kumain na, recap counts); add-on (b) view |
 
@@ -20,8 +20,8 @@ Time estimates are rough and not benchmarked: **MVP ≈ 3.5 h of parallel work**
 | By | Done |
 |---|---|
 | 10:45 PM | Interfaces locked (I0) |
-| **11:15 PM** | **Network checkpoint:** Internet Sharing tested with no upstream. If it fails, switch to an Android hotspot with mobile data off or a travel router |
-| **11:30 PM** | **Speech model picked:** small / medium / large-v3-turbo timed on a 4 s Tagalog clip; RAM rule applied ([architecture.md](architecture.md#speech-model-selection-by-1130-pm)); results in NOTES |
+| **11:15 PM** | **Network checkpoint: done late, 1:20 AM.** Internet Sharing failed (needs an upstream). Primary: iPhone 15 hotspot + LAN-only `pf` firewall on the hub; backups: spare router/pocket Wi-Fi with no WAN → iPhone USB + Internet Sharing + firewall → venue Wi-Fi + firewall ([architecture.md](architecture.md#network)). mkcert cert for the hub IP |
+| **11:30 PM** | **Speech model picked:** 8 GB hub → Whisper small + qwen2.5:3b; medium + qwen2.5:1.5b only if small's Tagalog is unusable (timed on a 4 s clip); RAM rule applied ([architecture.md](architecture.md#speech-model-selection-by-1130-pm)); results in NOTES |
 | 12:30 AM | End to end: hub mic → iPad plays a reply |
 | **1:00 AM** | `start.sh` + health light work, so anyone can restart the hub; Donita and Viviene hand off and sleep |
 | 1:15 AM | Decision model wired, caregiver alerts and urgent chime working |
@@ -52,12 +52,12 @@ Each sprint ends with something demoable. If you finish early, pull the next spr
 | S5 | 2:00–4:30 | Should: meals logic, then add-on (a): T6 face match + greeting rule | "Kumain na ba ako?" answers from the log; then Troy's face + greeting → his photo and line; stranger → no name |
 | Sleep | 4:30–7:00 | | |
 
-### Donita: M2 hub
+### Donita: M1 (8 GB) hub
 
 | Sprint | Time | Deliver | Done when |
 |---|---|---|---|
-| S1 | 10:30–11:15 | D1 network + HTTPS + no-upstream test, D3 Ollama warm | iPad + iPhone open the https page with no internet; fallback chosen if not |
-| S2 | 11:15–12:15 | D2 Whisper + model timing (by 11:30), D4 VAD → junk filter → throttle → /listen → WebSocket, D5 seed loader + storage | Speaking near the M2 shows the transcript on backstage; TV sign-off lines are dropped; seed loader done before 12:15 (A3 needs it) |
+| S1 | 10:30–11:15 (D1 done late, 1:20 AM) | D1 iPhone hotspot + LAN-only firewall + mkcert HTTPS ([DONITA-SETUP.md](DONITA-SETUP.md#5-network-d1)), D3 Ollama warm | iPad + iPhone open the https page; `curl -m 3 https://google.com` fails on the hub; ping to the iPad works |
+| S2 | 11:15–12:15 | D2 Whisper + model timing (by 11:30), D4 VAD → junk filter → throttle → /listen → WebSocket, D5 seed loader + storage | Speaking near the hub shows the transcript on backstage; TV sign-off lines are dropped; seed loader done before 12:15 (A3 needs it) |
 | S3 | 12:15–1:00 | D6 `start.sh` + health light + urgent chime | Anyone can restart the hub; urgent plays the chime |
 | Sleep | 1:00–4:30 | | Hub left running; handoff note in `docs/NOTES.md` |
 | S4 | 4:30–5:00 | Add-on (b): D7 CCTV detector, only if stable by 5:00. (c) D8 voice ID is cut | "Nasa kusina" answer computed from the clip only if (b) is stable; otherwise cut |
@@ -113,8 +113,8 @@ flowchart TD
     T5[T5 30-clip pass/fail test]
     T6[T6 a: Face match + greeting rule]
   end
-  subgraph Donita["Donita · M2 hub"]
-    D1[D1 M2 network + HTTPS · no-upstream test 11:15 PM]
+  subgraph Donita["Donita · M1 (8 GB) hub"]
+    D1[D1 iPhone hotspot + LAN firewall + HTTPS · done late 1:20 AM]
     D2[D2 Whisper server · model timing 11:30 PM]
     D3[D3 Ollama loaded + warm]
     D4[D4 VAD → junk filter → throttle → WebSocket]

@@ -31,8 +31,11 @@ An always-on mic in Lola's sala must never stream anywhere. It also has to keep 
 **"How accurate is it on Tagalog? How fast?"**
 Quote only our own smoke-test and 30-clip numbers from `docs/NOTES.md`. The Whisper paper's FLEURS Tagalog figures (small 27.7% WER, medium 19.1%) are benchmark numbers on read speech, not ours.
 
-**"Who owns an M2 at home?"**
-We measured on an M2. Cheaper hubs are a next step. (Only claim "any old laptop" if we timed one, e.g. Troy's 2017 MacBook Pro.)
+**"Your phone hotspot has internet. Isn't that online?"**
+The phone is only the house network. The hub is firewalled to the house network: it can reach the iPad and the phone, nothing else, and backstage shows OFFLINE because an outbound check actually fails.
+
+**"Who owns an M1 (8 GB) at home?"**
+We measured on an M1 (8 GB). Cheaper hubs are a next step. (Only claim "any old laptop" if we timed one, e.g. Troy's 2017 MacBook Pro.)
 
 **"Who built what?"**
 See the owners table in [mvp-plan.md](mvp-plan.md#owners). Everyone explains their own part.
@@ -47,9 +50,9 @@ See the owners table in [mvp-plan.md](mvp-plan.md#owners). Everyone explains the
 | TV or chatter triggers a reply | Silent when the matcher misses and the model says chatter; TV clips in the test set with a 0 false-trigger target | Troy |
 | Always-listening floods the model | One model call at a time; stale clips dropped | Donita |
 | Always-listening misses on stage | Hidden "listen now" button and typed-question box on backstage | Viviene |
-| Model too slow or bad JSON | Known questions skip the model; error or timeout → caregiver; RAM rule picks 3B or 1.5B; rules + matcher fallback if the gate fails | Troy, Donita |
+| Model too slow or bad JSON | Known questions skip the model; error or timeout → caregiver; 8 GB hub: small + 3B, medium + 1.5B only as fallback; rules + matcher fallback if the gate fails | Troy, Donita |
 | No push notifications offline | Hub chime first, caregiver page on the local network second | Donita, Viviene |
-| Internet Sharing doesn't work with no upstream | Tested at 11:15 PM; Android hotspot with data off or travel router as fallback | Donita |
+| No offline network (Internet Sharing failed: needs an upstream) | Primary: iPhone hotspot + hub LAN-only firewall; backups in [architecture.md](architecture.md#network); backstage OFFLINE comes from a failing outbound check | Donita |
 | Hub owner asleep when the hub breaks | `start.sh` + health light, so anyone can restart it; handoff notes | Donita |
 | Alert fatigue for the caregiver | Yellow cards are quiet and grouped; only red makes sound | Viviene |
 | Lola is distressed by the system | Lola's screen is never red; greeting never quizzes her or announces names as a test | Ayen, Troy |
