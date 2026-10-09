@@ -33,8 +33,8 @@ Each route is designed for its own device only (no responsive juggling).
 
 | Viewport | Device | Who sees it | Route | Shows in the MVP | Only if an add-on ships | Owner |
 |---|---|---|---|---|---|---|
-| **Lola's screen** | A16 iPad (landscape, ~1180×820) | Lola | `/lola` | Big clock, idle family photo, full-screen photo while the family voice plays. **Nothing else.** Never red | Greeting photo + recorded line (add-on a) | Ayen |
-| **Caregiver phone** | iPhone 15 (portrait, ~393×852) | Caregiver / family | `/caregiver` | Live log; red cards (sound); quiet yellow cards with grouped repeats and record-a-reply; green log entries. Should: "Kumain na" button, recap counts | "Nasaan si Lola?" answer (add-on b) | Viviene |
+| **Lola's screen** | A16 iPad (landscape, ~1180×820) | Lola | `/lola` | Big clock, idle family photo, full-screen photo while the family voice plays. **Nothing else.** Never red. Calm colors only | Photo of a registered person, then a call only while that person is on the house Wi-Fi (no internet). If they are not on that network, their photo and the "Sino ka?" line they recorded in setup (add-on a) | Ayen |
+| **Caregiver phone** | iPhone 15 (portrait, ~393×852) | Caregiver / family | `/caregiver` | Live log; red cards (sound); quiet yellow cards with grouped repeats and record-a-reply; green log entries. A registered person can ask about Lola. "How is she" and "what has she been saying" are this log (counts and her words, not a diagnosis). Should: "Kumain na" button, recap counts | "Where is she" is the recorded-clip answer if add-on (b) is on, and "no camera answer, no room guessed" if it is off | Viviene |
 | **Behind the scenes** | M2 MacBook (~1440×900) | Judges / presenters | `/backstage` | Per-utterance proof ([below](#backstage-proof)): transcript → rule or model → action, confidence, reason → ms; a dropped row; `TV lines ignored: N`; T5 badge; OFFLINE badge; health light; hidden "listen now" and typed-question box | Face match panel (a). CCTV clip with detection box (b), only if stable by 5:00 AM. No voice match panel: voice ID is cut | Viviene |
 | **Setup** | iPhone 15 or iPad | Family | `/setup` | Quick setup: add question, two phrasings, hold to record, photo, test | n/a | Ayen |
 | (optional) Extra backstage | Viviene's Windows laptop | Audience | `/backstage` | Mirror of the M2 view | n/a | Viviene |
@@ -69,7 +69,7 @@ The small T5 badge is specified in [mvp-plan.md](mvp-plan.md). The fake feed emi
 | Add-on b: person detection | MediaPipe or YOLO | hub | Runs on a pre-recorded clip |
 | Add-on c: speaker match | sherpa-onnx speaker embeddings or SpeechBrain ECAPA | hub | **Cut. Not built** ([mvp-plan.md](mvp-plan.md)) |
 
-No text-to-speech or voice-cloning model is used anywhere: Lola only hears the family's own recordings (safety rule in [README.md](README.md#safety-rules)). Add-ons (a) and (b) sit below the cut line; (b) only if stable by 5:00 AM; (c) voice ID is cut and is not built. The face greeting and camera view overlap with common offline dementia-assistant ideas, so they are demo extras, not the story ([features.md](features.md#add-ons-behind-the-cut-line-after-the-200-am-freeze-in-this-order)).
+No text-to-speech or voice-cloning model is used anywhere: Lola only hears the family's own recordings (safety rule in [README.md](README.md#safety-rules)). Add-ons (a) and (b) sit below the cut line; (b) only if stable by 5:00 AM; (c) voice ID is cut and is not built. The camera view (b) overlaps with common offline dementia-assistant ideas, so it is a demo extra, not the story. The who-are-you moment is a call only while the registered person is on the house Wi-Fi, or the "Sino ka?" line they recorded in setup ([features.md](features.md#add-ons-behind-the-cut-line-after-the-200-am-freeze-in-this-order)).
 
 ### Speech model selection (by 11:30 PM)
 

@@ -22,8 +22,14 @@ Urgent words always alert; the model can only escalate, never downgrade. The hub
 **"How does the alert reach the phone with no internet?"**
 It doesn't use push notifications (those need Apple's servers). The chime is the first channel; the caregiver page, open on the home network, is the second.
 
+**"What if the family member isn't home?"**
+The iPad shows their photo and plays the "Sino ka?" line they recorded in setup. Calling them over the internet is a next step and opt-in.
+
+**"What if she wanders out?"**
+Sino notices when she leaves the room it can hear or see; finding her outside is a GPS tracker's job, and Sino works next to one. Not in the MVP.
+
 **"What does the AI actually do?"**
-Silero VAD detects speech; whisper.cpp transcribes it on the hub; a filter drops junk; rules and a matcher handle urgent words and known questions; Qwen2.5 in Ollama decides the unclear lines as JSON. Backstage shows every step with its latency. The daily recap is plain counts computed by code.
+Silero VAD detects speech; whisper.cpp transcribes it on the hub; a filter drops junk; rules and a matcher handle urgent words and known questions; Qwen2.5 in Ollama decides the unclear lines as JSON. Backstage shows every step with its latency. A registered person can ask Sino about Lola. "How is she" and "what has she been saying" are the local log, counts and her words, not a diagnosis. "Where is she" is the recorded-clip answer when add-on (b) is on, and "no camera answer, no room guessed" when it is off. The daily recap is those same counts computed by code.
 
 **"Why not the cloud?"**
 An always-on mic in Lola's sala must never stream anywhere. It also has to keep working when the internet is down.
@@ -52,9 +58,9 @@ See the owners table in [mvp-plan.md](mvp-plan.md#owners). Everyone explains the
 | Internet Sharing doesn't work with no upstream | Tested at 11:15 PM; Android hotspot with data off or travel router as fallback | Donita |
 | Hub owner asleep when the hub breaks | `start.sh` + health light, so anyone can restart it; handoff notes | Donita |
 | Alert fatigue for the caregiver | Yellow cards are quiet and grouped; only red makes sound | Viviene |
-| Lola is distressed by the system | Lola's screen is never red; greeting never quizzes her or announces names as a test | Ayen, Troy |
+| Lola is distressed by the system | Lola's iPad stays calm and never red; the call never quizzes her or announces names as a test | Ayen, Troy |
 | Overnight scope creep | MVP frozen at 2:00 AM; add-ons (a) then (b), cut at 5:00 AM if not stable; (b) only if stable by then; (c) voice ID is cut | Troy |
-| Face names the wrong person | Name only on a high-confidence match plus a greeting; unknown → no name. Voice ID is cut | Troy |
+| Face names the wrong person | Name and call only on a high-confidence match when she asks who they are, and only while they are on the house Wi-Fi; otherwise the recorded "Sino ka?" line, or no name if they are not registered. Voice ID is cut | Troy |
 | Overclaiming in the pitch | Unmeasured numbers labeled "to verify"; no "faster than cloud"; battery only if shown unplugged; CCTV labeled as a recorded clip; seed data disclosed | Everyone |
 | Privacy of voices, faces, and transcripts | Everything stays on the hub; no audio stored by default; family can delete the log | Donita |
 | Being read as a medical device | Recap is counts only and says "not a diagnosis"; always escalates to a human | Viviene |

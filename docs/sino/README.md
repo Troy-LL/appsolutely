@@ -5,7 +5,9 @@
 
 **Status:** idea locked Fri Oct 9 (see the decision log in [../NOTES.md](../NOTES.md)). This folder is the **locked spec**. Application code follows it.
 
-**One line:** Sino is a small home hub that answers Lola's repeated questions with her family's own recorded voice and photo. It decides when to comfort her, when to get the caregiver, and when to raise an alarm, and it keeps working with no internet.
+**Vision:** "An offline-first assistant so families caring for someone with dementia have more time and more patience for them, even when they can't be in the room."
+
+**Where we start:** Sino is a small home hub that answers Lola's repeated questions with her family's own recorded voice and photo. It decides when to comfort her, when to get the caregiver, and when to raise an alarm, and it keeps working with no internet. Repeated questions are where patience runs out.
 
 **Challenge fit** (official challenge text from [../00-event.md](../00-event.md)): "Build an AI product that remains genuinely useful when the cloud disappears." An always-on mic in Lola's sala must never stream anywhere, so Sino's core path needs no cloud at all. Speech recognition and the decision model run on a home device, and it keeps working with the internet off.
 
@@ -17,7 +19,7 @@
 
 **Caregiver line:** TODO — one real quote from a caregiver/nurse we talk to before 7 AM, with permission. Do not invent a quote or a statistic.
 
-**Users:** the caregiver and family (primary: they set it up and get alerts), and Lola (she hears and sees the replies).
+**Users:** the caregiver and family (they set it up, get alerts, and ask Sino about Lola), and Lola (calm screen only).
 
 ## How it works
 
@@ -38,6 +40,12 @@ flowchart TD
   S --> L[Caregiver log + daily recap]
   K --> L
   U --> L
+
+  P[Registered person asks Sino about Lola · caregiver phone] --> H{How is she / What has she been saying?}
+  H -- yes --> LG[Local log: counts + her words, not a diagnosis]
+  P --> W{Where is she?}
+  W -- add-on b on --> RC[Recorded-clip answer]
+  W -- add-on b off --> NC[No camera answer, no room guessed]
 ```
 
 ## What makes it different
@@ -70,7 +78,7 @@ Official "why local" reasons this maps to ([../00-event.md](../00-event.md)): **
 | [features.md](features.md) | MVP (incl. quick setup), should, add-ons behind the cut line, next steps; seeded replies; UX rules | Troy (scope), Ayen (onboarding) |
 | [architecture.md](architecture.md) | Devices, viewports, network, models, interfaces, data flow, offline guarantees, privacy, to-verify list | Donita (hub), Troy (decision engine) |
 | [mvp-plan.md](mvp-plan.md) | Timeline, checkpoints, sprints per person, sync points, task graph | Troy |
-| [demo.md](demo.md) | 5-minute pitch script, "Sino ka?" roleplay, "Nasaan si Lola?", airplane-mode fallbacks | Viviene (visuals), Troy (script) |
+| [demo.md](demo.md) | 5-minute pitch script, "Sino ka?" on the house Wi-Fi or the recorded fallback, "Nasaan si Lola?", airplane-mode fallbacks | Viviene (visuals), Troy (script) |
 | [judge-qa.md](judge-qa.md) | Judge Q&A answers, risks and mitigations | Troy |
 | [DONITA-SETUP.md](DONITA-SETUP.md) | M2 hub installs and offline smoke test | Donita |
 | [hub-chime.md](hub-chime.md) | Urgent chime: `afplay` on the hub, red card second, `/lola` never red, 1:00 AM test | Donita |
