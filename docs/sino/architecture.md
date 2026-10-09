@@ -113,7 +113,7 @@ Web stack is the repo default in [../../AGENTS.md](../../AGENTS.md): React + Vit
 4. **`POST /listen`:** returns 202 and no body. What happened arrives on `/ws`.
    - Listen now: `{"mode":"listen_now"}`. The hub captures from its own mic and runs VAD, Whisper, the junk filter, and `decide()`.
    - Typed question: `{"mode":"typed","text":""}`. Skips VAD, Whisper, and the junk filter. Emits `heard` with that `text` as `transcript` and `dropped` false, then `decided`.
-5. **Folders:** `brain/`, `hub/`, `web/setup`, `web/caregiver`, `web/backstage` (served by the hub at `/backstage/`). Which folder holds `/lola` is TODO: unknown (frontend pair to decide).
+5. **Folders:** `brain/`, `hub/`, `web/setup`, `web/caregiver` (served at `/caregiver/`), `web/lola` (served at `/lola/`), `web/backstage` (served at `/backstage/`).
 
 **Ask Sino about Lola:** the caregiver socket sends `{"event":"ask_about_lola","question":""}` and that socket alone gets `{"event":"about_lola","intent":"","answer":"","source":"","latency_ms":0}` (`answer_about_lola()`). TODO: contract gap — those event names were not in the locked list. Post them in the team chat.
 
@@ -154,6 +154,8 @@ TODO: contract gap — `mic` in `health`. It is true at start when ffmpeg's devi
 TODO: contract gap — no route or event for Ask Sino about Lola. Inbound on `/ws` from the caregiver socket: `{"event":"ask_about_lola","question":""}`. Reply to that socket only: `{"event":"about_lola","intent":"","answer":"","source":"","latency_ms":0}`.
 
 TODO: contract gap — meals check (T4m), for Viviene's V4. Post in the team chat. The wire `meal_logged` stays `{"event":"meal_logged"}`; the hub stamps `ts` on the log line only. On comfort for `meal-check`, `decided` gains additive `reply_variant` (`ate`, `ate_repeat`, or `unknown`) and `last_meal_ts` (that hub `ts`, or `""` when no meal is logged). `play_reply` uses the matching object in seed `replies` (`reply_audio`, `photo`, `speaker`); the question's top-level `reply_audio` and `photo` are the fallback. `unknown` also sends a quiet `ask_caregiver` whose `transcript` is "Lola asked if she's eaten. No meal logged." The same log counts food asks since that meal for the recap.
+
+TODO: contract gap — `play_reply` has no speaker name. Additive field `speaker`: the speaker of the reply that actually played, `""` when unknown. A "Sino ka?" face match uses that person's `by_person` entry; `meal-check` uses the chosen variant's `speaker`; otherwise the seed `speaker` for that `reply_id`. Lola's screen shows it as the name on the frame and never invents one.
 
 TODO: contract gap — recorded-clip demo, all additive, nothing renamed. Post them in the team chat. Footage stays on the hub (`brain/clips/media/`, gitignored). Frames stay in memory. The snapshot goes to the caregiver only, never to Lola's screen.
 

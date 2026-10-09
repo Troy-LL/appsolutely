@@ -11,3 +11,5 @@ brain/clips/media/*
 !brain/clips/media/README.md
 *.jpg
 *.jpeg
+!web/lola/practice.jpg
+web/lola/shots/

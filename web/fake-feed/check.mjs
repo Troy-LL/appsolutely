@@ -5,7 +5,7 @@ import { openFakeFeed, SCRIPT } from './index.js'
 const KEYS = {
   heard: ['event', 'transcript', 'dropped', 'drop_reason'],
   decided: ['event', 'action', 'reply_id', 'reason', 'trigger_words', 'confidence', 'latency_ms', 'source', 'ignored', 'transcript'],
-  play_reply: ['event', 'reply_id', 'reply_audio', 'photo'],
+  play_reply: ['event', 'reply_id', 'reply_audio', 'photo', 'speaker'],
   alert: ['event', 'transcript'],
   ask_caregiver: ['event', 'transcript', 'count'],
   health: ['event', 'whisper', 'ollama', 'server', 'mic', 'offline', 'model', 'last_event_at'],
