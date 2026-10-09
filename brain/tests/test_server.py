@@ -350,7 +350,7 @@ async def _run():
                     raise AssertionError(sorted(reply))
                 if reply["event"] != "about_lola" or reply["intent"] != "how":
                     raise AssertionError(reply)
-                if "Not a diagnosis" not in reply["answer"]:
+                if "Hindi ito diagnosis" not in reply["answer"]:
                     raise AssertionError(reply["answer"])
                 await _quiet(backstage)
                 await _quiet(lola)
@@ -825,7 +825,7 @@ async def _meals(port, clients, log_path):
             if food != [2]:
                 raise AssertionError(food)
             how = server.answer_about_lola("Kamusta si Lola?", server.read_log())
-            if "Asked about food 2x" not in how["answer"]:
+            if "pagkain 2 beses" not in how["answer"]:
                 raise AssertionError(how["answer"])
 
         passed += await _one_meal("second ask plays ate_repeat", second_ask)

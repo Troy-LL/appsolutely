@@ -13,93 +13,43 @@
     "last_seen": {"room": "kusina", "minutes_ago": 1}
   },
   "cases": [
-    {
-      "id": "a01",
-      "question": "Kamusta si Lola?",
-      "camera": false,
-      "expect_intent": "how",
-      "expect_contains": [
-        "Asked about Nasaan si Nanay? 4x",
-        "Asked about Nasaan si Joy? 1x",
-        "Asked about Nasaan yung aso? 2x",
-        "1 urgent alert at 5:15 PM",
-        "Not a diagnosis"
-      ],
-      "expect_not_contains": ["malungkot", "masaya", "depressed", "lonely", "sad", "anxious"]
-    },
-    {
-      "id": "a02",
-      "question": "Ano mga tanong niya?",
-      "camera": false,
-      "expect_intent": "saying",
-      "expect_contains": [
-        "Her words",
-        "'Nasaan si Nanay?' 4x",
-        "'Nasaan si Joy?'",
-        "'Nasaan yung aso?' 2x",
-        "'Masakit dibdib ko.'",
-        "Not a diagnosis"
-      ],
-      "expect_not_contains": ["malungkot", "masaya", "depressed", "lonely", "sad", "anxious"]
-    },
-    {
-      "id": "a03",
-      "question": "Ano ang mga tanong niya?",
-      "camera": false,
-      "expect_intent": "saying",
-      "expect_contains": [
-        "Her words",
-        "'Nasaan si Nanay?' 4x",
-        "'Masakit dibdib ko.'",
-        "Not a diagnosis"
-      ],
-      "expect_not_contains": ["malungkot", "masaya", "depressed", "lonely", "sad", "anxious"]
-    },
-    {
-      "id": "a04",
-      "question": "Nasaan si Lola?",
-      "camera": false,
-      "expect_intent": "where",
-      "expect_contains": ["Walang camera sagot"],
-      "expect_not_contains": ["sala", "kusina", "banyo"]
-    },
-    {
-      "id": "a05",
-      "question": "Nasaan si Lola?",
-      "camera": true,
-      "expect_intent": "where",
-      "expect_contains": ["Nasa kusina, 1 minuto na"]
-    },
-    {
-      "id": "a06",
-      "question": "Kamusta na si Lola?",
-      "camera": false,
-      "expect_intent": "how",
-      "expect_contains": ["4x", "1 urgent alert at 5:15 PM", "Not a diagnosis"],
-      "expect_not_contains": ["malungkot", "masaya", "depressed", "lonely", "sad", "anxious"]
-    },
-    {
-      "id": "a07",
-      "question": "Anong ginagawa niya ngayon?",
-      "camera": false,
-      "expect_intent": "unknown",
-      "expect_contains": ["Wala akong sagot mula sa log"],
-      "expect_not_contains": ["malungkot", "masaya", "depressed", "lonely", "sad", "anxious"]
-    },
-    {
-      "id": "a08",
-      "question": "Ano ang gamot ni Lola?",
-      "camera": false,
-      "expect_intent": "unknown",
-      "expect_contains": ["Wala akong sagot mula sa log"],
-      "expect_not_contains": ["dosage", "dosis", "take", "tablet"]
-    },
-    {
-      "id": "a09",
-      "question": "Nasaan si Nanay?",
-      "camera": false,
-      "expect_intent": "unknown",
-      "expect_contains": ["Wala akong sagot mula sa log"]
-    }
+    {"id": "a01", "question": "Kamusta si Lola?", "camera": false, "expect_intent": "how", "expect_contains": ["'Nasaan si Nanay?' 4 beses", "'Nasaan si Joy?' isang beses", "'Nasaan yung aso?' 2 beses", "May 1 agarang alerto noong 5:15 PM", "Hindi ito diagnosis."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia"]},
+    {"id": "a06", "question": "Kamusta na si Lola?", "camera": false, "expect_intent": "how", "expect_contains": ["4 beses", "agarang alerto noong 5:15 PM", "Hindi ito diagnosis."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia"]},
+    {"id": "a10", "question": "How is Lola?", "camera": false, "expect_intent": "how", "expect_contains": ["'Nasaan si Nanay?' 4 times", "'Nasaan si Joy?' once", "'Nasaan yung aso?' 2 times", "There was 1 urgent alert, at 5:15 PM.", "This isn't a diagnosis."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia"]},
+    {"id": "a11", "question": "How's Lola doing today?", "camera": false, "expect_intent": "how", "expect_contains": ["4 times", "This isn't a diagnosis."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia"]},
+    {"id": "a12", "question": "Kumusta si Lola today?", "camera": false, "expect_intent": "how", "expect_contains": ["Based sa narinig ko", "'Nasaan si Nanay?' 4 times", "May 1 urgent alert noong 5:15 PM", "Hindi ito diagnosis, ha."], "expect_not_contains": ["beses", "agarang", "This isn't", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia"]},
+    {"id": "a13", "question": "Okay lang ba si Lola ngayon?", "camera": false, "expect_intent": "how", "expect_contains": ["4 beses", "Hindi ito diagnosis."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia"]},
+    {"id": "a02", "question": "Ano mga tanong niya?", "camera": false, "expect_intent": "saying", "expect_contains": ["Ito ang mga sinabi ni Lola", "'Nasaan si Nanay?' 4 beses", "'Nasaan si Joy?'", "'Nasaan yung aso?' 2 beses", "'Masakit dibdib ko.'", "Hindi ito diagnosis."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia", "'."]},
+    {"id": "a03", "question": "Ano ang mga tanong niya?", "camera": false, "expect_intent": "saying", "expect_contains": ["'Nasaan si Nanay?' 4 beses", "'Masakit dibdib ko.'", "Hindi ito diagnosis."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia"]},
+    {"id": "a14", "question": "What has Lola been saying?", "camera": false, "expect_intent": "saying", "expect_contains": ["Here's what Lola has been saying", "'Nasaan si Nanay?' 4 times", "'Masakit dibdib ko.'", "This isn't a diagnosis."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia", "'."]},
+    {"id": "a15", "question": "Ano yung mga questions ni Lola today?", "camera": false, "expect_intent": "saying", "expect_contains": ["So far, ito yung mga sinabi ni Lola", "'Nasaan yung aso?' 2 times", "Hindi ito diagnosis, ha."], "expect_not_contains": ["beses", "This isn't", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia"]},
+    {"id": "a04", "question": "Nasaan si Lola?", "camera": false, "expect_intent": "where", "expect_contains": ["Wala akong camera", "hindi ko huhulaan"], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "sala", "kusina", "banyo"]},
+    {"id": "a05", "question": "Nasaan si Lola?", "camera": true, "expect_intent": "where", "expect_contains": ["Nasa kusina, 1 minuto na."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome"]},
+    {"id": "a16", "question": "Where is Lola?", "camera": false, "expect_intent": "where", "expect_contains": ["I don't have a camera on Lola", "I won't guess"], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti", "sala", "kusina", "banyo"]},
+    {"id": "a17", "question": "Where is she now?", "camera": true, "expect_intent": "where", "expect_contains": ["Lola was last seen in the kusina, 1 min ago."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti"]},
+    {"id": "a18", "question": "Where na si Lola?", "camera": false, "expect_intent": "where", "expect_contains": ["Wala akong camera kay Lola, so hindi ko huhulaan"], "expect_not_contains": ["sala", "kusina", "banyo", "I don't"]},
+    {"id": "a07", "question": "Anong ginagawa niya ngayon?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Pasensya na, hindi ko iyan masasagot", "Pwede mo akong tanungin kung kumusta si Lola, ano ang mga sinasabi niya, o saan siya huling nakita."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia"]},
+    {"id": "a09", "question": "Nasaan si Nanay?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Pasensya na", "Pwede mo akong tanungin kung kumusta si Lola, ano ang mga sinasabi niya, o saan siya huling nakita."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "kusina"]},
+    {"id": "a19", "question": "What is she doing right now?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Sorry, I can't answer that from what I've heard.", "You can ask me how Lola is doing, what she's been saying, or where she was last seen."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia"]},
+    {"id": "a20", "question": "Hi", "camera": false, "expect_intent": "unknown", "expect_contains": ["Hi, I'm Sino!", "You can ask me how Lola is doing, what she's been saying, or where she was last seen."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti", "4 times"]},
+    {"id": "a21", "question": "Kumusta ka?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Mabuti naman ako", "Pwede mo akong tanungin kung kumusta si Lola, ano ang mga sinasabi niya, o saan siya huling nakita."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "4 beses", "Sa mga narinig"]},
+    {"id": "a22", "question": "How are you?", "camera": false, "expect_intent": "unknown", "expect_contains": ["I'm doing well, thanks for asking!", "You can ask me how Lola is doing, what she's been saying, or where she was last seen."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti", "4 times"]},
+    {"id": "a23", "question": "Salamat po!", "camera": false, "expect_intent": "unknown", "expect_contains": ["Walang anuman!", "Pwede mo akong tanungin kung kumusta si Lola, ano ang mga sinasabi niya, o saan siya huling nakita."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome"]},
+    {"id": "a24", "question": "Thank you!", "camera": false, "expect_intent": "unknown", "expect_contains": ["You're welcome!", "You can ask me how Lola is doing, what she's been saying, or where she was last seen."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti"]},
+    {"id": "a25", "question": "Hello po, kumusta po kayo?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Mabuti naman ako", "Pwede mo akong tanungin kung kumusta si Lola, ano ang mga sinasabi niya, o saan siya huling nakita."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "4 beses"]},
+    {"id": "a26", "question": "Thanks po!", "camera": false, "expect_intent": "unknown", "expect_contains": ["Walang anuman, happy to help!", "You can ask me kung kumusta si Lola, ano yung mga sinasabi niya, o saan siya last nakita."], "expect_not_contains": ["4 times", "4 beses"]},
+    {"id": "a08", "question": "Ano ang gamot ni Lola?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Hindi ko masasagot ang tungkol sa gamot", "doktor", "Pwede mo akong tanungin kung kumusta si Lola, ano ang mga sinasabi niya, o saan siya huling nakita."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "dosage", "dosis", "take", "tablet", "tableta"]},
+    {"id": "a27", "question": "What medicine does Lola take, and how much?", "camera": false, "expect_intent": "unknown", "expect_contains": ["I can't help with medicine, health advice, or a diagnosis.", "doctor", "You can ask me how Lola is doing, what she's been saying, or where she was last seen."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti", "dosage", "dosis", "take", "tablet", "tableta", "4 times"]},
+    {"id": "a28", "question": "Ilang tableta ng gamot ang iinumin ni Lola?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Hindi ko masasagot", "doktor"], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "dosage", "dosis", "take", "tablet", "tableta"]},
+    {"id": "a29", "question": "Does Lola have dementia?", "camera": false, "expect_intent": "unknown", "expect_contains": ["I can't help with medicine, health advice, or a diagnosis."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia", "Alzheimer"]},
+    {"id": "a30", "question": "May sakit ba si Lola?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Hindi ko masasagot", "doktor"], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "malungkot", "masaya", "depressed", "lonely", "sad", "anxious", "confused", "dementia"]},
+    {"id": "a31", "question": "Should I bring Lola to the hospital?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Please ask Lola's doctor or her caregiver."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti"]},
+    {"id": "a32", "question": "Ano yung meds ni Lola today?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Sorry, hindi ako pwedeng sumagot about gamot", "You can ask me kung kumusta si Lola, ano yung mga sinasabi niya, o saan siya last nakita."], "expect_not_contains": ["dosage", "dosis", "take", "tablet", "tableta", "beses"]},
+    {"id": "a33", "question": "Kumusta si Lola, uminom na ba siya ng gamot?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Hindi ko masasagot ang tungkol sa gamot"], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "dosage", "dosis", "take", "tablet", "tableta", "4 beses"]},
+    {"id": "a34", "question": "What's the weather today?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Sorry, I can only answer questions about Lola.", "You can ask me how Lola is doing, what she's been saying, or where she was last seen."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti"]},
+    {"id": "a35", "question": "Tell me a joke", "camera": false, "expect_intent": "unknown", "expect_contains": ["Sorry, I can only answer questions about Lola."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti"]},
+    {"id": "a36", "question": "Kumusta ang panahon ngayon?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Pasensya na, mga tanong lang tungkol kay Lola", "Pwede mo akong tanungin kung kumusta si Lola, ano ang mga sinasabi niya, o saan siya huling nakita."], "expect_not_contains": ["times", "once", "This isn't", "Sorry", "You can", "about", "I can", "I don't", "urgent alert", "welcome", "Mabuti naman"]},
+    {"id": "a37", "question": "Who is the president of the Philippines?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Sorry, I can only answer questions about Lola."], "expect_not_contains": ["beses", "Hindi ito", "Pasensya", "Pwede", "nagtanong", "agarang", "Wala", "Mabuti"]},
+    {"id": "a38", "question": "May joke ka ba?", "camera": false, "expect_intent": "unknown", "expect_contains": ["Sorry, mga tanong lang about Lola", "You can ask me kung kumusta si Lola, ano yung mga sinasabi niya, o saan siya last nakita."], "expect_not_contains": ["beses"]}
   ]
 }
