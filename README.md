@@ -11,6 +11,8 @@ Sino is a small home hub that answers a lola's repeated questions in her family'
 - **Models:** Whisper small via whisper.cpp + Qwen2.5-3B (Ollama) on an M1 (8 GB) hub; fallback Whisper medium + Qwen2.5-1.5B only if small's Tagalog is unusable (final pick logged in docs/NOTES.md), Silero VAD. Planned after the freeze (add-on, not built yet): OpenCV YuNet + SFace for face match on the hub CPU; update this line if it ships. No person-detection or speaker models: CCTV and voice ID are cut (see `docs/sino/features.md`). No text-to-speech or voice cloning. Update this list to what was actually used.
 - **Frameworks and tools:**
   - `python-multipart` (file uploads on the hub).
+  - `ffmpeg` (records the hub mic for "listen now"; whisper-server also uses it to convert audio).
+  - whisper.cpp `whisper-server` (serves Whisper small to the hub at `127.0.0.1:8080`).
   - TODO, add the rest as each is introduced.
 - **APIs and cloud services:** none at runtime.
 - **Existing code and assets:** open-source libraries only. Demo data (`brain/seed.json` and the teammate-recorded replies and photos) is labeled as demo data.
