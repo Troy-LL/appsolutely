@@ -1,0 +1,26 @@
+[
+  {
+    "id": "nasaan-si-nanay",
+    "question": "Nasaan si Nanay?",
+    "phrasings": ["Si Mama asan?", "Si Nanay, asan?", "Nasaan si Nanay?", "Nasaan si Mama?"],
+    "reply_audio": "",
+    "photo": "",
+    "speaker": "Joy"
+  },
+  {
+    "id": "nasaan-si-joy",
+    "question": "Nasaan si Joy?",
+    "phrasings": ["Nasaan si Joy?", "Asan si Joy?", "Nasaan ka Joy?"],
+    "reply_audio": "",
+    "photo": "",
+    "speaker": "Joy"
+  },
+  {
+    "id": "sino-ka",
+    "question": "Sino ka?",
+    "phrasings": ["Sino ka?", "Sino ka ba?", "Sino po kayo?"],
+    "reply_audio": "",
+    "photo": "",
+    "speaker": "Troy"
+  }
+]
