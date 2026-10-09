@@ -200,28 +200,23 @@ def junk_reason(text, peak):
     return "junk line" if not line.strip() else ""
 
 
-async def listen_once(hub):
-    """Record, transcribe, filter. Junk goes to backstage only; real speech goes to decide()."""
+async def process_clip(hub, path, label="listen now"):
+    """Peak level, Whisper, junk filter; the clip is deleted. Junk goes to backstage only; real
+    speech goes to decide(). Shared by listen now and always-listening (hub/always.py)."""
     global MIC_OK
-    path, text = None, ""
+    text = ""
     try:
-        path = await asyncio.to_thread(record_clip, listen_seconds())
         peak = await asyncio.to_thread(peak_dbfs, path)
         # All zeros means the mic is muted or macOS blocked it; a real room is never that quiet.
         MIC_OK = peak > float("-inf")
         if peak >= quiet_dbfs():
             text = await asyncio.to_thread(transcribe, path)
-    except MicError as exc:
-        MIC_OK = False
-        print(f"listen now: recording failed: {exc}", file=sys.stderr)
-        return
     except Exception as exc:
         # Whisper down or a bad clip: nothing reaches Lola or the caregiver. Never print the words.
-        print(f"listen now: transcription failed ({type(exc).__name__})", file=sys.stderr)
+        print(f"{label}: transcription failed ({type(exc).__name__})", file=sys.stderr)
         return
     finally:
-        if path:
-            Path(path).unlink(missing_ok=True)  # no audio is kept
+        Path(path).unlink(missing_ok=True)  # no audio is kept
     reason = junk_reason(text, peak)
     if reason:
         await hub.send_to("backstage", {"event": "heard", "transcript": text,
@@ -230,9 +225,30 @@ async def listen_once(hub):
         await hub.submit(spoken(text))
 
 
+async def listen_once(hub):
+    """Record one fixed-length clip, then process it like any other clip."""
+    global MIC_OK
+    try:
+        path = await asyncio.to_thread(record_clip, listen_seconds())
+    except MicError as exc:
+        MIC_OK = False
+        print(f"listen now: recording failed: {exc}", file=sys.stderr)
+        return
+    except Exception as exc:
+        # Any other failure (e.g. no temp file could be made): same message as before the split.
+        print(f"listen now: transcription failed ({type(exc).__name__})", file=sys.stderr)
+        return
+    await process_clip(hub, path)
+
+
+def capturing():
+    """True while a listen now capture (recording plus transcription) is running."""
+    return _task is not None and not _task.done()
+
+
 def start_listen(hub):
     """POST /listen listen_now: start one capture in the background. Ignored if one is running."""
     global _task
-    if not ENABLED or (_task is not None and not _task.done()):
+    if not ENABLED or capturing():
         return
     _task = asyncio.create_task(listen_once(hub))

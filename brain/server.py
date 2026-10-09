@@ -46,6 +46,8 @@ from questions import MAX_BYTES, BadInput, ensure_working_copy, media_dir, save_
 from listen import enable_mic, mic_ok, start_listen  # noqa: E402
 # hub/chime.py (Donita, D6): the urgent chime on the hub speaker.
 from chime import enable_chime, play_chime  # noqa: E402
+# hub/always.py (Donita, D4): always-listening, off unless ALWAYS_LISTEN=1.
+from always import deafen_for_chime, deafen_for_reply, enable_always, start_always  # noqa: E402
 
 SCREENS = ("lola", "caregiver", "backstage")
 UNKNOWN_MEAL_NOTE = "Lola asked if she's eaten. No meal logged."
@@ -340,6 +342,7 @@ class Hub:
                 "reply_audio": audio,
                 "photo": photo,
             })
+            deafen_for_reply()  # always-listening ignores the hub mic while the iPad speaks
             if meal is not None and meal["reply_variant"] == "unknown":
                 await self.send_to("caregiver", {
                     "event": "ask_caregiver",
@@ -348,6 +351,7 @@ class Hub:
                 })
         elif action == "urgent":
             play_chime()  # hub speaker, returns at once (docs/sino/hub-chime.md); never /lola
+            deafen_for_chime()  # always-listening ignores the hub mic while the chime plays
             await self.send_to("caregiver", {"event": "alert", "transcript": text})
         elif action == "caregiver":
             await self.send_to("caregiver", {
@@ -437,12 +441,15 @@ async def lifespan(_app):
     hub.queue = asyncio.Queue()
     worker = asyncio.create_task(hub.worker())
     watch = asyncio.create_task(hub.watch_health())
+    always = start_always(hub)  # [] unless main() turned always-listening on
     try:
         yield
     finally:
         worker.cancel()
         watch.cancel()
-        for task in (worker, watch):
+        for task in always:
+            task.cancel()
+        for task in (worker, watch, *always):
             try:
                 await task
             except asyncio.CancelledError:
@@ -728,6 +735,8 @@ def main():
     enable_mic()
     # Same for the chime: only the hub process makes sound (CHIME=0 keeps it off).
     enable_chime()
+    # Always-listening: only the hub process, and only with ALWAYS_LISTEN=1 (off by default).
+    enable_always()
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", str(DEFAULT_PORT)))
     uvicorn.run(app, host=host, port=port, log_level="info", **_ssl_kwargs())

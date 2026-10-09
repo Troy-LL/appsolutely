@@ -19,6 +19,7 @@ VAD_MODEL="${VAD_MODEL:-models/ggml-silero-v6.2.0.bin}"   # relative to WHISPER_
 CERT="${CERT:-$HOME/sino/certs/hub.pem}"
 KEY="${KEY:-$HOME/sino/certs/hub-key.pem}"
 PORT="${PORT:-8000}"
+ALWAYS_LISTEN="${ALWAYS_LISTEN:-0}"   # 1 = the hub mic listens all the time (hub/always.py)
 RUN_DIR="${RUN_DIR:-$HOME/sino/run}"    # PID files of what this script started
 LOG_DIR="${LOG_DIR:-$HOME/sino/logs}"   # one log file per part
 
@@ -162,7 +163,7 @@ do_start() {
     fail "Hub server" "certificate missing ($CERT, $KEY)"
   else
     (cd "$ROOT" && launch server env HOST=0.0.0.0 PORT="$PORT" SINO_MODEL=ollama \
-      HUB_URL="$OLLAMA_URL" CERT="$CERT" KEY="$KEY" "$PY" brain/server.py)
+      ALWAYS_LISTEN="$ALWAYS_LISTEN" HUB_URL="$OLLAMA_URL" CERT="$CERT" KEY="$KEY" "$PY" brain/server.py)
   fi
 
   # 4. Wait for each part to answer (WAIT_SECONDS in total, not per part).
@@ -228,6 +229,11 @@ do_status() {
     say "  ?     Microphone (unknown while the hub server is down)"
     say "  ?     Offline (unknown while the hub server is down)"
     down=1
+  fi
+  if [ "$ALWAYS_LISTEN" = "1" ]; then
+    say "  Always-listening: ON"
+  else
+    say "  Always-listening: OFF (set ALWAYS_LISTEN=1 and restart to turn on)"
   fi
   if pid="$(running_pid keep-warm)"; then
     say "  OK    Keep-warm loop (pid $pid)"
