@@ -112,3 +112,35 @@ Stub mode checks the rules and the matcher only: the model is never called, so l
 (Use the template in [01-team.md](01-team.md#handoff-note-write-it-in-docsnotesmd-at-100-am-and-430-am).)
 
 - Sat Oct 10, T5 stub run on the `troy/t5-harness` branch before PR #10 was merged (`SINO_MODEL=stub python3 brain/tests/run_t5.py`, text only): mode stub; urgent 11/11; comfort 33/33; TV false triggers 8; model-path rows 15; verdict FAIL on the TV gate. **Superseded:** after PRs #10–#12 merged, the same run on `main` gives urgent 34/34, comfort 37/37, TV false triggers 0, new 11/11 (Pass/fail gate above). Still not a pass; the badge stays off until a real hub run is logged.
+
+### Handoff 4:30 AM Sat, from Donita to the awake shift (TODO: names, sleep shifts not re-decided)
+
+- main status: green. All of Donita's hub PRs are merged: #14 (setup results + firewall fix), #23 (D5 save questions/recordings/photos), #26 (D4 listen now), #31 (D6 `hub/start.sh` + urgent chime). No open PRs as of 4:32 AM.
+- Done since last sync:
+  - Hub running on Donita's MacBook Air M1 (8 GB), started with `hub/start.sh` (Sat ~4:20 AM). Health light: Whisper, AI model (Ollama `qwen2.5:3b`), hub server, microphone, keep-warm all OK. Offline DOWN, because the firewall was off.
+  - Hub URL for the iPad and phone: `https://172.20.10.2:8000`. Logs in `~/sino/logs/`, PID files in `~/sino/run/`.
+  - Restart (anyone, from the repo root on the hub): `hub/start.sh` starts only what isn't running and prints the light; `hub/start.sh status` prints the light only; `hub/start.sh stop` stops only what `start.sh` started. Cold start 13 s, stop + start 5 s. No Ctrl+C while it is still starting: that stops the parts it just started.
+  - Network: Donita's iPhone Personal Hotspot, not Troy's (the doc's primary, `docs/sino/architecture.md#network`; team call). Mac `172.20.10.2`, iPad `172.20.10.3`. Keep the iPhone on the Personal Hotspot screen.
+  - If the Mac's IP changes: `mkcert -cert-file ~/sino/certs/hub.pem -key-file ~/sino/certs/hub-key.pem <new-ip> localhost`, then `hub/start.sh stop && hub/start.sh`. `start.sh` warns when the cert doesn't match.
+  - Firewall (LAN-only, blocks internet): on `sudo pfctl -f /etc/pf.sino.conf -e`, off `sudo pfctl -d` (needs the Mac password; turn it off before downloading anything). Rules fixed and tested Sat 2:00 AM (`docs/sino/DONITA-SETUP.md` §5). Must be ON for rehearsals and the demo; the Offline light turns OK only then.
+  - Passed on the hub: iPad Safari loads the hub URL with no certificate warning, plays saved `.m4a` and `.wav` replies, shows photos; a re-recorded reply plays the new file.
+  - Real mic, listen now: silence dropped (`likely no speech`). "Nasaan si Nanay?" heard as "nasa ang sinanay." but matched → comfort (confidence 0.903). "Thank you for watching" dropped (`junk line`).
+  - Typed "Masakit dibdib ko" → urgent: `/caregiver` got `alert`, `/lola` got no `alert`, hub played the chime (Glass 5× back to back, ~8.25 s; Donita approved).
+- In progress (branch, what's left): none from Donita; no open PRs as of 4:32 AM.
+- Known bugs (priority order):
+  1. Always-listening (Silero VAD, `docs/sino/features.md` M1) is NOT built. Only "listen now" (fixed 4.5 s clip) and typed questions exist. Past the 3:30 AM freeze: Troy decides build or cut.
+  2. Whisper small mishears Tagalog (Donita's clip: "nasaanzi na nai.", "nasa ang zina na iy."); the matcher's fuzzy match saved the live test. A hint prompt of the known questions fixed the clip (`WHISPER_HINT=1`, off by default) but may make TV lines sound like known questions. Needs Troy's T5 TV clips before turning it on.
+  3. `/lola` receives `decided` for urgent lines (the server sends comfort/caregiver/urgent `decided` to every screen). The Lola screen must ignore `decided` so it never shows red (`docs/sino/hub-chime.md`). Owner: Ayen.
+  4. Caregiver iPhone not yet tested opening the hub page on the hotspot (its cert is trusted).
+  5. 8 GB memory is tight: 15% free with Whisper + Qwen loaded (~2:20 AM); Qwen took 9.00 s after ~35 min idle, before keep-warm existed. Close other apps on the hub during rehearsals.
+  6. Upload filenames: the setup screen must send files with a name (e.g. `reply.m4a`), or the hub rejects them (400).
+  7. T5 not yet run on the hub in `ollama` mode with audio. Only stub/text so far: urgent 40/40, comfort 39/39, TV false triggers 0, new 19/19.
+- Do NOT touch:
+  - The running hub processes: use `hub/start.sh stop`, never kill or Ctrl+C.
+  - `/etc/pf.sino.conf`, `/etc/pf.anchors/sino`, and `~/sino/certs/`.
+  - `hub/data/` on the hub: the live questions list and family recordings (not in git).
+- Next 3 tasks for the awake shift:
+  1. Troy: run T5 on the hub in `ollama` mode (and with the synthetic Lola audio), fill the hub column in the Pass/fail gate above; decide always-listening and `WHISPER_HINT`.
+  2. Ayen + Viviene: point the real screens at `https://172.20.10.2:8000` (`/ws?screen=lola|caregiver|backstage`, `POST /listen`, `GET/POST /questions`, `/media/...`); test the caregiver iPhone on the hotspot.
+  3. Rehearse with the firewall ON (`sudo pfctl -f /etc/pf.sino.conf -e`) and the hub volume up for the chime.
+- Wake us if (Donita): `hub/start.sh` shows a part DOWN that a stop + start doesn't fix; the hotspot, network, or certificate breaks; the firewall blocks the iPad.
