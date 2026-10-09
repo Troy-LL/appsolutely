@@ -3,7 +3,7 @@
 > *Kapag nagtanong ulit si Lola, boses ng pamilya ang sasagot.*
 > *When Lola asks again, her family's voice answers.*
 
-**Status:** idea locked Fri Oct 9 (see the decision log in [../NOTES.md](../NOTES.md)). This folder is the **locked spec**. Application code follows it.
+**Status:** idea locked Fri Oct 9 (see the decision log in [../NOTES.md](../NOTES.md)). This folder is the **locked spec**. Application code follows it. Latest decisions (Sat 2:00 AM): MVP freeze moved to 3:30 AM; recorded family voices are the reply for every known question; face match, the CCTV clip, voice ID, and the live call are cut to next steps ([features.md](features.md)).
 
 **Vision:** "An offline-first assistant so families caring for someone with dementia have more time and more patience for them, even when they can't be in the room."
 
@@ -31,8 +31,12 @@ flowchart TD
   J -- yes --> Q
   J -- no --> D{Urgent words?}
   D -- yes --> U[URGENT: hub chime + red card on caregiver phone]
-  D -- no --> E{Known question, strong match?}
-  E -- yes --> S[COMFORT: play family voice + photo on the iPad]
+  D -- no --> M{Medication, or 'masakit ang loob'?}
+  M -- yes --> K
+  M -- no --> TV{Known TV words?}
+  TV -- yes --> Q
+  TV -- no --> E{Known question, strong match?}
+  E -- yes --> S[COMFORT: play the family's recorded voice + photo on the iPad]
   E -- no --> F[Local AI decides]
   F -- urgent --> U
   F -- unclear or new --> K[CAREGIVER: quiet card 'Lola asked ...' + record-a-reply]
@@ -41,11 +45,10 @@ flowchart TD
   K --> L
   U --> L
 
-  P[Registered person asks Sino about Lola · caregiver phone] --> H{How is she / What has she been saying?}
+  P[Should, after the freeze: registered person asks Sino about Lola · caregiver phone] --> H{How is she / What has she been saying?}
   H -- yes --> LG[Local log: counts + her words, not a diagnosis]
   P --> W{Where is she?}
-  W -- add-on b on --> RC[Recorded-clip answer]
-  W -- add-on b off --> NC[No camera answer, no room guessed]
+  W --> NC[No camera answer, no room guessed · camera add-on cut]
 ```
 
 ## What makes it different
@@ -75,13 +78,13 @@ Official "why local" reasons this maps to ([../00-event.md](../00-event.md)): **
 | File | What it covers | Owner |
 |---|---|---|
 | [README.md](README.md) | This page: problem, flow, why local, source-of-truth rules | Troy |
-| [features.md](features.md) | MVP (incl. quick setup), should, add-ons behind the cut line, next steps; seeded replies; UX rules | Troy (scope), Ayen (onboarding) |
+| [features.md](features.md) | MVP (incl. quick setup), should, what was cut, next steps; seeded replies; UX rules | Troy (scope), Ayen (onboarding) |
 | [architecture.md](architecture.md) | Devices, viewports, network, models, interfaces, data flow, offline guarantees, privacy, to-verify list | Donita (hub), Troy (decision engine) |
 | [mvp-plan.md](mvp-plan.md) | Timeline, checkpoints, sprints per person, sync points, task graph | Troy |
-| [demo.md](demo.md) | 5-minute pitch script, "Sino ka?" on the house Wi-Fi or the recorded fallback, "Nasaan si Lola?", airplane-mode fallbacks | Viviene (visuals), Troy (script) |
+| [demo.md](demo.md) | 5-minute pitch script, "Sino ka?" (photo + recorded line, then Troy in person), TV beat, no-internet fallbacks | Viviene (visuals), Troy (script) |
 | [judge-qa.md](judge-qa.md) | Judge Q&A answers, risks and mitigations | Troy |
 | [DONITA-SETUP.md](DONITA-SETUP.md) | M1 (8 GB) hub installs and offline smoke test | Donita |
-| [hub-chime.md](hub-chime.md) | Urgent chime: `afplay` on the hub, red card second, `/lola` never red, 1:00 AM test | Donita |
+| [hub-chime.md](hub-chime.md) | Urgent chime: `afplay` on the hub, red card second, `/lola` never red, pre-freeze test | Donita |
 | [task-graph.mmd](task-graph.mmd), [task-graph.png](task-graph.png) | Task dependencies (source and rendered image) | Troy |
 
 ## Source of truth / do not invent

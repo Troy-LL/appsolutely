@@ -5,7 +5,7 @@ Owner: **Viviene**. Checker: **Troy**. Target: **submitted by 8:30 AM Sat**. Har
 ## Checklist (official fields, plus our repo prep)
 
 ### Repo (public by 8:00 AM)
-- [ ] `main` builds and runs from a clean clone (Viviene tests 4:30 to 7:00 AM)
+- [ ] `main` builds and runs from a clean clone (Viviene tests; time TODO: re-decide with the sleep shifts in [01-team.md](01-team.md#sleep-shifts-cross-pair))
 - [ ] README: what it is, the sentence, screenshot, architecture diagram (marking what runs on-device vs. cloud), **setup steps judges can follow**, env vars via `.env.example`
 - [ ] README disclosures section kept current (see Disclosures below)
 - [ ] No secrets or API keys anywhere in the repo or its history
@@ -37,7 +37,7 @@ Owner: **Viviene**. Checker: **Troy**. Target: **submitted by 8:30 AM Sat**. Har
 > (One short paragraph. Use the five official reasons: difficult, expensive, slow, private, or impossible with cloud-only. Back it with our measured numbers.)
 
 ### Video (by 8:00 AM)
-- [ ] **Airplane mode turns on in the first 10 seconds**, on screen
+- [ ] **Airplane mode turns on in the first 10 seconds**, on screen. For Sino: show no internet on the hub (the OFFLINE badge from a failing outbound check), since the iPhone is the hotspot and can't go to airplane mode ([sino/demo.md](sino/demo.md))
 - [ ] Shot list: 0 to 10 s airplane mode on + hook · 10 to 40 s the one flow, offline · 40 to 55 s what runs locally and why · 55 to 60 s team + #AppBuildersPH
 - [ ] Full-length backup demo recording saved on the demo device (offline fallback)
 

@@ -6,8 +6,9 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 
 - Hub (M1, 8 GB) running from `start.sh`, seed loaded, health light green.
 - iPad on `/lola`, "Simulan" already tapped. iPhone on `/caregiver`, open on the hub's network (no push without internet). Backstage on the projected screen.
-- Internet off on every device. The OFFLINE badge is visible.
-- Clips ready: the 20 s teleserye clip (TODO below), and the recorded CCTV clip only if add-on (b) is stable by 5:00 AM. Voice ID is cut and has no clip.
+- The hub's LAN-only firewall is on and the OFFLINE badge is visible (it comes from a real outbound check failing). On rung 1 the house network is Troy's iPhone hotspot, which has cellular, so the claim is "the hub is firewalled to the house network", not "every device is offline". The iPhone cannot go to airplane mode, because that turns the hotspot off ([architecture.md](architecture.md#network)).
+- Clips ready: the 20 s teleserye clip (TODO below). No CCTV clip and no voice ID: both are cut.
+- Recordings loaded: Joy's four replies and Troy's "Sino ka?" line (TODO: not recorded yet as of Sat 2:00 AM).
 - Hub volume up for the urgent chime.
 
 ## Run of show
@@ -17,12 +18,12 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 | 0:00–0:30 | Opener (below) | Lola's iPad |
 | 0:30–1:00 | Show there's no internet. Point at the OFFLINE badge: "the hub is firewalled to the house network." If the hub is unplugged, say it runs on battery (only if it really is unplugged) | Backstage |
 | 1:00–1:50 | **Live quick setup.** Ask "Nasaan yung aso?" (not in the seed) → quiet yellow card on `/caregiver` → on the iPhone, `/setup` adds the question, two phrasings, a held recording, and a photo → ask again → the family voice answers on the iPad. "Nasaan si Joy?" stays in the seed and is not added live | iPhone `/setup` + `/caregiver` → iPad |
-| 1:50–2:20 | "Sino ka?" Lola asks who Troy is. Face match sees he is registered. The iPad shows his photo and calls him only while he is on the house Wi-Fi (no internet). If he is not on that network, the iPad shows his photo and plays the "Sino ka?" line he recorded in setup. | iPad + Troy |
+| 1:50–2:20 | "Sino ka?" Lola asks who Troy is. It is a known question, so the iPad shows Troy's photo and plays the line he recorded in setup. Then Troy talks to "Lola" in person. No face match and no call | iPad + Troy |
 | 2:20–3:30 | **TV test, its own beat.** Play the 20 s teleserye clip: a full dialogue that contains "nasaan si nanay" mid-sentence, not as the whole line. Sino stays silent. `/backstage` shows a dropped row and `TV lines ignored: N` ticks. Then Lola asks "Nasaan si Nanay?" plainly → the comfort reply and photo. The row shows transcript → rule or model → action, confidence, reason → ms | Backstage + iPad |
 | 3:30–4:00 | "Masakit dibdib ko" → the hub chimes ([hub-chime.md](hub-chime.md)) and a red card appears on the phone. `/lola` stays calm and never red. A medication question goes to the caregiver | Hub + iPhone |
 | 4:00–5:00 | Why local + close + scan-to-vote | Slide |
 
-If add-on (b) is stable by 5:00 AM, show "Nasaan si Lola?" in 15 s at 3:30. Voice ID is cut and is not shown. Anything cut goes on the "next steps" slide.
+Face match, the "Nasaan si Lola?" camera view, voice ID, and the live call are cut. They go on the "next steps" slide. If Ask Sino about Lola is wired after the freeze, show "Kamusta si Lola?" on `/caregiver` in 15 s at the 3:30 mark (TODO: only if wired).
 
 **Pitch order:** lead with the always-on mic privacy line and the four differentiators in [README.md](README.md#what-makes-it-different) (real family voices, silence as a decision, family-written replies, visible decisions). The offline/brownout angle is supporting proof, not the hook.
 
@@ -46,19 +47,17 @@ Beat: ask it → quiet yellow card on `/caregiver` → the family adds it in `/s
 
 TODO (Viviene): source or record a 20 s clip with "nasaan si nanay" buried mid-dialogue, not as the whole line.
 
-On stage: the clip plays, Sino stays silent, and `TV lines ignored: N` ticks. Then Lola asks "Nasaan si Nanay?" as the whole line, and the seeded comfort reply plays. Backstage shows the dropped row for the clip and the rule-or-model row for her plain ask ([architecture.md](architecture.md#backstage-proof)).
+On stage: the clip plays, Sino stays silent, and `TV lines ignored: N` ticks. TODO (Troy): today the counter only ticks when the clip's words hit the TV-word rule; a model `silent` does not set `ignored` `tv` ([architecture.md](architecture.md#backstage-proof)). Check the real clip on the hub. Then Lola asks "Nasaan si Nanay?" as the whole line, and the seeded comfort reply plays. Backstage shows the dropped row for the clip and the rule-or-model row for her plain ask ([architecture.md](architecture.md#backstage-proof)).
 
-## "Sino ka?" (live call)
+## "Sino ka?" (photo + recorded line)
 
-A co-presenter playing Lola asks who Troy is. Face match sees that Troy is a registered person. The iPad shows the photo of Troy with Lola and calls him only while he is on the house Wi-Fi. The call does not use the internet. Troy answers live: "Lola, ako 'to, si Troy. Pamangkin mo. Ito tayo nung pasko."
+A co-presenter playing Lola asks "Sino ka?". It matches the seeded question `sino-ka`, so the iPad shows the photo of Troy with Lola and plays the line he recorded in setup: "Lola, ako 'to, si Troy. Pamangkin mo. Ito tayo nung pasko." Then Troy talks to "Lola" in person, on stage. There is no face match and no call: both are next steps ([features.md](features.md#cut-tonight-moved-to-next-steps)).
 
-If he is not on that network, the iPad shows his photo and plays the "Sino ka?" line he recorded in setup. A person who is not registered gets no name and no call. The screen never quizzes Lola.
+The screen never quizzes Lola. Without face match, "Sino ka?" always plays Troy's line, whoever is in the room (TODO: Troy, confirm that is fine for the pitch).
 
-If face match is not up and Troy is on the house Wi-Fi, he still talks to her live and the iPad shows his photo. If he is not on the network, the recorded line plays.
+## Ask Sino about Lola (Should, only if wired after the freeze)
 
-## "Nasaan si Lola?" (add-on b)
-
-Only if it is stable by 5:00 AM. A registered person asks Sino, "Nasaan si Lola?" The hub runs the person detector on a **recorded clip** of "Lola" moving between sala and kusina; backstage shows the detection box, and the phone answers from the last-seen log ("Nasa kusina, 1 minuto na"). Say out loud that it is a recorded clip. The answer is never hardcoded. "Kamusta si Lola?" and "Ano ang mga tanong niya?" pull the log already on `/caregiver`. That answer is the counts and her words. It is not a diagnosis.
+A registered person asks on `/caregiver`. "Kamusta si Lola?" and "Ano ang mga tanong niya?" pull the log: the counts and her words, not a diagnosis. "Nasaan si Lola?" gets the no-camera answer and never names a room, because the CCTV add-on is cut. Code: `brain/ask.py` (PR #11). Skip this beat if it is not wired.
 
 ## Fallbacks (internet stays off)
 
@@ -70,7 +69,8 @@ Only if it is stable by 5:00 AM. A registered person asks Sino, "Nasaan si Lola?
 | The hub's network | Primary is the iPhone hotspot + hub LAN-only firewall (keep the iPhone on the hotspot screen). Then down the ladder ([architecture.md](architecture.md#network)): spare router/pocket Wi-Fi with no WAN → iPhone USB + Internet Sharing + firewall → venue Wi-Fi + firewall. Regenerate the mkcert cert if the hub IP changes. Last resort, USB-C cable to the iPad |
 | The hub crashes | `start.sh`, wait for the health light |
 | The whole live demo | Play the backup video (recorded at the 7 AM rehearsals, internet off in the first 10 s) |
-| Any add-on | Skip it; it goes on the next-steps slide |
+| Ask Sino about Lola not wired | Skip it; the core beats don't depend on it |
+| A recording is missing | Comfort has no audio to play. Record it before 7 AM; don't substitute text-to-speech |
 
 ## Submission video (~1 min)
 

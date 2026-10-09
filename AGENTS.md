@@ -13,7 +13,7 @@ These rules apply to every AI tool used in this repo (Claude Code, Cursor, Copil
 - Facts about the project come only from `docs/sino/`; official event rules come only from `docs/00-event.md`. **Cite the doc** a fact comes from when you state it.
 - **Unknown means TODO, never a guess.** If hardware, a model, an owner, a number, or a feature isn't written down, write `TODO:` and ask the human.
 - Latency, accuracy, and other unmeasured numbers are "to verify at smoke test" until a real measurement is logged in `docs/NOTES.md`. Never state them as results.
-- Don't build anything outside `docs/sino/features.md`. New ideas go to its "Next steps" list. Add-ons below the cut line are built only after the MVP freeze.
+- Don't build anything outside `docs/sino/features.md`. New ideas go to its "Next steps" list. Since Sat 2:00 AM every add-on is cut (face match, CCTV, voice ID, live call); Should items are built only after the 3:30 AM MVP freeze.
 
 ## Stay inside the spec
 

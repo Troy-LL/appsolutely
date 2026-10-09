@@ -1,8 +1,16 @@
 # Sino: features and scope
 
-Scope rules: the MVP is frozen at **2:00 AM Sat**. Should items come next. Add-ons (a) and (b) sit **behind a cut line**, are built only after the freeze, in that order, and each has an off switch and a fallback. (b) ships only if it is stable by 5:00 AM. (c) voice ID is cut. "Next steps" items are pitch-only and are **not built**. Timeline: [mvp-plan.md](mvp-plan.md).
+Scope rules (Troy, Sat 2:00 AM): the MVP is frozen at **3:30 AM Sat** (moved from 2:00 AM). Should items come after the freeze. **All add-ons are cut for tonight:** (a) face match, (b) the "Nasaan si Lola?" CCTV clip, and (c) voice ID are in "Next steps". The live call is cut too. "Next steps" items are pitch-only and are **not built**. Timeline: [mvp-plan.md](mvp-plan.md). Decision log: [../NOTES.md](../NOTES.md#decision-log).
 
-## MVP (frozen by 2:00 AM)
+## MVP (frozen by 3:30 AM)
+
+**Core to protect until the freeze:**
+
+1. The hub hears Lola, transcribes her, and runs `decide()`.
+2. A known question gets the family's recorded voice and photo on the iPad.
+3. An urgent line gets the hub chime and a red card on the caregiver phone.
+4. TV stays silent, and `/backstage` shows every decision.
+5. Quick setup works live with "Nasaan yung aso?".
 
 Always-listening hub mic (Silero VAD) → whisper.cpp → junk-line filter → `decide()` (urgent rules + matcher, Qwen for unclear lines) → iPad plays the family's recorded reply + photo → caregiver log and alerts, urgent chime from the hub → behind-the-scenes screen with the OFFLINE badge. The family adds questions and replies through quick setup.
 
@@ -15,16 +23,20 @@ Always-listening hub mic (Silero VAD) → whisper.cpp → junk-line filter → `
 
 ### M2. Decision: comfort / caregiver / urgent / silent (Troy)
 
-Keyword rules first, then the known-question matcher, then the local model (Qwen2.5-3B via Ollama, or 1.5B depending on RAM; see [architecture.md](architecture.md)) only for lines the rules and matcher can't settle.
+Keyword rules first, then the known-question matcher, then the local model (`qwen2.5:3b` via Ollama; `qwen2.5:1.5b` only with the Whisper medium fallback, see [architecture.md](architecture.md#speech-model-selection-by-1130-pm)) only for lines the rules and matcher can't settle. Order in `brain/decide.py`: urgent words → "sakit ng loob" idiom → medication → TV words → known-question matcher → model.
 
-- Urgent words (masakit, nahulog, tulong, hindi makahinga) **always** alert. The model can only escalate, never downgrade.
-- Medication questions are **never answered**. They always go to the caregiver.
-- If the matcher misses and the model says it's chatter (TV, conversation), Sino stays **silent** and logs it.
-- If the model errors or times out, Sino defaults to the caregiver, never to silence.
+- Urgent words **always** alert. The model can only escalate, never downgrade. The stems in `brain/decide.py` (case- and spacing-insensitive): natumba, nadulas, nadapa, nahulog, bumagsak; masakit, sumasakit, ang sakit ng dibdib, masakit dibdib; di/hindi makahinga, hirap huminga, nahihirapan huminga; tulungan, tulong, saklolo.
+- The idiom "masakit ang loob" / "sakit ng loob" (hurt feelings) goes to the **caregiver**, not urgent.
+- Medication questions (gamot, dosis, reseta, tableta) are **never answered**. They always go to the caregiver.
+- Known TV lines and words ("Thank you for watching", "Salamat sa panonood", abangan, kabanata, palabas, teleserye, dula, bes) are **silent** by rule, with `ignored` set to `tv`.
+- Known-question matcher: drops filler words (po, opo, lola, ma, na, ba) and punctuation, reads "asan" as "nasaan" and "where's" as "where is", and needs a similarity of at least 0.85 to a seeded phrasing. Below that, Sino does not answer Lola.
+- If the matcher misses and the model says it's chatter (TV, conversation) with confidence ≥ 0.8, Sino stays **silent** and logs it. Lower confidence goes to the caregiver. The model may not return comfort; a model comfort becomes caregiver.
+- If the model errors, returns bad JSON, or takes longer than 4 s, Sino defaults to the caregiver, never to silence.
+- `SINO_MODEL=stub` (the default) never calls the model, so every line the rules and matcher miss goes to the caregiver. `SINO_MODEL=ollama` calls Ollama at `HUB_URL` (default `http://localhost:11434`).
 
 ### M3. Family voice replies on Lola's screen (Ayen: screen; Troy: matching)
 
-The matched reply plays in the family member's recorded voice with their photo, full screen on the iPad. **Rule: no cloned or synthetic family voices.** Only recordings the family made themselves are played. Silent if unsure. Lola's screen is never red and shows nothing else (see [architecture.md](architecture.md#viewports)).
+The matched reply plays in the family member's recorded voice with their photo, full screen on the iPad. Pre-recorded family voices are **the** reply for every known question, not a fallback. **Rule: no cloned or synthetic family voices, and no text-to-speech.** Only recordings the family made themselves are played. Silent if unsure. "Sino ka?" is one of these known questions: the iPad shows the registered person's photo and plays the line they recorded. Lola's screen is never red and shows nothing else (see [architecture.md](architecture.md#viewports)).
 
 ### M4. Quick setup = onboarding (Ayen)
 
@@ -43,7 +55,7 @@ The family's whole setup, and the live proof that the family wrote the replies:
 - **Yellow (caregiver):** quiet card, repeats grouped ("Lola asked about the aso 3×"), with one-tap record-a-reply.
 - **Green (comforted):** quiet log entry.
 - `/caregiver` only receives alerts while it is open on the hub's local network. There are no push notifications with the internet off (iOS push needs Apple's servers).
-- **Ask Sino about Lola.** A registered person can talk to Sino on this phone, in their own words. "How is she" and "what has she been saying" are the local log: counts and her words, not a diagnosis. "Where is she" is the recorded-clip answer if add-on (b) is on, and "no camera answer, no room guessed" if it is off. It does not invent a mood or a medical read. Lola's iPad is not this conversation.
+- **Ask Sino about Lola** is a Should item after the freeze (see below), not MVP.
 
 ### M6. Urgent chime (Donita)
 
@@ -55,37 +67,41 @@ Judges see the local AI decide. Each utterance is one row: transcript → rule h
 
 ### M8. Demo seed data, `seed.json` (Troy + team)
 
-Lola Cora; 5 to 6 questions with phrasings; teammate-recorded replies and photos; safety words; earlier log entries; meal log. Disclosed in the README as demo data. Seeded replies include:
+What `brain/seed.json` holds today: **5 questions** (`nasaan-si-nanay`, `nasaan-si-joy`, `sino-ka`, `nasaan-ako`, `gusto-ko-nang-umuwi`), each with Tagalog and English phrasings and a `speaker`. `reply_audio` and `photo` are empty strings until the recordings and photos exist. Disclosed in the README as demo data.
 
-| Question | Reply (recorded by a teammate) | Why |
-|---|---|---|
-| "Nasaan si Nanay?" (Lola's late mother) | "Ma, kwento mo nga ulit si Nanay mo." | Validation: invites the memory, no correction, no false claim |
-| "Nasaan si Joy?" | "Nasa trabaho pa ako, Ma. Uuwi ako mamaya, kain ka muna." | Joy is alive and at work, so this is true |
-| "Sino ka?" | Live call only while that person is on the house Wi-Fi (no internet). Fallback, the line they recorded in setup: "Lola, ako 'to, si Troy. Pamangkin mo. Ito tayo nung pasko." | The iPad shows their photo, then the call or that clip ([demo.md](demo.md)). Someone who is not registered gets no name and no call |
-| "Nasaan ako?" | "Dito ka lang, Ma. Kasama mo ako." | She is here with Joy. No room and no destination. Speaker: Joy. Audio not recorded yet |
-| "Gusto ko nang umuwi" | "Ma, dito muna tayo ha." | Does not promise a trip home. Speaker: Joy. Audio not recorded yet |
+Not in `seed.json` yet: the household name (Lola Cora), earlier log entries, and a meal log (TODO: unknown whether they are still needed; the T7 fake log lives in `brain/tests/ask_cases.json`). The urgent, medication, and TV words live in `brain/decide.py`, not in the seed.
 
-## Should (after the freeze, before add-ons)
+**Recordings still needed (TODO):** Joy's four replies and Troy's "Sino ka?" line. Until they exist, a comfort decision has no audio to play.
 
+| Question | Reply (recorded by a teammate) | Speaker | Why |
+|---|---|---|---|
+| "Nasaan si Nanay?" (Lola's late mother) | "Ma, kwento mo nga ulit si Nanay mo." | Joy | Validation: invites the memory, no correction, no false claim. Audio not recorded yet |
+| "Nasaan si Joy?" | "Nasa trabaho pa ako, Ma. Uuwi ako mamaya, kain ka muna." | Joy | Joy is alive and at work, so this is true. Audio not recorded yet |
+| "Sino ka?" | "Lola, ako 'to, si Troy. Pamangkin mo. Ito tayo nung pasko." | Troy | The iPad shows Troy's photo and plays this line ([demo.md](demo.md)). On stage, Troy then talks to "Lola" in person. There is no live call. Audio not recorded yet |
+| "Nasaan ako?" | "Dito ka lang, Ma. Kasama mo ako." | Joy | She is here with Joy. No room and no destination. Audio not recorded yet |
+| "Gusto ko nang umuwi" | "Ma, dito muna tayo ha." | Joy | Does not promise a trip home. Audio not recorded yet |
+
+## Should (after the 3:30 AM freeze)
+
+- **Ask Sino about Lola (T7).** A registered person asks on the caregiver phone, in their own words. `answer_about_lola(question, log)` in `brain/ask.py` (merged, PR #11) picks one intent: `how`, `saying`, or `where` (rules first; Qwen only picks the intent when `SINO_MODEL=ollama`). Code builds the answer from the log: counts, her exact words, and the last urgent alert, ending with "Not a diagnosis." "Where is she" gets the no-camera answer ("Walang camera sagot; hindi ko hulaan ang kwarto.") and never names a room, because add-on (b) is cut. Medication questions get no answer. It never invents a mood or a medical read. Lola's iPad is not this conversation. Still to do after the freeze: wire it to `/caregiver` (TODO: contract gap, no event or route for it in [architecture.md](architecture.md#the-3-interfaces-locked-in-the-first-15-minutes) yet).
 - **Meals check:** the caregiver taps "Kumain na" → "Kumain na ba ako?" gets a true answer from the local log.
 - **Clock answer:** recorded time clips for "Anong oras na?" (the big clock is already on Lola's screen).
 - **Daily recap:** counts and times computed by code only, no AI phrasing ("Asked about Nanay 6×, mostly 4 to 6 PM. 1 urgent alert at 5:15 PM."). Marked "not a diagnosis." The caregiver can ask "Kamusta si Lola?" or "Ano ang mga tanong niya?" and Sino pulls that same log up. "How is she" is the log. It is not a diagnosis.
 
-## Add-ons (behind the cut line, after the 2:00 AM freeze, in this order)
+## Cut tonight (moved to Next steps)
 
-(a) and (b) are optional, each has an off switch, and each is cut at **5:00 AM** if not stable. (b) ships only if it is stable by 5:00 AM. (c) voice ID is already cut and is not started.
+Decided by Troy, Sat 2:00 AM ([../NOTES.md](../NOTES.md#decision-log)). None of these are built. If asked, they are next steps.
 
-**Not the story:** the "Nasaan si Lola?" camera view (b) overlaps with common offline dementia-assistant ideas, so it is a demo extra. The pitch stays on the differentiators in [README.md](README.md#what-makes-it-different). The who-are-you moment is a live call while the registered person is on the house Wi-Fi. If they are not on that network, the iPad plays the "Sino ka?" line they recorded in setup.
+1. **(a) Face match for registered people.** Cut (T6, and the iPad frame A4). Without it, "Sino ka?" is a known question in the seed: the iPad shows the registered person's photo and plays their recorded line.
+2. **(b) "Nasaan si Lola?" on CCTV footage.** Cut (D7, V5). "Nasaan si Lola?" gets the no-camera answer and never guesses a room.
+3. **(c) Voice ID.** Cut earlier. No speaker match, no voice samples, no voice panel on `/backstage`.
+4. **Live call on the house Wi-Fi.** Cut. Calling a registered person is a next step.
 
-1. **(a) Face match for registered people** (not Lola). About 5 photos each; face-api.js or MobileFaceNet ONNX. Rule: high-confidence face match when she asks who the person is → Lola's screen shows that person's photo and calls them only while they are on the house Wi-Fi (no internet). If they are not on that network, the iPad shows their photo and plays the "Sino ka?" line they recorded in setup. Unknown person → no name and no call. Owners: Troy (match), Ayen (the frame and the call on the iPad).
-2. **(b) "Nasaan si Lola?" on seeded footage.** A registered person asks where she is. A pre-recorded clip of "Lola" moving between sala and kusina plays; the hub runs a person detector (MediaPipe or YOLO) on it and keeps a last-seen log, so the answer is computed ("Nasa kusina, 1 minuto na"), never hardcoded. Labeled in the demo as a recorded clip. If this add-on is cut, Sino says it has no camera answer and does not guess a room. Owners: Donita (detector), Viviene (view).
-3. **(c) Voice ID is cut.** Not built. No speaker match, no voice samples, no voice panel on `/backstage`. [mvp-plan.md](mvp-plan.md).
-
-**Distress rule for all add-ons:** the call never quizzes Lola ("Who is this?") and never announces names as a test. On the house Wi-Fi it shows the photo and connects the registered person. If they are not on that network, it shows the photo and plays the "Sino ka?" line they recorded in setup.
+**Distress rule:** the iPad never quizzes Lola ("Who is this?") and never announces names as a test. For "Sino ka?" it shows the photo and plays the recorded line.
 
 ## Next steps (not building)
 
-Recording replies from family abroad (OFW), learning which voice calms her best, visitor recognition, a door alert (the hub notices Lola leaving and chimes), Lola's own device for calling and locating her outside the house (needs GPS and a network, opt-in), calling a registered person over the internet (opt-in), a native iPad app, cheaper hubs.
+Recording replies from family abroad (OFW), learning which voice calms her best, face match for registered people (it would trigger their photo and recorded line), visitor recognition, "Nasaan si Lola?" from a camera (person detector and last-seen log), voice ID, calling a registered person on the house Wi-Fi (WebRTC, no internet), calling a registered person over the internet (opt-in), a door alert (the hub notices Lola leaving and chimes), Lola's own device for calling and locating her outside the house (needs GPS and a network, opt-in), a native iPad app, cheaper hubs.
 
 ## A day with Sino (example story for the pitch)
 
@@ -93,9 +109,9 @@ Recording replies from family abroad (OFW), learning which voice calms her best,
 2. **4:30 PM:** Lola asks "Si Nanay, asan?" Ate Joy's photo and voice answer: "Ma, kwento mo nga ulit si Nanay mo." Lola starts talking about her mother.
 3. **4:50 PM:** "Nasaan yung aso?" is not in the seed. Sino stays quiet with Lola and adds a quiet yellow card. The family adds it in `/setup`; the next ask plays their voice. Repeats before that reply group on the card ("Lola asked about the aso 3×"). This is the live demo question ([demo.md](demo.md)). "Nasaan si Joy?" stays in the seed.
 4. **5:15 PM:** "Masakit dibdib ko." No comfort clip. The hub chimes loudly, and a red card shows Lola's exact words.
-5. **5:30 PM:** a teleserye plays a longer dialogue that contains "nasaan si nanay" mid-sentence, not as the whole line. The matcher misses, the model says chatter, Sino stays silent, and `/backstage` counts it under `TV lines ignored`. She can still ask "Nasaan si Nanay?" plainly and get the comfort reply.
+5. **5:30 PM:** a teleserye plays a longer dialogue that contains "nasaan si nanay" mid-sentence, not as the whole line. The matcher misses, the model says chatter, Sino stays silent, and `/backstage` counts it under `TV lines ignored` (that count on a model decision needs the model path to set `ignored` to `tv`: TODO, see [architecture.md](architecture.md#backstage-proof)). She can still ask "Nasaan si Nanay?" plainly and get the comfort reply.
 6. **6:00 PM:** the internet is down. Sino keeps working, because everything runs inside the house.
-7. **9:00 PM:** Joy asks Sino, "Kamusta si Lola?" and "Ano ang mga tanong niya?" Sino pulls the log: "Asked about Nanay 6×, mostly 4 to 6 PM. 1 urgent alert at 5:15 PM." Not a diagnosis. If she asks where Lola is and add-on (b) is on, the answer is the recorded clip. If it is off, Sino says it has no camera answer and does not guess a room.
+7. **9:00 PM:** Joy asks Sino, "Kamusta si Lola?" and "Ano ang mga tanong niya?" Sino pulls the log: "Asked about Nanay 6×, mostly 4 to 6 PM. 1 urgent alert at 5:15 PM." Not a diagnosis. If she asks where Lola is, Sino says it has no camera answer and does not guess a room.
 
 ## UX rules
 

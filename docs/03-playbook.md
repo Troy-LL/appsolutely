@@ -34,7 +34,7 @@ All times PH. Owners per area are in [01-team.md](01-team.md).
 - Record speed (seconds per input, load time) and accuracy (how many of 5 were right) in `docs/NOTES.md`. Real numbers only.
 - **If it fails by hour 3 (~4:00 PM), pivot.** Pivot lock at 4:00 PM stays: no pivots after that.
 
-**Hardware reality:** Troy's 2017 MacBook Pro (Intel i5, 8 GB RAM, integrated graphics) runs only ~1 to 3B models at 4-bit, slowly, on CPU. A **recent Android phone in Chrome (WebGPU)** is the likely demo device. Test on it early, not at midnight.
+**Hardware reality:** Troy's 2017 MacBook Pro (Intel i5, 8 GB RAM, integrated graphics) runs only ~1 to 3B models at 4-bit, slowly, on CPU. For Sino the demo device is **Donita's MacBook Air M1 (8 GB) as the home hub**, with the A16 iPad (`/lola`) and Troy's iPhone 15 (`/caregiver`, and the rung-1 hotspot) as screens ([sino/architecture.md](sino/architecture.md#devices)). No one on the team has an Android phone.
 
 ## Full timeline to submit
 
@@ -46,10 +46,7 @@ All times PH. Owners per area are in [01-team.md](01-team.md).
 | 7:00 PM | **Checkpoint:** happy path works on a phone every time? If not, cut scope now. User test #1. Dinner | Visual pass starts only after this |
 | 7:30 PM to 12:00 AM | Slice 2 (wow moment), error/empty/loading states, visual pass on working screens, eval set (10 to 20 cases). User test #2 at ~10 PM | |
 | 12:00 to 1:00 AM | Judge-question drill #1, demo run #1 (timed), README draft, architecture diagram | |
-| 1:00 AM | **Handoff:** Donita + Viviene sleep | Handoff note in NOTES.md |
-| 1:00 to 4:30 AM | Troy + Ayen: bug fixes, AI reliability, eval run, diagram, polish. **No new features** | |
-| 4:30 AM | **Handoff:** Troy + Ayen sleep | Handoff note in NOTES.md |
-| 4:30 to 7:00 AM | Donita + Viviene: bug fixes, guardrail pass, user test #3 (~6 AM), README clean-clone test, video prep. Donita merges | |
+| 1:00 to 7:00 AM | **TODO: re-decide.** The old plan (Donita + Viviene sleep 1:00 to 4:30 AM, Troy + Ayen sleep 4:30 to 7:00 AM) assumed the cross-pairs; pairs changed at 1:51 AM ([01-team.md](01-team.md#sleep-shifts-cross-pair)). Sino's own overnight plan: MVP freeze 3:30 AM, then Should items only ([sino/mvp-plan.md](sino/mvp-plan.md)) | Handoff notes in NOTES.md |
 | Sat 7:00 AM | **Feature freeze.** All up, sync, demo run #2 | Bug fixes only after this |
 | 7:00 to 8:00 AM | Record video (plus full backup demo), finalize `CONTRIBUTIONS.md` and AI tools disclosure. **Repo public at 8:00** | See 05-submission |
 | 8:00 to 8:30 AM | Publish post. **Submit by 8:30**, two people check every field first | One submission only |
@@ -58,7 +55,7 @@ All times PH. Owners per area are in [01-team.md](01-team.md).
 
 ## Sync times (10 minutes each)
 
-Fri 3 PM, 5 PM, 7 PM, 10 PM, 12 AM. Handoffs 1:00 AM and 4:30 AM. Sat 7:00 AM.
+Fri 3 PM, 5 PM, 7 PM, 10 PM, 12 AM. Sat 2:00 AM, 3:30 AM (Sino freeze), 7:00 AM. Handoff times: TODO: re-decide with the sleep shifts.
 
 Format: each person says **done / next / blocked**. Viviene keeps time and updates the cut list.
 
@@ -89,7 +86,7 @@ Format: each person says **done / next / blocked**. Viviene keeps time and updat
   - Show me the file you wrote.
   - What are the limits?
   - How do you know it works? (eval numbers and test-set size, never rounded up)
-- **Demo runs** at 12 AM, 7 AM, and on-site: full 5 minutes with a timer, on the demo device, inputs pre-loaded, **always in airplane mode** (turn it on visibly at the start).
+- **Demo runs** at 12 AM, 7 AM, and on-site: full 5 minutes with a timer, on the demo device, inputs pre-loaded, **always in airplane mode** (turn it on visibly at the start). For Sino, "airplane mode" means the hub's LAN-only firewall and the OFFLINE badge: the iPhone is the hotspot and can't go to airplane mode ([sino/demo.md](sino/demo.md)).
 
 ## Pitch shape (5 min + 3 min Q&A)
 
