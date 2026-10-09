@@ -51,7 +51,7 @@ Write the run to `docs/NOTES.md` and show it on `/backstage`. Until a real hub r
 | speech-to-reply latency | TODO: unknown (no audio) | TODO |
 | mode | `stub` | `ollama` |
 
-The stub run checks the rules and the matcher only: `SINO_MODEL=stub` never calls the model, so lines the rules and matcher miss go to the caregiver. It is **not a pass**; the runner prints `PENDING (latency TODO: unknown)`. `cases.json` has 96 text rows (34 urgent, 37 comfort, 8 TV, 11 new, 6 "sakit ng loob"), not 30 audio clips.
+The stub run checks the rules and the matcher only: `SINO_MODEL=stub` never calls the model, so lines the rules and matcher miss go to the caregiver. It is **not a pass**; the runner prints `PENDING (latency TODO: unknown)`. The Sat ~2:00 AM column above is that 96-row run (34 urgent, 37 comfort, 8 TV, 11 new, 6 "sakit ng loob"). `cases.json` now has 99 text rows: those plus three Whisper mangles (`us23`, `cf05`, `cf06`). `run_t5.py --audio` scores the 32 synthetic clips in `brain/tests/audio/lola/`. They are cleaner than real elderly speech. The gate is still not a pass until the hub `ollama` audio run is logged.
 
 `/backstage` shows a small badge. The badge text is `Test: passed <time of the logged run>` only after `docs/NOTES.md` records a hub pass. Until then the badge shows the TODO figures and does not say passed. A stub run never turns it on.
 

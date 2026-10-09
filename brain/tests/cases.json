@@ -83,6 +83,7 @@
   {"id": "us20", "bucket": "urgent", "text": "Masakit ang loob ng tiyan ko", "expected": "urgent"},
   {"id": "us21", "bucket": "urgent", "text": "Masakit ang dibdib ko, nasaan ang gamot ko?", "expected": "urgent"},
   {"id": "us22", "bucket": "urgent", "text": "Abangan ang susunod na kabanata. Tulong!", "expected": "urgent"},
+  {"id": "us23", "bucket": "urgent", "text": "Masaketang didip ko", "expected": "urgent"},
   {"id": "l01", "bucket": "loob", "text": "Masakit ang loob ko", "expected": "caregiver"},
   {"id": "l02", "bucket": "loob", "text": "MASAKIT ANG LOOB KO", "expected": "caregiver"},
   {"id": "l03", "bucket": "loob", "text": "masakit  ang   loob", "expected": "caregiver"},
@@ -93,6 +94,12 @@
   {"id": "cf02", "bucket": "comfort", "text": "Nasan si Nanay?", "expected": "comfort"},
   {"id": "cf03", "bucket": "comfort", "text": "Asan po si Mama?", "expected": "comfort"},
   {"id": "cf04", "bucket": "comfort", "text": "Lola, nasaan si Joy?", "expected": "comfort"},
+  {"id": "cf05", "bucket": "comfort", "text": "na fan si Nanai?", "expected": "comfort"},
+  {"id": "cf06", "bucket": "comfort", "text": "nasaanzi na nai.", "expected": "comfort"},
   {"id": "nf01", "bucket": "new", "text": "Kanina ko pa iniisip kung nasaan si nanay ngayon", "expected": "caregiver"},
-  {"id": "nf02", "bucket": "new", "text": "Ilang tableta ang iinumin ko?", "expected": "caregiver"}
+  {"id": "nf02", "bucket": "new", "text": "Ilang tableta ang iinumin ko?", "expected": "caregiver"},
+  {"id": "nf03", "bucket": "new", "text": "May gulong ang kotse", "expected": "caregiver"},
+  {"id": "nf04", "bucket": "new", "text": "Pulong bukas", "expected": "caregiver"},
+  {"id": "nf05", "bucket": "new", "text": "Ano ang bulong niya", "expected": "caregiver"},
+  {"id": "us24", "bucket": "urgent", "text": "Tolong naman", "expected": "urgent"}
 ]
