@@ -44,6 +44,7 @@ DECIDED_KEYS = {
     "source",
     "ignored",
     "transcript",
+    "utterance_id",
 }
 HEALTH_KEYS = {
     "event",
@@ -104,9 +105,25 @@ async def _quiet(ws):
     raise AssertionError(f"unexpected {msg}")
 
 
-def _check_decided(msg, text, action, source, ignored):
+def _check_heard(heard, text):
+    rest = dict(heard)
+    utterance_id = rest.pop("utterance_id", None)
+    if not isinstance(utterance_id, str) or not utterance_id:
+        raise AssertionError(f"heard utterance_id {utterance_id!r}")
+    if rest != {"event": "heard", "transcript": text, "dropped": False, "drop_reason": ""}:
+        raise AssertionError(heard)
+    return utterance_id
+
+
+def _same_utterance(msg, utterance_id):
+    if msg.get("utterance_id") != utterance_id:
+        raise AssertionError(f"decided utterance_id {msg.get('utterance_id')!r} != heard {utterance_id!r}")
+
+
+def _check_decided(msg, text, action, source, ignored, utterance_id):
     if set(msg) != DECIDED_KEYS:
         raise AssertionError(f"decided keys {sorted(msg)}")
+    _same_utterance(msg, utterance_id)
     if msg["event"] != "decided" or msg["action"] != action:
         raise AssertionError(msg)
     if msg["transcript"] != text or msg["source"] != source or msg["ignored"] != ignored:
@@ -123,11 +140,9 @@ def _check_decided(msg, text, action, source, ignored):
 
 async def _expect_line(clients, text, action, source, ignored):
     backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
-    heard = await _recv(backstage)
-    if heard != {"event": "heard", "transcript": text, "dropped": False, "drop_reason": ""}:
-        raise AssertionError(heard)
+    utterance_id = _check_heard(await _recv(backstage), text)
     decided_b = await _recv(backstage)
-    _check_decided(decided_b, text, action, source, ignored)
+    _check_decided(decided_b, text, action, source, ignored, utterance_id)
     if action == "silent":
         await _quiet(lola)
         await _quiet(caregiver)
@@ -135,8 +150,8 @@ async def _expect_line(clients, text, action, source, ignored):
         return decided_b
     decided_l = await _recv(lola)
     decided_c = await _recv(caregiver)
-    _check_decided(decided_l, text, action, source, ignored)
-    _check_decided(decided_c, text, action, source, ignored)
+    _check_decided(decided_l, text, action, source, ignored, utterance_id)
+    _check_decided(decided_c, text, action, source, ignored, utterance_id)
     if action == "comfort":
         play = await _recv(lola)
         if set(play) != {"event", "reply_id", "reply_audio", "photo"}:
@@ -316,6 +331,20 @@ async def _run():
             except (AssertionError, asyncio.TimeoutError) as exc:
                 print(f"stale newest wins: FAIL {exc}")
 
+            total += 1
+            try:
+                ids = []
+                for _ in range(2):
+                    _post(port, {"mode": "typed", "text": "Nasaan si Nanay?"})
+                    decided = await _expect_line(clients, "Nasaan si Nanay?", "comfort", "rule", "")
+                    ids.append(decided["utterance_id"])
+                if ids[0] == ids[1]:
+                    raise AssertionError(f"same utterance_id twice {ids[0]!r}")
+                passed += 1
+                print("utterance_id per line: PASS")
+            except (AssertionError, asyncio.TimeoutError) as exc:
+                print(f"utterance_id per line: FAIL {exc}")
+
             face_passed, face_total = await _face(port, clients)
             passed += face_passed
             total += face_total
@@ -399,9 +428,10 @@ def _identify_as(who, score=0.91):
     return identify
 
 
-def _check_sino(msg, who):
+def _check_sino(msg, who, utterance_id):
     if set(msg) != DECIDED_KEYS | {"who"}:
         raise AssertionError(sorted(msg))
+    _same_utterance(msg, utterance_id)
     if msg["event"] != "decided" or msg["action"] != "comfort" or msg["reply_id"] != "sino-ka":
         raise AssertionError(msg)
     if msg["transcript"] != "Sino ka?" or msg["who"] != who:
@@ -411,10 +441,8 @@ def _check_sino(msg, who):
 async def _expect_sino(clients, audio, photo, who, seen_who):
     text = "Sino ka?"
     backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
-    heard = await _recv(backstage)
-    if heard != {"event": "heard", "transcript": text, "dropped": False, "drop_reason": ""}:
-        raise AssertionError(heard)
-    _check_sino(await _recv(backstage), who)
+    utterance_id = _check_heard(await _recv(backstage), text)
+    _check_sino(await _recv(backstage), who, utterance_id)
     seen = await _recv(backstage)
     if set(seen) != {"event", "who", "score"} or seen["event"] != "face_seen":
         raise AssertionError(seen)
@@ -422,8 +450,8 @@ async def _expect_sino(clients, audio, photo, who, seen_who):
         raise AssertionError(seen)
     if isinstance(seen["score"], bool) or not isinstance(seen["score"], (int, float)):
         raise AssertionError(seen["score"])
-    _check_sino(await _recv(lola), who)
-    _check_sino(await _recv(caregiver), who)
+    _check_sino(await _recv(lola), who, utterance_id)
+    _check_sino(await _recv(caregiver), who, utterance_id)
     play = await _recv(lola)
     if set(play) != {"event", "reply_id", "reply_audio", "photo"}:
         raise AssertionError(play)
@@ -593,13 +621,12 @@ def _meal_seed(load):
 
 async def _expect_meal(clients, text, variant, audio, photo, last_meal_ts, card_count):
     backstage, lola, caregiver = clients["backstage"], clients["lola"], clients["caregiver"]
-    heard = await _recv(backstage)
-    if heard != {"event": "heard", "transcript": text, "dropped": False, "drop_reason": ""}:
-        raise AssertionError(heard)
+    utterance_id = _check_heard(await _recv(backstage), text)
     for ws in (backstage, lola, caregiver):
         msg = await _recv(ws)
         if set(msg) != MEAL_KEYS:
             raise AssertionError(sorted(msg))
+        _same_utterance(msg, utterance_id)
         if msg["action"] != "comfort" or msg["reply_id"] != "meal-check":
             raise AssertionError(msg)
         if msg["reply_variant"] != variant or msg["last_meal_ts"] != last_meal_ts:
