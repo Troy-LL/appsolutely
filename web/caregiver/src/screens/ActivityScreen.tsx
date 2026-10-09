@@ -144,7 +144,7 @@ export function ActivityScreen({ t, entries, demoDays, lastNote, onRecord, onAdd
           <p className="sn-tl__quote">“{words(e)}”</p>
           {s ? <p className="sn-tl__sub">{s}</p> : null}
           {e.kind === 'needs' && back === 0 ? (
-            <button type="button" className="sn-btn sn-btn--sm" onClick={() => onRecord(e.id)}>{t.btn('record')}</button>
+            <button type="button" className="sn-btn sn-btn--wide" onClick={() => onRecord(e.id)}>{t.btn('record')}</button>
           ) : null}
         </div>
       </li>,

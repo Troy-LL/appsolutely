@@ -138,14 +138,14 @@ export default function App() {
   const back = () => go(tab)
   const recordEntry = entries.find((e) => e.id === recordId)
   const person = people.find((p) => p.name === personName)
-  const onTab = TABS.includes(screen)
+  const onTab = TABS.includes(screen) || screen === 'receipt'
 
   return (
     <div className={`sn-app${scale === 1 ? ' s2' : scale === 2 ? ' s3' : ''}`} lang={lang === 'en' ? 'en' : 'tl'}>
       {onTab ? (
         <TopBar t={t} lang={lang} langOpen={langOpen} fake={!USING_HUB} me={ME}
           onToggleLang={() => setLangOpen(!langOpen)} onPickLang={(l) => { setLang(l); setLangOpen(false) }}
-          onAccount={() => go('account')} onFamily={() => go('family')} onKnows={() => go('knows')} />
+          onAccount={() => go('account')} />
       ) : null}
 
       {link === 'reconnecting' ? <p className="sn-reconnect" role="status">{t.one('reconnecting')}</p> : null}
