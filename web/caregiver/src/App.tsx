@@ -2,7 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { AskIntent, ChatMsg, Entry, Lang, MemberColor, Person, Question, Scale, Screen } from './types'
 import { makeT } from './i18n/i18n'
 import { initialLog, logReducer } from './data/log'
-import { deleteQuestion, loadQuestions, loadSafetyWords, useFeed, USING_HUB } from './data/hub'
+import { deleteQuestion, loadQuestions, loadSafetyWords, postUrgentReply, useFeed, USING_HUB } from './data/hub'
 import { SAFETY_WORDS } from './data/safetyWords'
 import { readAbout } from './feed/events'
 import { startMonitoring } from './feed/monitor'
@@ -152,6 +152,19 @@ export default function App() {
     askTimer.current = window.setTimeout(() => answer({ text: t.two('askTimeout'), error: true }), ASK_TIMEOUT_MS)
   }
 
+  const replyUrgent = (audio?: Blob) => {
+    const text = lang === 'en' ? 'On my way' : 'Papunta na ako'
+    for (const entry of log.entries) {
+      if (entry.kind === 'urgent') dispatch({ type: 'markRead', id: entry.id })
+    }
+    const message = { event: 'urgent_reply', text, speaker: ME, reply_audio: '' }
+    if (audio && USING_HUB) {
+      void postUrgentReply({ text, speaker: ME, audio }).catch(() => send(message))
+      return
+    }
+    send(message)
+  }
+
   const go = (s: Screen) => {
     setLangOpen(false)
     setScreen(s)
@@ -182,7 +195,7 @@ export default function App() {
       {screen === 'home' ? (
         <HomeScreen t={t} me={ME} now={now} health={log.health} entries={today} people={people} replyCount={replyCount}
           onRecord={(id) => { setRecordId(id); go('record') }}
-          onRead={(id) => dispatch({ type: 'markRead', id })}
+          onReply={replyUrgent}
           onUnread={(id) => dispatch({ type: 'unmarkRead', id })}
           onPerson={(name) => { setPersonName(name); go('person') }}
           onFamily={() => go('family')}
@@ -203,6 +216,7 @@ export default function App() {
       {screen === 'activity' ? (
         <ActivityScreen t={t} entries={entries} demoDays={!USING_HUB} lastNote={lastNote}
           onRecord={(id) => { setRecordId(id); go('record') }}
+          onReply={() => replyUrgent()}
           onAddNote={addNote}
           onUndoNote={() => { if (lastNote) dispatch({ type: 'removeNote', id: lastNote.id }); setLastNote(null) }}
           onReceipt={() => go('receipt')} />

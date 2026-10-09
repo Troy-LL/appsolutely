@@ -22,6 +22,10 @@ Changed Sat ~4:10 AM at Donita's request after testing: a single Glass was too e
 
 `/lola` does not play this file and does not turn red.
 
+## When it stops
+
+A caregiver `urgent_reply` (docs/sino/architecture.md) calls `stop_chime()`, which ends the `afplay` process if it is still running. The next urgent line can start a new alarm. `/lola` still never plays this sound.
+
 Whether the chime is audible across a room is to verify at smoke test ([architecture.md](architecture.md#to-verify-at-smoke-test)).
 
 ## Pre-freeze test (was the 1:00 AM test)

@@ -52,3 +52,17 @@ def play_chime():
         _alarm = _start(COMMAND)
     except Exception as exc:
         print(f"chime: afplay did not start ({type(exc).__name__})", file=sys.stderr)
+
+
+def stop_chime():
+    """Stop the alarm if it is still playing. Never raises."""
+    global _alarm
+    alarm = _alarm
+    _alarm = None
+    if alarm is None:
+        return
+    try:
+        if alarm.poll() is None:
+            alarm.terminate()
+    except Exception as exc:
+        print(f"chime: could not stop ({type(exc).__name__})", file=sys.stderr)

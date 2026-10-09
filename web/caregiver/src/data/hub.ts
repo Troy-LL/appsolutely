@@ -146,3 +146,14 @@ export async function addSafetyWord(word: string): Promise<{ word: string } | 'f
   }
   return (await res.json()) as { word: string }
 }
+
+// POST /urgent-reply. A recorded voice on an urgent card; the hub stores it and tells Lola.
+export async function postUrgentReply(opts: { text: string; speaker: string; audio: Blob }): Promise<void> {
+  const ext = opts.audio.type.includes('mp4') ? 'm4a' : opts.audio.type.includes('ogg') ? 'ogg' : opts.audio.type.includes('wav') ? 'wav' : 'webm'
+  const form = new FormData()
+  form.append('text', opts.text.slice(0, 300))
+  form.append('speaker', opts.speaker.slice(0, 60))
+  form.append('reply_audio', opts.audio, `urgent-reply.${ext}`)
+  const res = await fetch('/urgent-reply', { method: 'POST', body: form })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+}
