@@ -51,7 +51,7 @@ from listen import enable_mic, mic_ok, start_listen  # noqa: E402
 # hub/chime.py (Donita, D6): the urgent chime on the hub speaker.
 from chime import enable_chime, play_chime  # noqa: E402
 # hub/always.py (Donita, D4): always-listening, off unless ALWAYS_LISTEN=1.
-from always import deafen_for_chime, deafen_for_reply, enable_always, start_always  # noqa: E402
+from always import always_on, deafen_for_chime, deafen_for_reply, enable_always, start_always  # noqa: E402
 
 SCREENS = ("lola", "caregiver", "backstage")
 UNKNOWN_MEAL_NOTE = "Lola asked if she's eaten. No meal logged."
@@ -266,6 +266,7 @@ class Hub:
             "ollama": _reachable(f"{hub}/api/tags", 0.3),
             "server": True,
             "mic": mic_ok(),
+            "always": always_on(),
             "offline": bool(self._offline),
             "model": model_mode(),
             "last_event_at": self.last_event_at,

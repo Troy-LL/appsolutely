@@ -201,6 +201,8 @@ async def _capture():
     """Read the mic for as long as the hub runs. If ffmpeg stops, wait and start it again."""
     warned = False  # print the failure once, not on every retry
     while True:
+        while listen.always_mic_held():
+            await asyncio.sleep(0.05)
         proc = None
         try:
             proc = await asyncio.create_subprocess_exec(
@@ -208,6 +210,8 @@ async def _capture():
                 stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
             gate, zeros = Gate(), 0
             while True:
+                if listen.always_mic_held():
+                    break
                 frame = await asyncio.wait_for(proc.stdout.readexactly(FRAME_BYTES), READ_TIMEOUT)
                 # Health light "mic": false after a full second of exact zeros (muted or blocked).
                 zeros = zeros + 1 if frame == SILENT_FRAME else 0
@@ -218,7 +222,7 @@ async def _capture():
                     clip_done(pcm)
         except Exception as exc:  # ffmpeg missing, ended, or stuck (a server stop is not caught)
             listen.MIC_OK = False
-            if not warned:
+            if not warned and not listen.always_mic_held():
                 print(f"always-listening: mic capture stopped ({type(exc).__name__}), "
                       f"retrying every {RESTART_SECONDS} s", file=sys.stderr)
                 warned = True
@@ -227,6 +231,8 @@ async def _capture():
                 with contextlib.suppress(ProcessLookupError):
                     proc.kill()
                 await proc.wait()
+        if listen.always_mic_held():
+            continue
         await asyncio.sleep(RESTART_SECONDS)
 
 
@@ -235,6 +241,10 @@ def enable_always():
     global ENABLED
     ENABLED = os.environ.get("ALWAYS_LISTEN") == "1"
     print(f"always-listening: {'on' if ENABLED else 'off'}", flush=True)
+
+
+def always_on():
+    return ENABLED
 
 
 def start_always(hub):

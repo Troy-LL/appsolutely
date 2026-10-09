@@ -54,6 +54,7 @@ HEALTH_KEYS = {
     "ollama",
     "server",
     "mic",
+    "always",
     "offline",
     "model",
     "last_event_at",
