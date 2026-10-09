@@ -59,6 +59,9 @@ TBD.
 | Thu Oct 8 | Prize targets: Grand Champion first, Tutorials Dojo as fallback; side-award criteria copied at briefing | Team |
 | Thu Oct 8 | Talk to AI tools in any language; code, commits, and README stay in English | Team |
 | Fri Oct 9 1 PM | Official rules folded into docs: Local AI theme, weighted criteria, official submission checklist, airplane-mode tests, model smoke-test gate. Idea not locked yet | Troy |
+| Fri Oct 9 | **Idea locked: Sino.** Offline home hub that answers Lola's repeated questions in her family's recorded voice and alerts the caregiver. Hub: Donita's M2 (whisper.cpp + Ollama qwen2.5:3b). Spec in `docs/sino/` | Team |
+| Fri Oct 9 10:30 PM | Build plan reset: MVP freeze 2:00 AM, add-ons cut-off 5:00 AM, submit 8:30 AM. See `docs/sino/mvp-plan.md` | Troy |
+| Fri Oct 9 10:40 PM | Spec hardened: quick setup is the MVP onboarding (9-step wizard dropped); junk-line filter + throttle + hidden "listen now"; speech model picked by timing at 11:30 PM with a RAM rule; urgent = hub chime + red card (no push offline); quiet grouped yellow cards; recap is counts only; "Nasaan si Nanay?" gets a validation reply; Internet Sharing no-upstream test at 11:15 PM; add-ons a → b → c behind a cut line; why-local leads with the always-on mic | Troy |
 
 ## Handoffs
 

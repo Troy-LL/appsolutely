@@ -1,6 +1,18 @@
 # Appsolutely
 
-Team repo for the **AppBuildersPH Hackathon 2026** (Team Appsolutely: Troy, Ayen, Donita, Viviene). Right now it holds planning docs only: event facts, roles, philosophy, the 1 PM playbook, the idea filter, and the submission checklist. **No application code exists yet.** Per the rules, the project is built from scratch after the challenge reveal at 1:00 PM Fri Oct 9.
+Team repo for the **AppBuildersPH Hackathon 2026** (Team Appsolutely: Troy, Ayen, Donita, Viviene). It holds the planning docs (event facts, roles, philosophy, playbook, idea filter, submission checklist) and the Sino spec in `docs/sino/`. Per the rules, the project is built from scratch after the challenge reveal at 1:00 PM Fri Oct 9.
+
+## Our project: Sino
+
+Sino is a small home hub that answers a lola's repeated questions in her family's own recorded voice, decides when to comfort her, get the caregiver, or raise an alarm, and keeps working with no internet. An always-on mic in a home must never stream anywhere, so speech recognition (whisper.cpp) and the decision model (Qwen2.5 in Ollama) run on a home device. Spec: **[docs/sino/README.md](docs/sino/README.md)**.
+
+## Disclosures (running list, updated as we build)
+
+- **Models:** Whisper via whisper.cpp (small, medium, or large-v3-turbo; final pick logged in docs/NOTES.md), Qwen2.5-3B or Qwen2.5-1.5B (Ollama), Silero VAD. Added only if an add-on ships: face (face-api.js or MobileFaceNet ONNX), person detection (MediaPipe or YOLO), speaker (sherpa-onnx or SpeechBrain ECAPA). Update this list to what was actually used.
+- **Frameworks and tools:** TODO, add as each is introduced.
+- **APIs and cloud services:** none at runtime.
+- **Existing code and assets:** open-source libraries only. Demo data (`seed.json`, teammate-recorded replies and photos, and the recorded CCTV clip if used) is labeled as demo data.
+- **AI development tools:** Claude Code, Cursor, Grok Bot (plus the Figma MCP if used).
 
 ## Key dates (PH time, UTC+8)
 

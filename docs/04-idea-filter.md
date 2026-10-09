@@ -1,5 +1,7 @@
 # 04 Idea filter and locked spec
 
+> **Idea locked Fri Oct 9: Sino.** The locked spec now lives in [docs/sino/](sino/README.md) (features, AI contract and interfaces in `architecture.md`, failure cases in `judge-qa.md`, demo in `demo.md`). The empty spec template below is kept for reference only; don't fill it in.
+
 Fill this in live from 1:10 PM Fri. At 2:30 PM, sections 2 to 7 **are the spec**. Changing them after 4:00 PM needs the whole team.
 
 ## Challenge (official)

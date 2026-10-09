@@ -10,15 +10,20 @@ These rules apply to every AI tool used in this repo (Claude Code, Cursor, Copil
 ## Read first, every session
 
 1. `docs/INDEX.md`: where everything lives
-2. `docs/02-philosophy.md`: the vision and principles
-3. `docs/04-idea-filter.md`: **the locked spec** (user, moment, one screen, AI contract, failure cases, demo script, cut list)
+2. `docs/sino/README.md`: **the locked spec** for our project, Sino, then `features.md` (scope), `architecture.md` (devices, models, interfaces), and `mvp-plan.md` (who owns what, when)
+3. `docs/02-philosophy.md`: the vision and principles
 
-If the spec sections in `04-idea-filter.md` are still empty, do not write application code. Ask the human what was decided.
+## Source of truth / do not invent
+
+- Facts about the project come only from `docs/sino/`; official event rules come only from `docs/00-event.md`. **Cite the doc** a fact comes from when you state it.
+- **Unknown means TODO, never a guess.** If hardware, a model, an owner, a number, or a feature isn't written down, write `TODO:` and ask the human.
+- Latency, accuracy, and other unmeasured numbers are "to verify at smoke test" until a real measurement is logged in `docs/NOTES.md`. Never state them as results.
+- Don't build anything outside `docs/sino/features.md`. New ideas go to its "Next steps" list. Add-ons below the cut line are built only after the MVP freeze.
 
 ## Stay inside the spec
 
 - Build only what serves the sentence and the demo script. Anything on the cut list stays cut.
-- Follow the AI contract JSON exactly. If it must change, stop and tell the human; both the UI and the backend depend on it.
+- Follow the interfaces in `docs/sino/architecture.md` exactly. If it must change, stop and tell the human; both the UI and the backend depend on it.
 - Core UI pattern: input → one tap → AI result card → one next step. Every screen has empty, loading, result, and error states.
 - Stack defaults: React + Vite + Tailwind + shadcn/ui (phone-first, PWA), Python FastAPI backend, Inter, Lucide icons, one accent color.
 - Don't add dependencies, services, auth, or new screens unless the human asks.

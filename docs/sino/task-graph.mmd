@@ -1,0 +1,59 @@
+%% Sino task graph, 10:30 PM plan rev 2. Rendered version: task-graph.png. Plan details: mvp-plan.md
+flowchart TD
+  I0[I0 Lock 3 interfaces · 15 min · all]
+
+  subgraph Troy["Troy · decision engine"]
+    T1[T1 Matcher + urgent rules]
+    T2[T2 Record seed replies + 30 test clips]
+    T3[T3 Qwen JSON decision + silent rule]
+    T4[T4 Medication + meals logic]
+    T5[T5 30-clip pass/fail test]
+    T6[T6 a: Face match + greeting rule]
+  end
+  subgraph Donita["Donita · M2 hub"]
+    D1[D1 M2 network + HTTPS · no-upstream test 11:15 PM]
+    D2[D2 Whisper server · model timing 11:30 PM]
+    D3[D3 Ollama loaded + warm]
+    D4[D4 VAD → junk filter → throttle → WebSocket]
+    D5[D5 Seed loader + storage]
+    D6[D6 start.sh + health light + urgent chime]
+    D7[D7 b: CCTV person detector on clip]
+    D8[D8 c: Voice ID]
+  end
+  subgraph Ayen["Ayen · setup + Lola screen"]
+    A1[A1 Design system]
+    A2[A2 Lola iPad: clock, photo, reply]
+    A3[A3 Quick setup: question, phrasings, record, photo, test]
+    A4[A4 a: Greeting view]
+  end
+  subgraph Viv["Viviene · caregiver + backstage"]
+    V1[V1 Fake event feed]
+    V2[V2 Caregiver iPhone: red, quiet yellow, log]
+    V3[V3 Backstage + listen now + typed question]
+    V4[V4 Should: Kumain na + recap counts]
+    V5[V5 b: 'Nasaan si Lola?' view]
+  end
+
+  I0 --> T1 & D4 & D5 & V1
+  T1 --> T3 --> T5
+  T1 --> T4
+  T2 --> T5
+  D3 --> T3
+  D1 --> D2 --> D4 --> D6
+  A1 --> A2 & A3 & V2 & V3
+  V1 --> A2 & V2 & V3
+  D5 --> A3
+  D4 & D5 & D6 & T3 & A2 & V2 & V3 --> W[W1 MVP wired · 12:30–1:15 AM]
+  W --> T5 --> F[F1 MVP freeze · 2 AM]
+  T4 & A3 --> F
+  F --> V4
+  F --> T6 & A4
+  T6 & A4 --> XA[a: face greeting works]
+  XA -.-> D7
+  F --> D7 & V5
+  D7 & V5 --> XB[b: CCTV works]
+  XB -.-> D8
+  F --> D8
+  XA & XB & D8 & V4 --> C[C1 Add-ons cut-off · 5 AM]
+  C --> R[R1 Rehearse ×3 + backup video · 7 AM]
+  R --> S[S1 Submit · 8:30 AM]
