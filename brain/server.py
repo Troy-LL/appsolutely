@@ -41,6 +41,8 @@ except ImportError:
 # hub/questions.py (Donita, D5) stores new questions and their files. Appended last so brain/ wins.
 sys.path.append(str(Path(__file__).resolve().parent.parent / "hub"))
 from questions import MAX_BYTES, BadInput, ensure_working_copy, media_dir, save_question  # noqa: E402
+# hub/listen.py (Donita, D4): listen now records the hub mic, runs Whisper and the junk filter.
+from listen import enable_mic, mic_ok, start_listen  # noqa: E402
 
 SCREENS = ("lola", "caregiver", "backstage")
 WHISPER_URL = "http://127.0.0.1:8080"
@@ -139,7 +141,7 @@ class Hub:
             "whisper": _reachable(WHISPER_URL, 0.3),
             "ollama": _reachable(f"{hub}/api/tags", 0.3),
             "server": True,
-            "mic": False,
+            "mic": mic_ok(),
             "offline": bool(self._offline),
             "model": model_mode(),
             "last_event_at": self.last_event_at,
@@ -365,6 +367,8 @@ async def listen(request: Request):
         return Response(status_code=400)
     mode = payload.get("mode")
     if mode == "listen_now":
+        # Record, transcribe, and filter in the background; what happened arrives on /ws.
+        start_listen(hub)
         return Response(status_code=202)
     if mode != "typed":
         return Response(status_code=400)
@@ -586,6 +590,8 @@ def main():
     # Point load_seed() at the hub's working copy. Done here, not at import, so
     # brain/tests/test_server.py (which imports app) keeps reading brain/seed.json.
     os.environ.setdefault("SINO_SEED", str(ensure_working_copy()))
+    # Only the hub process opens the mic, so test_server.py (mic false, listen now silent) still holds.
+    enable_mic()
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", str(DEFAULT_PORT)))
     uvicorn.run(app, host=host, port=port, log_level="info", **_ssl_kwargs())
