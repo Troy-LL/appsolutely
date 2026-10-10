@@ -230,6 +230,11 @@ function RoomReel({ t, hub }: { t: T; hub: boolean }) {
         {rooms.map((item, i) => <i key={item.id} className={i === ((index % count) + count) % count ? 'is-on' : ''} />)}
       </div>
       <p className="sn-room-label">RECORDED CLIP · DEMO</p>
+      {room.detected ? (
+        <p className="sn-mon-tag" style={{ maxWidth: 'none', justifySelf: 'center' }}>
+          {`Huling nakita: ${room.tl} ${clipClock(room.clip_offset_s)}`}
+        </p>
+      ) : null}
       <p className="sn-room-meta">
         <Bits text={{ main: `Clip ${clipClock(room.clip_offset_s)}`, sub: '' }} />
         <Bits text={person} />

@@ -405,6 +405,82 @@ async def test_server_paths():
         media.cleanup()
 
 
+KAINAN_SEATED = (100, 40, 280, 340)
+
+
+def _iou(a, b):
+    ax1, ay1, ax2, ay2 = a
+    bx1, by1, bx2, by2 = b
+    ix1, iy1 = max(ax1, bx1), max(ay1, by1)
+    ix2, iy2 = min(ax2, bx2), min(ay2, by2)
+    inter = max(0, ix2 - ix1) * max(0, iy2 - iy1)
+    area_a = max(0, ax2 - ax1) * max(0, ay2 - ay1)
+    area_b = max(0, bx2 - bx1) * max(0, by2 - by1)
+    union = area_a + area_b - inter
+    if union <= 0:
+        return 0.0
+    return inter / union
+
+
+def test_kainan_person_box():
+    clips.detect_people = REAL_DETECT
+    folder = BRAIN / "clips" / "media"
+    cache = clips.cache_path(folder)
+    if cache.is_file():
+        cache.unlink()
+    summary = clips.scan(folder)
+    seen = clips.room_sighting("kainan")
+    if not isinstance(seen, dict) or seen.get("detector") != "mobilenet-ssd":
+        raise AssertionError(seen)
+    box = seen.get("box")
+    if not isinstance(box, list) or len(box) != 4:
+        raise AssertionError(box)
+    overlap = _iou(box, KAINAN_SEATED)
+    if overlap < 0.3:
+        raise AssertionError((overlap, box, seen))
+    label = clips.box_label(seen["score"])
+    if label != f"Tao · {float(seen['score']):.2f}":
+        raise AssertionError(label)
+    rows = {row["id"]: row for row in clips.room_catalog(folder)}
+    if not rows["kainan"]["detected"]:
+        raise AssertionError(rows["kainan"])
+    if rows["hagdan"]["detected"] or rows["balkonahe"]["detected"]:
+        raise AssertionError((rows["hagdan"], rows["balkonahe"], summary))
+    jpeg = clips.snapshot_jpeg("kainan")
+    if not isinstance(jpeg, bytes) or not jpeg.startswith(b"\xff\xd8"):
+        raise AssertionError("kainan jpeg")
+    if clips.snapshot_jpeg("hagdan") is not None or clips.snapshot_jpeg("balkonahe") is not None:
+        raise AssertionError("empty room served a frame")
+    print(
+        f"kainan box={box} score={float(seen['score']):.4f} iou={overlap:.4f} "
+        f"offset={seen['clip_offset_s']} label={label} frames={summary['frames']} "
+        f"detections={summary['detections']} detector={seen['detector']} stats={clips.last_stats()}"
+    )
+
+
+def test_cache_reload_skips_detect():
+    clips.detect_people = REAL_DETECT
+    with tempfile.TemporaryDirectory() as tmp:
+        folder = Path(tmp)
+        _write_clip(folder / "stairs.mp4", 3, fps=2)
+        clips.detect_calls = 0
+        first = clips.scan(folder)
+        calls = clips.detect_calls
+        if calls <= 0:
+            raise AssertionError("first scan did not run the detector")
+        second = clips.scan(folder)
+        if clips.detect_calls != calls:
+            raise AssertionError((calls, clips.detect_calls))
+        if second["frames"] != first["frames"] or second["detections"] != first["detections"] or second["rooms"] != first["rooms"]:
+            raise AssertionError((first, second))
+        path = folder / "stairs.mp4"
+        stamp = path.stat()
+        os.utime(path, (stamp.st_atime, stamp.st_mtime + 10))
+        clips.scan(folder)
+        if clips.detect_calls == calls:
+            raise AssertionError("changed mtime reused the cache")
+
+
 def test_demo_room_clips():
     clips.detect_people = REAL_DETECT
     folder = BRAIN / "clips" / "media"
@@ -453,6 +529,8 @@ def main():
         test_one_detection_does_not_count,
         test_room_names,
         test_recording_wording,
+        test_kainan_person_box,
+        test_cache_reload_skips_detect,
         test_demo_room_clips,
     ]
     passed = 0
