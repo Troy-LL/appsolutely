@@ -192,4 +192,12 @@ export const tl = {
   mealAte: 'Sabi kumain na siya',
   mealRepeat: 'Tinanong ulit, inalok ng tubig',
   mealUnknown: 'Hindi alam kung kumain',
+  addWord: 'Magdagdag ng salita',
+  addWordLabel: 'Salita',
+  addWordPh: 'Halimbawa: lagnat',
+  addWordEmpty: 'Isulat muna ang salita.',
+  addWordShort: 'Apat na letra man lang.',
+  addWordLong: 'Masyadong mahaba. Mga apatnapung titik lang.',
+  addWordDup: 'Nandiyan na ang salitang iyan.',
+  saveWord: 'I-save',
 }

@@ -193,4 +193,12 @@ export const en: Record<keyof typeof tl, string> = {
   mealAte: 'She said Lola has eaten',
   mealRepeat: 'Asked again, and offered water',
   mealUnknown: 'Does not know if Lola has eaten',
+  addWord: 'Add a word',
+  addWordLabel: 'Word',
+  addWordPh: 'For example: lagnat',
+  addWordEmpty: 'Write a word first.',
+  addWordShort: 'At least 4 letters.',
+  addWordLong: 'Too long. Forty characters at most.',
+  addWordDup: 'That word is already here.',
+  saveWord: 'Save',
 }

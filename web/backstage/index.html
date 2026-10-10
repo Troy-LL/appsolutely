@@ -247,6 +247,29 @@ function onEvent(msg) {
       const rooms = Array.isArray(msg.rooms) && msg.rooms.length ? msg.rooms.join(", ") : "no rooms";
       return setInfo("clips", "Clip scan: " + rooms + " · " + (msg.detections ?? 0) + " detections · " + seconds(msg.ms));
     }
+    case "safety_word":
+      return showSafetyWord(msg.word);
+  }
+}
+
+function showSafetyWord(word) {
+  const text = String(word || "").trim();
+  if (!text) return;
+  const item = document.querySelector('#info [data-kind="safety"]');
+  const prev = item ? item.textContent.replace(/^Safety words:\s*/, "") : "";
+  const words = prev ? prev.split(", ").filter(Boolean) : [];
+  if (!words.includes(text)) words.push(text);
+  setInfo("safety", "Safety words: " + words.join(", "));
+}
+
+async function loadSafetyWords() {
+  try {
+    const res = await fetch("/safety-words");
+    if (!res.ok) return;
+    const body = await res.json();
+    if (Array.isArray(body.custom)) body.custom.forEach(showSafetyWord);
+  } catch {
+    /* the next safety_word event still shows a word added while this page is open */
   }
 }
 
@@ -260,6 +283,7 @@ function openHubSocket() {
     ws.onopen = () => {
       attempt = 0;
       showEmpty("Nothing heard yet. Sino is listening.");
+      loadSafetyWords();
     };
     ws.onmessage = (e) => {
       let msg;

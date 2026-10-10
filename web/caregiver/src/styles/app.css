@@ -497,6 +497,15 @@ html, body, #root { margin: 0; height: 100%; background: var(--paper); }
 @media print {
   .sn-app { height: auto; max-width: none; overflow: visible; display: block; }
   .sn-scroll { overflow: visible; padding: 0; }
-  .sn-top, .sn-tabs, .sn-noprint, .sn-langpop, .sn-reconnect, .sn-monitor { display: none !important; }
+  .sn-top, .sn-tabs, .sn-noprint, .sn-langpop, .sn-reconnect, .sn-monitor, .sn-sheet, .sn-sheet-bg { display: none !important; }
   .sn-receipt, .sn-tear { max-width: 420px; margin-left: auto; margin-right: auto; }
 }
+
+button.sn-word-add { padding: 0 14px; cursor: pointer; color: var(--ink); }
+button.sn-word-add:active { background: var(--ink); color: var(--paper); }
+.sn-sheet-bg { position: fixed; inset: 0; z-index: 30; background: rgba(43, 36, 32, 0.4); }
+.sn-sheet { position: fixed; z-index: 31; left: 50%; bottom: 0; transform: translateX(-50%); width: 100%; max-width: 430px; box-sizing: border-box; background: var(--paper); border: 2px solid var(--ink); border-bottom: 0; border-radius: 18px 18px 0 0; box-shadow: 0 -4px 0 var(--ink); padding: 20px 24px 24px; }
+.sn-sheet__title { font: 600 calc(22px * var(--s))/1.2 var(--font-heading); margin: 0 0 14px; }
+.sn-sheet .sn-input { margin: 8px 0 16px; }
+.sn-sheet__err { margin: -8px 0 14px; font-size: calc(15px * var(--s)); line-height: 1.4; }
+.sn-sheet .sn-row .sn-btn { flex: 1; }

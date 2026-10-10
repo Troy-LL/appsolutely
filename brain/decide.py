@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import threading
 import time
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -64,6 +65,75 @@ _BREATHING_NEGATIONS = ("hindi", "di")
 
 def normalize(text):
     return " ".join(_PUNCTUATION.sub(" ", str(text).lower()).split())
+
+
+_SAFETY_LOCK = threading.Lock()
+_CUSTOM_MIN_LETTERS = 4
+_CUSTOM_MAX_LEN = 40
+
+
+class SafetyWordError(ValueError):
+    """The caregiver's word was empty, too short, too long, or already listed."""
+
+
+def safety_words_path():
+    override = os.environ.get("SINO_SAFETY_WORDS", "")
+    if override:
+        return Path(override)
+    hub = os.environ.get("HUB_DATA", "")
+    folder = Path(hub) if hub else Path(__file__).resolve().parent.parent / "hub" / "data"
+    return folder / "safety-words.json"
+
+
+def load_custom_safety_words():
+    path = safety_words_path()
+    if not path.is_file():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    raw = data.get("words") if isinstance(data, dict) else None
+    if not isinstance(raw, list):
+        return []
+    words = []
+    for item in raw:
+        if not isinstance(item, str):
+            continue
+        word = normalize(item)
+        if word and word not in words:
+            words.append(word)
+    return words
+
+
+def _builtin_safety_words():
+    return set(URGENT_STEMS) | set(FUZZY_SOLO) | {stem for _pattern, stem in _ENGLISH_URGENT}
+
+
+def safety_words_payload():
+    return {"builtin": list(URGENT_STEMS), "custom": load_custom_safety_words()}
+
+
+def add_custom_safety_word(raw):
+    word = normalize(raw)
+    if not word:
+        raise SafetyWordError("empty")
+    letters = sum(1 for ch in word if ch.isalpha())
+    if letters < _CUSTOM_MIN_LETTERS:
+        raise SafetyWordError("short")
+    if len(word) > _CUSTOM_MAX_LEN:
+        raise SafetyWordError("long")
+    with _SAFETY_LOCK:
+        custom = load_custom_safety_words()
+        if word in _builtin_safety_words() or word in custom:
+            raise SafetyWordError("duplicate")
+        custom.append(word)
+        path = safety_words_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text(json.dumps({"words": custom}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        os.replace(tmp, path)
+    return word
 
 
 def _match_key(text):
@@ -244,13 +314,48 @@ def _sounds_like_lola(text):
     return near >= _NEAR_QUESTION
 
 
+def _custom_urgent_hits(normalized):
+    words = load_custom_safety_words()
+    if not words:
+        return []
+    hits = []
+    solos = tuple(word for word in words if " " not in word)
+    for word in words:
+        if _spacing_insensitive(word, r"\b").search(normalized):
+            if word not in hits:
+                hits.append(word)
+    if solos:
+        for token in normalize(normalized).split():
+            for piece in (token, *_unglued(token)):
+                for stem in _solo_hits(piece, solos):
+                    if stem not in hits:
+                        hits.append(stem)
+    return hits
+
+
+def _tv_hits(normalized):
+    tokens = normalized.split()
+    tv_hits = [phrase for phrase in TV_PHRASES if phrase in normalized]
+    for token in tokens:
+        for tv in TV_TOKENS:
+            if tv in tv_hits:
+                continue
+            if token == tv or (len(tv) >= 5 and tv in token):
+                tv_hits.append(tv)
+    return tv_hits
+
+
 def urgent_words(text):
     """The urgent words decide() would alarm on. Rules only, never the model, so it is instant.
     brain/server.py uses it so the throttle never drops an emergency (QA D-01)."""
     without_loob = normalize(text)
     for _idiom, pattern in _LOOB_PATTERNS:
         without_loob = pattern.sub(" | ", without_loob)
-    return _urgent_hits(without_loob)
+    hits = _urgent_hits(without_loob)
+    for word in _custom_urgent_hits(without_loob):
+        if word not in hits:
+            hits.append(word)
+    return hits
 
 
 def _from_model(output, started, text=""):
@@ -326,15 +431,16 @@ def _unglued(token):
     return pieces
 
 
-def _solo_hits(piece):
-    if piece in URGENT_TYPOS:
+def _solo_hits(piece, canons=None):
+    solos = FUZZY_SOLO if canons is None else canons
+    if canons is None and piece in URGENT_TYPOS:
         return [URGENT_TYPOS[piece]]
-    if piece in FUZZY_SOLO:
+    if piece in solos:
         return [piece]
     if len(piece) < 4:
         return []
     ranked = []
-    for canon in FUZZY_SOLO:
+    for canon in solos:
         if piece[0] != canon[0]:
             continue
         limit = _urgent_limit(piece, canon)
@@ -421,6 +527,12 @@ def decide(text: str) -> dict:
     if urgent_hits:
         return _result("urgent", "urgent word", urgent_hits, 1.0, started)
 
+    # Custom words use the same fuzzy rules, but a TV line stays silent.
+    tv_hits = _tv_hits(normalized)
+    custom_hits = [word for word in _custom_urgent_hits(without_loob) if word not in urgent_hits]
+    if custom_hits and not tv_hits:
+        return _result("urgent", "urgent word", custom_hits, 1.0, started)
+
     if loob_hits:
         return _result("caregiver", "sakit ng loob idiom", loob_hits, 1.0, started)
 
@@ -429,13 +541,6 @@ def decide(text: str) -> dict:
     if medication_hits:
         return _result("caregiver", "medication", medication_hits, 1.0, started)
 
-    tv_hits = [phrase for phrase in TV_PHRASES if phrase in normalized]
-    for token in tokens:
-        for tv in TV_TOKENS:
-            if tv in tv_hits:
-                continue
-            if token == tv or (len(tv) >= 5 and tv in token):
-                tv_hits.append(tv)
     if tv_hits:
         return _result("silent", "television line", tv_hits, 1.0, started, ignored="tv")
 
