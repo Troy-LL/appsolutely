@@ -79,6 +79,8 @@ def parse_model_json(raw: str) -> dict | None:
 
 
 def classify(text: str) -> dict | None:
+    if os.environ.get("SINO_MODE") == "demo":
+        return None
     if os.environ.get("SINO_MODEL", "stub") != "ollama":
         return None
     base_url = os.environ.get("HUB_URL") or DEFAULT_HUB_URL

@@ -125,6 +125,10 @@ Recording replies from family abroad (OFW), learning which voice calms her best,
 6. **6:00 PM:** the internet is down. Sino keeps working, because everything runs inside the house.
 7. **9:00 PM:** Joy asks Sino, "Kamusta si Lola?" and "Ano ang mga tanong niya?" Sino pulls the log: "Asked about Nanay 6×, mostly 4 to 6 PM. 1 urgent alert at 5:15 PM." Not a diagnosis. If she asks where Lola is, a scanned recording answers in the past tense ("Huling nakita sa recording: Kainan (clip 0:42).") and the caregiver sees that frame labeled "RECORDED CLIP · DEMO". It never says she is there now. With no detection, Sino says it has no camera answer and the caregiver gets a quiet card.
 
+## Public demo
+
+`SINO_MODE=demo` is a simulated public hub: stub decisions and a seeded day for each visitor, not the family's home hub. Nothing is heard from a live mic, and Ollama is not called. The home hub is `SINO_MODE` left unset.
+
 ## UX rules
 
 - **Lola's screen:** big clock, idle photo, full-screen photo with the voice. No menus, no text input, calm colors, never red.
