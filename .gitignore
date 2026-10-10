@@ -18,3 +18,4 @@ brain/clips/media/*
 *.jpeg
 !web/lola/practice.jpg
 web/lola/shots/
+demo/sim/out/
