@@ -4,7 +4,7 @@
 
 <img src="assets/brand/sino-logo.png" alt="Sino logo" width="260">
 
-**A home assistant for people with dementia that answers in the family's own voice, and never needs the internet.**
+**When someone with dementia asks the same question again, Sino answers in the family's own voice. No internet needed.**
 
 <a href="https://github.com/Troy-LL/appsolutely/blob/main/assets/demo/sino-demo.mp4"><img src="assets/demo/sino-demo-poster.jpg" alt="Watch the Sino demo with sound" width="100%"></a>
 
@@ -20,20 +20,20 @@
 
 ## Why Sino
 
-Lola asks "Nasaan si Nanay?" ten times a day. Her mother passed away years ago. Every answer is a choice between telling her the truth again and watching her grieve, or finding something gentle to say, and by the tenth time even the most patient family runs out of patience.
+Lola asks "Nasaan si Nanay?" ten times a day. Her mother passed away years ago. Every answer is a choice: tell her the truth again and watch her grieve, or find something gentle to say. By the tenth time, even the most patient family runs out.
 
-Sino gives that answer back to the family. They record what they want her to hear, once, in their own voices. After that, when Lola asks, she hears her daughter's voice and sees her daughter's face, every time, with the same warmth as the first time.
+Sino lets the family answer once and keep answering. They record what they want her to hear, in their own voices. After that, when Lola asks, she hears her daughter's voice, with the same warmth every time.
 
-**It has to be local.** A microphone that listens all day inside someone's home must never send that audio anywhere. So the speech recognition and the AI that decides what to do both run on a small hub in the house. Unplug the router and Sino keeps working.
+**It has to be local.** A microphone that listens all day inside someone's home must never send that audio anywhere. So the speech recognition and the AI that decides what to do both run on a small hub in the house. Cut the internet and Sino keeps working; the hub and screens only need the home network.
 
 ## What it does
 
 - **Answers in the family's voice.** A known question plays a reply the family recorded, full screen on Lola's iPad, with their photo when one is added. No text-to-speech and no voice cloning, ever.
-- **Knows when not to answer.** Every line Sino hears ends up as one of four outcomes: comfort her, quietly tell the caregiver, raise an urgent alarm, or stay silent. Anything about medicine always goes to the caregiver. When Sino isn't sure, it asks a person instead of guessing.
+- **Knows when not to answer.** Every line Sino hears gets one of four outcomes: comfort her, quietly tell the caregiver, raise an urgent alarm, or stay silent. Anything about medicine always goes to the caregiver. When Sino isn't sure, it asks a person instead of guessing.
 - **Sounds the alarm on real danger.** "Masakit dibdib ko," "natumba ako," "tulong": pain, falls, and trouble breathing ring a red alert on the caregiver's phone with Lola's exact words, until someone taps "Papunta na ako / On my way." Only fixed safety rules can raise an alarm, not the AI model, and the family can add their own safety words.
 - **Stays quiet for the TV.** Known TV words and lines, like "teleserye," "abangan," and "Salamat sa panonood," are ignored, so a show in the background doesn't get answered. A real urgent word still wins.
 - **Remembers meals so she doesn't have to.** The caregiver taps "Kumain na" after a meal. If Lola asks "Kumain na ba ako?", Sino reassures her. If no meal was logged, it never tells her she hasn't eaten; it quietly asks the caregiver to check.
-- **Shows who's there.** For "Sino ka?", Sino looks at one camera frame, and if it's sure the face belongs to an enrolled family member, it plays that person's recorded line. If it isn't sure, it plays a safe default and never names the wrong relative.
+- **Tells her who's there.** For "Sino ka?", Sino looks at one camera frame, and if it's sure the face belongs to an enrolled family member, it plays that person's recorded line. If it isn't sure, it plays a safe default and never names the wrong relative.
 - **Answers "how is Lola today?"** On the caregiver phone, the family asks in plain Taglish or English: "Kamusta si Lola?" or "Ano ang mga tanong niya?" Sino answers from the day's log with counts, her exact words, and any alerts, and says plainly that it's not a diagnosis.
 - **Looks for Lola in recorded clips.** "Nasaan si Lola?" checks video already recorded on the hub, highlights the person it found, and answers in the past tense: "Huling nakita sa recording: Kainan." It is a demo of recorded clips, not live CCTV.
 - **Lets the family teach it.** From the caregiver phone: add a question, add how Lola says it, hold to record the reply. A reply recorded on a yellow card plays on Lola's iPad right away.
@@ -46,15 +46,17 @@ flowchart LR
     A["iPad / hub mic"] --> B["whisper.cpp<br/>(speech to text, Tagalog)"]
     B --> C["Safety rules +<br/>known-question matcher"]
     C -->|unclear lines only| D["Qwen2.5 3B<br/>(Ollama)"]
-    C --> E["Lola's iPad"]
-    D --> E
+    C -->|known question| E["Lola's iPad"]
     C --> F["Caregiver iPhone"]
     D --> F
+    C -->|urgent| H["Hub chime (afplay)"]
     C --> G["Backstage"]
     D --> G
+    I["Camera frame / room clips"] --> J["OpenCV: faces, people"]
+    J --> F
 ```
 
-Everything in that picture runs inside the house, on one Mac acting as the hub. Rules go first: urgent words, medication, TV lines, then the known-question matcher. The local model only weighs in on lines the rules can't settle, and if it is slow or unsure, the line goes to a person. The three screens are web pages served by the hub over the home network.
+Everything in that picture runs inside the house, on one Mac acting as the hub. Rules go first: urgent words, medication, TV lines, then the known-question matcher. The local model only weighs in on lines the rules can't settle, and if it is slow, or not confident enough to stay silent, the line goes to a person. The three screens are web pages served by the hub over the home network.
 
 ## Three screens
 
