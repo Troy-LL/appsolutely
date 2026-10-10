@@ -97,6 +97,18 @@ It needs:
 The gate is not tuned on the iPad mic yet: to verify at smoke test. Test the
 pure parts (gate, WAV, upload queue) with `node web/lola/mic.test.mjs`.
 
+## Playing a reply
+
+A comfort decision arrives on the lola socket as `play_reply`. `reply_audio` is
+`/media/...` on the hub (the same origin as `/lola/`, http or https with the page).
+The Simulan tap plays a one-sample silent clip on one audio element and resumes
+an AudioContext. That is the only gesture iPad Safari needs. Later replies reuse
+that element, for a typed question, the iPad mic, and "Sino ka?". While the mic
+is on, the clip plays through that AudioContext, because Safari will not sound
+an `<audio>` element that is sharing the speakers with the microphone. If Safari
+refuses `play()` on the element, the same context plays the file. A tap anywhere
+replays a reply the browser blocked. `web/lola/reply.test.py` checks both paths.
+
 ## Contract gaps for the team
 
 These are things the screen is built for but cannot fully exercise under the

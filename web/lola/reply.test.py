@@ -7,8 +7,10 @@ events over the socket and reads what the page did: which state showed, when the
 audio played and ended, and whether play() was refused.
 
 Desktop Chrome is not iPadOS: Chrome lets any element play after one tap on the
-page, iPadOS only the element that was played inside the tap. So case 5 can only
-show that the same element is reused, not reproduce the iPad rule itself.
+page, iPadOS only the element that was played inside the tap. Case 5 checks that
+the same element is reused. Case 6 makes element play() refuse real clips (what
+iPad Safari does once the unlock clip has ended) and checks the AudioContext
+path still plays them with no second tap.
 """
 
 import asyncio
@@ -102,11 +104,41 @@ HTMLMediaElement.prototype.play = function () {
   const el = this, src = name(el), id = idOf(el)
   // capture: runs before lola.js's own 'ended' handler, which may already set the next clip's src
   if (!el.__hooked) { el.__hooked = true; el.addEventListener('ended', () => __log.push({ t: now(), kind: 'ended', el: id, src: name(el) }), true) }
+  // Case 6: iPad refuses a new src after the unlock clip. data: is the Simulan prime.
+  if (window.__denyElement && !String(el.src).startsWith('data:')) {
+    __log.push({ t: now(), kind: 'refused', el: id, src, err: 'NotAllowedError' })
+    return Promise.reject(new DOMException('denied', 'NotAllowedError'))
+  }
   __log.push({ t: now(), kind: 'play', el: id, src })
   const p = play.call(el)
   p.then(() => __log.push({ t: now(), kind: 'played', el: id, src }),
          (e) => __log.push({ t: now(), kind: 'refused', el: id, src, err: e.name }))
   return p
+}
+const NativeCtx = window.AudioContext || window.webkitAudioContext
+if (NativeCtx) {
+  function SinoCtx(...args) {
+    const ctx = new NativeCtx(...args)
+    const create = ctx.createBufferSource.bind(ctx)
+    ctx.createBufferSource = function () {
+      const node = create()
+      const start = node.start.bind(node)
+      node.start = function (...a) {
+        const src = node.__clip || 'prime'
+        __log.push({ t: now(), kind: 'played', el: 'ctx', src })
+        const fn = node.onended
+        node.onended = () => {
+          __log.push({ t: now(), kind: 'ended', el: 'ctx', src })
+          if (typeof fn === 'function') fn()
+        }
+        return start(...a)
+      }
+      return node
+    }
+    return ctx
+  }
+  window.AudioContext = SinoCtx
+  if (window.webkitAudioContext) window.webkitAudioContext = SinoCtx
 }
 for (const kind of ['pointerdown', 'click']) {
   document.addEventListener(kind, (e) => __log.push({ t: now(), kind, pointer: e.pointerType, gesture: navigator.userActivation.isActive }), true)
@@ -176,9 +208,11 @@ class Chrome:
             raise RuntimeError(f"{expr}: {res['exceptionDetails']}")
         return res["result"].get("value")
 
-    async def open_lola(self, port):
+    async def open_lola(self, port, deny_element=False):
         screens.clear()
         await self.send("Page.enable")
+        if deny_element:
+            await self.send("Page.addScriptToEvaluateOnNewDocument", source="window.__denyElement = true")
         await self.send("Page.addScriptToEvaluateOnNewDocument", source=HOOK)
         await self.send("Page.navigate", url=f"http://127.0.0.1:{port}/lola/?feed=hub&hub=127.0.0.1:{port}&mic=off&lang=tl")
         for _ in range(200):
@@ -230,6 +264,11 @@ def back_after_end(log, t, src):
     """ms from the clip's end to the clock showing again, or None."""
     ended, back = find(log, "ended", t, src=src), find(log, "show", t, state="waiting")
     return back["t"] - ended["t"] if ended and back else None
+
+
+def tapped_since(log, t):
+    """A pointer or click at or after t: a per-reply gesture, which autoplay must not need."""
+    return any(e["kind"] in ("pointerdown", "click") and e["t"] >= t for e in log)
 
 
 async def cases_autoplay_on(port):
@@ -308,17 +347,40 @@ async def case_start_unlocks(port):
         log = await c.js("__log")
         unlock = find(log, "play", 0, src="silent")
         check("5 Simulan plays the silent clip on the reply player", bool(unlock))
+        check("5 silent unlock play() succeeded", bool(find(log, "played", 0, src="silent")))
         for rid, clip in (("r6", "half.wav"), ("r7", "one.wav")):
             t = await c.now()
             await reply(rid, clip)
             log = await c.wait_for(lambda L: find(L, "show", t, state="waiting"), 6)
             play, played = find(log, "play", t, src=clip), find(log, "played", t, src=clip)
             gap = back_after_end(log, t, clip)
-            check(f"5 {rid} plays with no new gesture", bool(played) and find(log, "refused", t) is None)
+            check(f"5 {rid} plays with no new gesture",
+                  bool(played) and find(log, "refused", t) is None and not tapped_since(log, t))
             check(f"5 {rid} uses the same element Simulan unlocked", bool(unlock and play and play["el"] == unlock["el"]),
                   f"element #{play and play['el']} vs unlocked #{unlock and unlock['el']}")
             check(f"5 {rid} back to the clock about 1 s after the audio ends", gap is not None and 900 <= gap <= 1500,
                   f"audio end -> clock {gap} ms")
+
+
+async def case_element_refused(port):
+    # 6. After Simulan, element play() of a real clip is refused (iPad once the unlock clip ended).
+    # The AudioContext from that tap plays it anyway. No second tap. Clock ~1 s after the voice.
+    async with Chrome("document-user-activation-required") as c:
+        await c.open_lola(port, deny_element=True)
+        x, y = await c.js("(() => { const r = document.querySelector('#start-btn').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2] })()")
+        await c.click(x, y)
+        await asyncio.sleep(0.3)
+        for rid, clip in (("r8", "half.wav"), ("r9", "one.wav")):
+            t = await c.now()
+            await reply(rid, clip)
+            log = await c.wait_for(lambda L: find(L, "show", t, state="waiting"), 6)
+            played, ended = find(log, "played", t, src=clip), find(log, "ended", t, src=clip)
+            gap = back_after_end(log, t, clip)
+            check(f"6 {rid} element play() refused", bool(find(log, "refused", t, src=clip)))
+            check(f"6 {rid} context plays it with no new tap",
+                  bool(played and played["el"] == "ctx" and ended and not tapped_since(log, t)))
+            check(f"6 {rid} back to the clock about 1 s after the audio ends",
+                  gap is not None and 900 <= gap <= 1500, f"audio end -> clock {gap} ms")
 
 
 async def main():
@@ -334,6 +396,7 @@ async def main():
         await case_blocked(port, "click")
         await case_blocked(port, "tap")
         await case_start_unlocks(port)
+        await case_element_refused(port)
     finally:
         server.should_exit = True
         await task
