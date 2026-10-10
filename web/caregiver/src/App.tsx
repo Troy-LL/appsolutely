@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import type { AskIntent, ChatMsg, Entry, Lang, MemberColor, Person, Question, Scale, Screen } from './types'
+import type { Alarm, AskIntent, ChatMsg, Entry, Lang, MemberColor, Person, Question, Scale, Screen } from './types'
 import { makeT } from './i18n/i18n'
 import { initialLog, logReducer } from './data/log'
-import { loadQuestions, useFeed, USING_HUB } from './data/hub'
+import { deleteQuestion, loadQuestions, loadSafetyWords, postUrgentReply, useFeed, USING_HUB } from './data/hub'
+import { SAFETY_WORDS } from './data/safetyWords'
 import { readAbout } from './feed/events'
-import { startMonitoring } from './feed/monitor'
+import { armAlerts, type AlertStatus } from './feed/monitor'
 import type { LinkStatus } from './feed/connect'
-import { useUrgentSound } from './data/urgentSound'
+import { audioRunning, startAlarm, stopAlarm } from './data/urgentSound'
+import { AlarmScreen, AlertsBar } from './components/Alarm'
 import { TopBar } from './components/TopBar'
 import { TAB_SCREENS, TabBar } from './components/TabBar'
 import { answerLocally, ASK_QUESTIONS, intentOf } from './data/askLocal'
@@ -40,11 +42,15 @@ export default function App() {
   const [added, setAdded] = useState<Person[]>([])
   const [justAdded, setJustAdded] = useState<Person | null>(null)
   const [questions, setQuestions] = useState<Question[] | null>(null)
+  const [builtinWords, setBuiltinWords] = useState<string[]>(SAFETY_WORDS)
+  const [customWords, setCustomWords] = useState<string[]>([])
   const [loadError, setLoadError] = useState('')
   const [now, setNow] = useState(Date.now())
   const [log, dispatch] = useReducer(logReducer, initialLog)
   const [link, setLink] = useState<LinkStatus>('open')
-  const [monitoring, setMonitoring] = useState(false)
+  // "Turn on alerts" (real hub only) and the full-screen red alarm (components/Alarm.tsx)
+  const [alerts, setAlerts] = useState<AlertStatus | 'arming'>('off')
+  const [alarm, setAlarm] = useState<Alarm | null>(null)
   const t = useMemo(() => makeT(lang), [lang])
 
   // Sino AI thread. One question at a time; pendingId is the Sino bubble waiting for about_lola.
@@ -62,21 +68,61 @@ export default function App() {
   const refreshQuestions = () => {
     loadQuestions().then(setQuestions).catch((e: unknown) => setLoadError(e instanceof Error ? e.message : String(e)))
   }
+  const rememberWord = (word: string) => {
+    if (!word || builtinWords.includes(word)) return
+    setCustomWords((words) => (words.includes(word) ? words : [...words, word]))
+  }
   // live events from /ws (fake feed unless ?feed=hub)
   const send = useFeed((event) => {
+    if (event.event === 'safety_word' && typeof event.word === 'string') {
+      rememberWord(event.word)
+      return
+    }
+    if (event.event === 'question_removed' && typeof event.id === 'string') {
+      const id = event.id
+      setQuestions((list) => (list ? list.filter((item) => item.id !== id) : list))
+      return
+    }
     const about = readAbout(event)
     if (about) {
       answer(about)
       return
     }
+    // Full-screen red alarm. A second alert while it rings only shows the new words
+    // (the newest red card): ringing stays true, so the effect below starts no second alarm.
+    if (event.event === 'alert') setAlarm({ ringing: true, silent: !audioRunning() })
+    // Someone answered (this phone, another phone, or a voice reply): stop ringing here too.
+    if (event.event === 'urgent_reply') endAlarm()
     dispatch({ type: 'event', event, at: Date.now() })
   }, {
     onStatus: setLink,
     onVisible: refreshQuestions,
   })
-  useEffect(() => { refreshQuestions() }, [])
+  useEffect(() => {
+    refreshQuestions()
+    loadSafetyWords().then((list) => {
+      setBuiltinWords(list.builtin)
+      setCustomWords(list.custom)
+    }).catch(() => undefined)
+  }, [])
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 60_000); return () => window.clearInterval(id) }, [])
-  useUrgentSound(log.entries.some((e) => e.kind === 'urgent'))
+  // The alarm rings while alarm.ringing is true: once a second, until someone answers.
+  // After 2 minutes startAlarm stops the sound by itself; the red screen stays up.
+  useEffect(() => {
+    if (!alarm?.ringing) return
+    startAlarm(() => setAlarm((a) => (a ? { ...a, ringing: false } : a)))
+    return stopAlarm
+  }, [alarm?.ringing])
+  // The one stop for the alarm: the sound and the full-screen red. Called by the red
+  // card's "Papunta na ako / On my way" (replyUrgent) and by an urgent_reply from the hub.
+  function endAlarm() {
+    stopAlarm()
+    setAlarm(null)
+  }
+  const turnOnAlerts = async () => {
+    setAlerts('arming')
+    setAlerts(await armAlerts(setAlerts))
+  }
 
   // Last 7 days: restore what this phone saved (real hub), or sample days (fake feed).
   useEffect(() => { dispatch({ type: 'load', entries: USING_HUB ? loadSaved() : demoHistory() }) }, [])
@@ -130,6 +176,20 @@ export default function App() {
     askTimer.current = window.setTimeout(() => answer({ text: t.two('askTimeout'), error: true }), ASK_TIMEOUT_MS)
   }
 
+  const replyUrgent = (audio?: Blob) => {
+    endAlarm()
+    const text = lang === 'en' ? 'On my way' : 'Papunta na ako'
+    for (const entry of log.entries) {
+      if (entry.kind === 'urgent') dispatch({ type: 'markRead', id: entry.id })
+    }
+    const message = { event: 'urgent_reply', text, speaker: ME, reply_audio: '' }
+    if (audio && USING_HUB) {
+      void postUrgentReply({ text, speaker: ME, audio }).catch(() => send(message))
+      return
+    }
+    send(message)
+  }
+
   const go = (s: Screen) => {
     setLangOpen(false)
     setScreen(s)
@@ -137,6 +197,7 @@ export default function App() {
   }
   const back = () => go(tab)
   const recordEntry = entries.find((e) => e.id === recordId)
+  const alarmEntry = entries.find((e) => e.kind === 'urgent') // newest first
   const person = people.find((p) => p.name === personName)
   const onTab = TABS.includes(screen) || screen === 'receipt'
 
@@ -149,18 +210,12 @@ export default function App() {
       ) : null}
 
       {link === 'reconnecting' ? <p className="sn-reconnect" role="status">{t.one('reconnecting')}</p> : null}
-      {!monitoring ? (
-        <div className="sn-monitor">
-          <button type="button" className="sn-btn sn-btn--wide" onClick={() => { void startMonitoring(); setMonitoring(true) }}>
-            {t.btn('startMonitor')}
-          </button>
-        </div>
-      ) : null}
+      {USING_HUB ? <AlertsBar t={t} status={alerts} onArm={() => void turnOnAlerts()} /> : null}
 
       {screen === 'home' ? (
         <HomeScreen t={t} me={ME} now={now} health={log.health} entries={today} people={people} replyCount={replyCount}
           onRecord={(id) => { setRecordId(id); go('record') }}
-          onRead={(id) => dispatch({ type: 'markRead', id })}
+          onReply={replyUrgent}
           onUnread={(id) => dispatch({ type: 'unmarkRead', id })}
           onPerson={(name) => { setPersonName(name); go('person') }}
           onFamily={() => go('family')}
@@ -181,6 +236,7 @@ export default function App() {
       {screen === 'activity' ? (
         <ActivityScreen t={t} entries={entries} demoDays={!USING_HUB} lastNote={lastNote}
           onRecord={(id) => { setRecordId(id); go('record') }}
+          onReply={() => replyUrgent()}
           onAddNote={addNote}
           onUndoNote={() => { if (lastNote) dispatch({ type: 'removeNote', id: lastNote.id }); setLastNote(null) }}
           onReceipt={() => go('receipt')} />
@@ -190,7 +246,18 @@ export default function App() {
 
       {screen === 'knows' ? (
         <KnowsScreen t={t} questions={questions} loadError={loadError} people={people} todayCount={today.length}
-          onOpenLog={() => go('activity')} />
+          builtinWords={builtinWords} customWords={customWords} onAdded={rememberWord}
+          onOpenLog={() => go('activity')}
+          onRemove={async (id) => {
+            const prev = questions
+            setQuestions((list) => (list ? list.filter((item) => item.id !== id) : list))
+            try {
+              await deleteQuestion(id)
+            } catch (err) {
+              setQuestions(prev)
+              throw err
+            }
+          }} />
       ) : null}
 
       {screen === 'record' && recordEntry ? (
@@ -216,6 +283,8 @@ export default function App() {
       ) : null}
 
       {onTab ? <TabBar t={t} screen={screen} go={go} badge={today.filter((e) => e.kind === 'needs').length} /> : null}
+
+      {alarm && alarmEntry ? <AlarmScreen t={t} alarm={alarm} entry={alarmEntry} onReply={replyUrgent} /> : null}
     </div>
   )
 }

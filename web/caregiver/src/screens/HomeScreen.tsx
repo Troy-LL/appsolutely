@@ -16,7 +16,7 @@ interface Props {
   people: Person[]
   replyCount: (name: string) => number
   onRecord: (id: string) => void
-  onRead: (id: string) => void
+  onReply: (audio?: Blob) => void
   onUnread: (id: string) => void
   onPerson: (name: string) => void
   onFamily: () => void
@@ -76,7 +76,7 @@ export function HomeScreen(p: Props) {
         </div>
       ) : null}
 
-      {urgent.map((e) => <UrgentCard key={e.id} t={t} entry={e} onRead={() => p.onRead(e.id)} />)}
+      {urgent.map((e) => <UrgentCard key={e.id} t={t} entry={e} onReply={p.onReply} />)}
 
       <div className="sn-block">
         <Heading main={hNeeds.main} sub={hNeeds.sub} />

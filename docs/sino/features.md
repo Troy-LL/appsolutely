@@ -8,11 +8,11 @@ Scope rules (Troy, Sat 2:00 AM): the MVP is frozen at **3:30 AM Sat** (moved fro
 
 1. The hub hears Lola, transcribes her, and runs `decide()`.
 2. A known question gets the family's recorded voice and photo on the iPad.
-3. An urgent line gets the hub chime and a red card on the caregiver phone.
+3. An urgent line gets a red card on the caregiver phone, which rings (since Sat ~8:05 AM; the hub chime only with `CHIME=1`).
 4. TV stays silent, and `/backstage` shows every decision.
 5. Quick setup works live with "Nasaan yung aso?".
 
-Always-listening hub mic (Silero VAD) → whisper.cpp → junk-line filter → `decide()` (urgent rules + matcher, Qwen for unclear lines) → iPad plays the family's recorded reply + photo → caregiver log and alerts, urgent chime from the hub → behind-the-scenes screen with the OFFLINE badge. The family adds questions and replies through quick setup.
+Always-listening hub mic (Silero VAD) → whisper.cpp → junk-line filter → `decide()` (urgent rules + matcher, Qwen for unclear lines) → iPad plays the family's recorded reply + photo → caregiver log and alerts, the urgent alarm on the caregiver iPhone → behind-the-scenes screen with the OFFLINE badge. The family adds questions and replies through quick setup.
 
 ### M1. Listening pipeline (Donita)
 
@@ -27,6 +27,7 @@ Always-listening hub mic (Silero VAD) → whisper.cpp → junk-line filter → `
 Keyword rules first, then the known-question matcher, then the local model (`qwen2.5:3b` via Ollama; `qwen2.5:1.5b` only with the Whisper medium fallback, see [architecture.md](architecture.md#speech-model-selection-by-1130-pm)) only for lines the rules and matcher can't settle. Order in `brain/decide.py`: urgent words → "sakit ng loob" idiom → medication → TV words → known-question matcher → model.
 
 - Urgent words **always** alert. Only these rules raise urgent; a model urgent becomes caregiver. The stems in `brain/decide.py` (case- and spacing-insensitive): natumba, nadulas, nadapa, nahulog, bumagsak; masakit, sumasakit, ang sakit ng dibdib, masakit dibdib; di/hindi makahinga, hirap huminga, nahihirapan huminga; tulungan, tulong, saklolo. Whisper slips on those stems still alert. An explicit list maps masaket → masakit and didip/dibdip → dibdib. Other urgent tokens allow an edit distance of at most 1 when the shorter word is 4–6 letters, and at most 2 when it is 7 or more. A stem stuck to a short word still counts ("masaketang" is "masakit" + "ang"). "hindi makahinga" still needs both parts. hirap, huminga, and hinga use that same first-letter rule and alert as a pair: hirap with huminga or hinga, and di or hindi with huminga or hinga ("di maka hinga"). English stems match whole, because Whisper sometimes writes English: can't breathe, cannot breathe, help, I fell, fell down, chest pain, my chest hurts. A TV line does not become urgent this way.
+- **Custom safety words.** On the caregiver's Safety words card, a + chip opens "Magdagdag ng salita / Add a word". Save calls `POST /safety-words`. The hub trims, lowercases, and stores the word in `hub/data/safety-words.json` (gitignored). `decide()` merges that list with the stems above. A custom word uses the same fuzzy rules: edit distance 1 when the shorter word is 4–6 letters, 2 when it is 7 or more, first letter must match, and a short word stuck on the front or back still counts. Under 4 letters, over 40 characters, empty, or a duplicate of a built-in or an already saved word is refused. Built-in words are not removed from the card. A built-in urgent hit still wins over a TV line. A custom word does not: if the line is a TV line, it stays silent with `ignored` `tv`, so one added word does not turn TV lines into alerts. Urgent stays rules-only. Other open caregiver screens and `/backstage` get `safety_word` and show the new word ([architecture.md](architecture.md#the-3-interfaces-locked-in-the-first-15-minutes)).
 - The idiom "masakit ang loob" / "sakit ng loob" (hurt feelings) goes to the **caregiver**, not urgent.
 - Medication questions (gamot, dosis, reseta, tableta) are **never answered**. They always go to the caregiver.
 - Known TV lines and words ("Thank you for watching", "Salamat sa panonood", abangan, kabanata, palabas, teleserye, dula, bes, balita, commercial) are **silent** by rule, with `ignored` set to `tv`. A TV word counts inside a longer word ("sateleserye"). A real urgent hit still wins.
@@ -56,21 +57,23 @@ The family's whole setup, and the live proof that the family wrote the replies:
 - **Yellow (caregiver):** quiet card, repeats grouped ("Lola asked about the aso 3×"), with one-tap record-a-reply.
 - **Green (comforted):** quiet log entry.
 - `/caregiver` only receives alerts while it is open on the hub's local network. There are no push notifications with the internet off (iOS push needs Apple's servers).
+- **Safety words:** the card lists the built-in urgent words. A + chip at the end of that list adds one more (see M2). Built-in words stay.
+- **Urgent alarm (Donita, Sat ~8:05 AM):** the iPhone is the main urgent alarm. One "Turn on alerts" tap arms the page; on `alert` a full-screen red alert rings and repeats until "Papunta na ako / On my way" (or a voice reply) on the red card, at most 2 minutes. An `urgent_reply` from another phone stops it too. The page must stay open and awake. To verify on the iPhone.
 - **Ask Sino about Lola** is a Should item after the freeze (see below), not MVP.
 
 ### M6. Urgent chime (Donita)
 
-On urgent, the hub speaker plays a loud chime so anyone in the house hears it. The caregiver phone's red card is the second channel. Lola's screen never shows red. The `afplay` command and the 1:00 AM test are in [hub-chime.md](hub-chime.md).
+On urgent, the hub speaker can play a loud chime so anyone in the house hears it. **Off by default since Sat ~8:05 AM (Donita):** the caregiver iPhone is the main alarm (M5), and `CHIME=1` turns the laptop chime back on as a backup. Lola's screen never shows red. The `afplay` command and the 1:00 AM test are in [hub-chime.md](hub-chime.md).
 
 ### M7. Behind-the-scenes screen (Viviene)
 
-Judges see the local AI decide. Each utterance is one row: transcript → rule hit or model → action + confidence + reason → ms. A dropped row covers a junk-line drop and a TV line Sino ignored. A running counter reads `TV lines ignored: N`. Also on this screen: an **OFFLINE** badge, the health light, the hidden "listen now" button, the typed-question box, and the T5 badge in [mvp-plan.md](mvp-plan.md). Fields: [architecture.md](architecture.md#backstage-proof). Hidden from families.
+Judges see the local AI decide. Each utterance is one row: transcript → rule hit or model → action + confidence + reason → ms. A dropped row covers a junk-line drop and a TV line Sino ignored. A running counter reads `TV lines ignored: N`. Also on this screen: an **OFFLINE** badge, the health light, the hidden "listen now" button, the typed-question box, the T5 badge in [mvp-plan.md](mvp-plan.md), and a line when the caregiver adds a safety word. Fields: [architecture.md](architecture.md#backstage-proof). Hidden from families.
 
 ### M8. Demo seed data, `seed.json` (Troy + team)
 
 What `brain/seed.json` holds today: **6 questions** (`nasaan-si-nanay`, `nasaan-si-joy`, `sino-ka`, `nasaan-ako`, `gusto-ko-nang-umuwi`, `meal-check`), each with Tagalog and English phrasings and a `speaker`. `reply_audio` points at Joy's recordings in `brain/media/` for the four comfort questions and the three meal variants. `sino-ka` `by_person` points at Troy's, Joy's, and Donita's own lines (`sino-ka-troy-reply.m4a`, `sino-ka-joy-reply.m4a`, `sino-ka-donita-reply.m4a`); that question's top-level `reply_audio` stays empty, and every `photo` stays empty. `meal-check` also has `dynamic` `meal` and `replies` for `ate`, `ate_repeat`, and `unknown`; the top-level `reply_audio` and `photo` stay the fallback. Disclosed in the README as demo data.
 
-Not in `seed.json` yet: the household name (Lola Cora) and earlier log entries (the T7 fake log lives in `brain/tests/ask_cases.json`). A meal is not a seed row. The caregiver's tap is a `meal_logged` line in the decisions log. The urgent, medication, and TV words live in `brain/decide.py`, not in the seed.
+Not in `seed.json` yet: the household name (Lola Cora) and earlier log entries (the T7 fake log lives in `brain/tests/ask_cases.json`). A meal is not a seed row. The caregiver's tap is a `meal_logged` line in the decisions log. The urgent, medication, and TV words live in `brain/decide.py`, not in the seed. Words the caregiver adds live in `hub/data/safety-words.json` and are merged when `decide()` runs.
 
 **Recordings still needed (TODO):** photos. The three "Sino ka?" lines are recorded in `brain/media/` (`by_person` for troy, joy, and donita). Joy's four replies and three meal clips are recorded there too. A "Sino ka?" miss still uses the empty top-level `reply_audio`.
 

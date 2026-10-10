@@ -151,11 +151,11 @@ export function openHubFeed(screen, onEvent, { url, onStatus } = {}) {
   if (onStatus) {
     ws.onopen = () => onStatus('open')
     ws.onclose = () => onStatus('closed')
-    ws.onerror = () => onStatus('error')
   }
   return {
     send(obj) { if (ws.readyState === 1) ws.send(JSON.stringify(obj)) },
     close() { ws.close() },
+    get readyState() { return ws.readyState },
   }
 }
 

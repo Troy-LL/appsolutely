@@ -62,9 +62,10 @@ def _multipart(fields, files):
     return body, f"multipart/form-data; boundary={boundary}"
 
 
-def _request(port, path, data=None, content_type=None):
-    req = urllib.request.Request(f"http://127.0.0.1:{port}{path}", data=data,
-                                 method="POST" if data is not None else "GET")
+def _request(port, path, data=None, content_type=None, method=None):
+    if method is None:
+        method = "POST" if data is not None else "GET"
+    req = urllib.request.Request(f"http://127.0.0.1:{port}{path}", data=data, method=method)
     if content_type:
         req.add_header("Content-Type", content_type)
     try:
@@ -181,6 +182,39 @@ async def _cases(port, done):
     _check("id", [e["id"] for e in json.loads(SEED.read_text(encoding="utf-8"))] == seed_ids)
     _passed(done, "id collision adds -2, seed.json unchanged")
 
+    # (g) DELETE removes a family-added question, refuses a built-in one, tells every screen.
+    seed_bytes = SEED.read_bytes()
+    status, listed = _request(port, "/questions")
+    before_ids = [e["id"] for e in json.loads(listed)]
+    status, err = _request(port, "/questions/nasaan-si-nanay", method="DELETE")
+    err = json.loads(err or b"null")
+    _check("g", status == 400 and err.get("error") == "built-in questions stay", (status, err))
+    _check("g", [e["id"] for e in json.loads(_request(port, "/questions")[1])] == before_ids)
+    _check("g", _request(port, "/media/nasaan-si-nanay-reply.m4a")[0] == 200)
+    status, err = _request(port, "/questions/no-such-question", method="DELETE")
+    err = json.loads(err or b"null")
+    _check("g", status == 404 and isinstance(err.get("error"), str), (status, err))
+    status, err = _request(port, "/questions/Bad_ID", method="DELETE")
+    err = json.loads(err or b"null")
+    _check("g", status == 400 and isinstance(err.get("error"), str), (status, err))
+    async with websockets.connect(f"ws://127.0.0.1:{port}/ws?screen=caregiver") as caregiver, \
+            websockets.connect(f"ws://127.0.0.1:{port}/ws?screen=lola") as lola:
+        await _recv_event(caregiver, "health")
+        await _recv_event(lola, "health")
+        status, removed = _request(port, "/questions/nasaan-yung-aso", method="DELETE")
+        removed = json.loads(removed or b"null")
+        _check("g", status == 200 and removed.get("id") == "nasaan-yung-aso", removed)
+        gone_c = await _recv_event(caregiver, "question_removed")
+        gone_l = await _recv_event(lola, "question_removed")
+    _check("g", gone_c == {"event": "question_removed", "id": "nasaan-yung-aso"}, gone_c)
+    _check("g", gone_l == gone_c, gone_l)
+    left = [e["id"] for e in json.loads(_request(port, "/questions")[1])]
+    _check("g", "nasaan-yung-aso" not in left and "nasaan-yung-aso-2" in left and "nasaan-si-nanay" in left, left)
+    _check("g", _request(port, "/media/nasaan-yung-aso-reply.webm")[0] == 404)
+    _check("g", _request(port, "/media/nasaan-yung-aso-photo.jpg")[0] == 404)
+    _check("g", SEED.read_bytes() == seed_bytes)
+    _passed(done, "g DELETE removes an added question and keeps the seed")
+
 
 async def _run():
     port = _free_port()
@@ -198,8 +232,8 @@ async def _run():
         runner.should_exit = True
         thread.join(timeout=5)
         shutil.rmtree(TMP, ignore_errors=True)
-    print(f"PASS {len(done)}/7")
-    return len(done) == 7
+    print(f"PASS {len(done)}/8")
+    return len(done) == 8
 
 
 if __name__ == "__main__":

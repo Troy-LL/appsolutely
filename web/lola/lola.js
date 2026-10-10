@@ -93,6 +93,8 @@ let current = null
 let pending = null
 let blocked = null
 let hold = null
+let reassuring = false
+let replyKey = ''
 
 // One audio element for every reply. iPadOS only plays sound from an element that was first
 // played inside a tap, so the Simulan tap unlocks this one and every reply reuses it. A new
@@ -148,6 +150,7 @@ function playReply(msg) {
 function startClip(msg) {
   cancelHold()
   blocked = null
+  reassuring = msg.event === 'urgent_reply'
   renderAnswer(msg)
   if (!msg.reply_audio) { current = null; afterClip(HOLD_MS); return }
   const id = ++clipId
@@ -196,7 +199,7 @@ function afterClip(delay = AFTER_CLIP_MS) {
   current = null
   if (pending) { const next = pending; pending = null; startClip(next); return }
   cancelHold()
-  hold = setTimeout(() => { hold = null; blocked = null; show('waiting') }, delay)
+  hold = setTimeout(() => { hold = null; blocked = null; reassuring = false; show('waiting') }, delay)
 }
 
 function onEvent(msg) {
@@ -208,7 +211,18 @@ function onEvent(msg) {
     case 'play_reply':
       playReply(msg)
       break
+    case 'urgent_reply': {
+      const text = typeof msg.text === 'string' ? msg.text : ''
+      const speaker = typeof msg.speaker === 'string' ? msg.speaker : ''
+      const audio = typeof msg.reply_audio === 'string' ? msg.reply_audio : ''
+      const key = `${speaker}\0${text}\0${audio}`
+      if (key === replyKey && reassuring) break
+      replyKey = key
+      playReply({ event: 'urgent_reply', reply_audio: audio, photo: '', speaker, reply_text: text })
+      break
+    }
     case 'decided':
+      if (reassuring) break
       if (msg.action !== 'comfort' && !current && !pending) {
         cancelHold()
         blocked = null
@@ -228,7 +242,10 @@ let retry = null
 function connect() {
   clearTimeout(retry)
   retry = null
-  if (feed && !feedOpen) { try { feed.close() } catch {} }
+  const state = feed && feed.readyState
+  if (state === 0 || state === 1) return
+  if (feed) { try { feed.close() } catch { /* already closed */ } }
+  feed = null
   feedOpen = false
   const gen = ++feedGen
   const onStatus = (status) => { if (gen === feedGen) feedStatus(status) }
@@ -241,7 +258,14 @@ function connect() {
 }
 
 function feedStatus(status) {
-  if (status === 'open') { feedOpen = true; attempt = 0; return }
+  if (status === 'open') {
+    clearTimeout(retry)
+    retry = null
+    feedOpen = true
+    attempt = 0
+    return
+  }
+  if (status !== 'closed') return
   feedOpen = false
   scheduleReconnect()
 }

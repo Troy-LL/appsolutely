@@ -52,6 +52,13 @@ export interface Entry {
   preset?: string // note: which quick pick, e.g. 'ate'
 }
 
+// The full-screen red alarm, opened by an alert event. It shows the newest red card
+// (Lola's words) and closes on "Papunta na ako / On my way" or an urgent_reply.
+export interface Alarm {
+  ringing: boolean // false once the 2-minute cap stopped the sound
+  silent: boolean // this phone could not make sound when the alert came
+}
+
 export interface Person {
   name: string // as Lola says it, e.g. "Joy"
   color: MemberColor

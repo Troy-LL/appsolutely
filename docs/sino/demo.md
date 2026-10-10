@@ -5,11 +5,11 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 ## Setup before going on stage
 
 - Hub (M1, 8 GB) running from `start.sh`, seed loaded, health light green.
-- iPad opens `https://<hub>:8000/lola/?feed=hub` (the hub's mkcert HTTPS URL; Safari allows the mic only on HTTPS) and the family taps Start ("Simulan") once, then **allows the microphone** when the iPad asks. The iPad is Lola's main mic ([architecture.md](architecture.md#devices)). Set the iPad's Auto-Lock to Never (Settings → Display & Brightness → Auto-Lock) so the screen stays on. iPhone on `/caregiver`, open on the hub's network (no push without internet). Backstage on the projected screen.
+- iPad opens `https://<hub>:8000/lola/?feed=hub` (the hub's mkcert HTTPS URL; Safari allows the mic only on HTTPS) and the family taps Start ("Simulan") once, then **allows the microphone** when the iPad asks. The iPad is Lola's main mic ([architecture.md](architecture.md#devices)). Set the iPad's Auto-Lock to Never (Settings → Display & Brightness → Auto-Lock) so the screen stays on. The caregiver iPhone opens `https://<hub>:8000/caregiver/?feed=hub` and taps "Turn on alerts" once. Set its Auto-Lock to Never (or turn on Guided Access) so Safari stays open and awake: the iPhone is the urgent alarm, and there is no push without internet. To verify on the iPhone. Backstage on the projected screen.
 - The hub's LAN-only firewall is on and the OFFLINE badge is visible (it comes from a real outbound check failing). On rung 1 the house network is Troy's iPhone hotspot, which has cellular, so the claim is "the hub is firewalled to the house network", not "every device is offline". The iPhone cannot go to airplane mode, because that turns the hotspot off ([architecture.md](architecture.md#network)).
 - Clips ready: the 20 s teleserye clip (TODO below). No live CCTV and no voice ID: both stay cut. The recorded-clip demo is optional, below.
 - Recordings loaded: Joy's four replies and three meal clips, and the three "Sino ka?" lines (Troy, Joy, Donita) in `brain/media/`. Photos are still empty.
-- Hub volume up for the urgent chime.
+- iPhone volume up for the urgent alarm. The hub volume matters only if the laptop chime is on (`CHIME=1`).
 
 ## Run of show
 
@@ -20,7 +20,7 @@ Format (from [../00-event.md](../00-event.md)): 5-minute pitch with a live demo,
 | 1:00–1:50 | **Live quick setup.** Ask "Nasaan yung aso?" (not in the seed) → quiet yellow card on `/caregiver` → on the iPhone, `/setup` adds the question, two phrasings, a held recording, and a photo → ask again → the family voice answers on the iPad. "Nasaan si Joy?" stays in the seed and is not added live | iPhone `/setup` + `/caregiver` → iPad |
 | 1:50–2:20 | "Sino ka?" Lola asks who Troy is. It is a known question, so the iPad shows Troy's photo and plays the line he recorded in setup. Then Troy talks to "Lola" in person. No face match and no call | iPad + Troy |
 | 2:20–3:30 | **TV test, its own beat.** Play the 20 s teleserye clip: a full dialogue that contains "nasaan si nanay" mid-sentence, not as the whole line. Sino stays silent. `/backstage` shows a dropped row and `TV lines ignored: N` ticks. Then Lola asks "Nasaan si Nanay?" plainly → the comfort reply and photo. The row shows transcript → rule or model → action, confidence, reason → ms | Backstage + iPad |
-| 3:30–4:00 | "Masakit dibdib ko" → the hub chimes ([hub-chime.md](hub-chime.md)) and a red card appears on the phone. `/lola` stays calm and never red. A medication question goes to the caregiver | Hub + iPhone |
+| 3:30–4:00 | "Masakit dibdib ko" → the caregiver iPhone rings with a full-screen red alert and Lola's words, until someone taps "Papunta na ako / On my way" (the laptop stays quiet; [hub-chime.md](hub-chime.md)). `/lola` stays calm and never red. A medication question goes to the caregiver | iPhone |
 | 4:00–5:00 | Why local + close + scan-to-vote | Slide |
 
 The live "Nasaan si Lola?" camera view, the door alert, voice ID, and the live call are cut. They go on the "next steps" slide. Face match is one optional beat below, only if built after the freeze. The recorded-clip demo is the other optional beat. If Ask Sino about Lola is wired after the freeze, show "Kamusta si Lola?" on `/caregiver` in 15 s at the 3:30 mark (TODO: only if wired).
@@ -81,10 +81,11 @@ The caregiver taps "Kumain na". Lola asks "Kumain na ba ako?". The `ate` clip pl
 | The model is slow or wrong | Rules + matcher still answer known questions; backstage shows the decision |
 | The hub's network | Primary is the iPhone hotspot + hub LAN-only firewall (keep the iPhone on the hotspot screen). Then down the ladder ([architecture.md](architecture.md#network)): spare router/pocket Wi-Fi with no WAN → iPhone USB + Internet Sharing + firewall → venue Wi-Fi + firewall. Regenerate the mkcert cert if the hub IP changes. Last resort, USB-C cable to the iPad |
 | The hub crashes | `start.sh`, wait for the health light |
+| The iPhone does not ring on urgent | Reopen `/caregiver/?feed=hub` and tap "Turn on alerts". As a backup, turn the laptop chime on before going on stage: `hub/start.sh stop`, then `CHIME=1 hub/start.sh` (the health light shows `Laptop chime: ON`) |
 | The whole live demo | Play the backup video (recorded at the 7 AM rehearsals, internet off in the first 10 s) |
 | Ask Sino about Lola not wired | Skip it; the core beats don't depend on it |
 | A recording is missing | Comfort has no audio to play. Record it before 7 AM; don't substitute text-to-speech |
 
 ## Submission video (~1 min)
 
-Show no internet in the **first 10 seconds**, then the live "Nasaan yung aso?" setup, the TV clip staying silent while the counter ticks, the plain "Nasaan si Nanay?" comfort reply, and the urgent chime + red card. Full checklist: [../05-submission.md](../05-submission.md).
+Show no internet in the **first 10 seconds**, then the live "Nasaan yung aso?" setup, the TV clip staying silent while the counter ticks, the plain "Nasaan si Nanay?" comfort reply, and the urgent alarm ringing on the caregiver iPhone. Full checklist: [../05-submission.md](../05-submission.md).

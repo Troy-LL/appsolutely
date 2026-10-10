@@ -25,7 +25,9 @@ from starlette.websockets import WebSocketDisconnect
 
 import clips as clipwhere
 from ask import answer_about_lola
-from decide import decide, load_seed, urgent_words
+from decide import (
+    SafetyWordError, add_custom_safety_word, decide, load_seed, safety_words_payload, urgent_words,
+)
 from model import DEFAULT_HUB_URL
 
 # brain/face ships on troy/face-engine and may be absent. Script launch also tries face.
@@ -44,12 +46,13 @@ except ImportError:
 # hub/questions.py (Donita, D5) stores new questions and their files. Appended last so brain/ wins.
 sys.path.append(str(Path(__file__).resolve().parent.parent / "hub"))
 from questions import (  # noqa: E402
-    MAX_BYTES, BadInput, ensure_working_copy, install_seed_media, media_dir, save_question,
+    AUDIO_EXTS, MAX_BYTES, BadInput, delete_question, ensure_working_copy, install_seed_media, media_dir,
+    save_question,
 )
 # hub/listen.py (Donita, D4): listen now records the hub mic, runs Whisper and the junk filter.
 from listen import enable_mic, mic_ok, start_listen  # noqa: E402
 # hub/chime.py (Donita, D6): the urgent chime on the hub speaker.
-from chime import enable_chime, play_chime  # noqa: E402
+from chime import enable_chime, play_chime, stop_chime  # noqa: E402
 # hub/always.py (Donita, D4): always-listening, off unless ALWAYS_LISTEN=1.
 from always import always_on, deafen_for_chime, deafen_for_reply, enable_always, start_always  # noqa: E402
 # hub/upload.py (Donita): the iPad's mic. Lola's screen uploads short clips; same steps as listen now.
@@ -116,6 +119,58 @@ def append_meal():
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def append_urgent_reply(speaker):
+    entry = {
+        "event": "urgent_reply",
+        "ts": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "speaker": speaker,
+    }
+    path = log_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def _media_path(path):
+    if not isinstance(path, str) or not path.startswith("/media/"):
+        return False
+    name = path[len("/media/"):]
+    if not name or "/" in name or "\\" in name or name in (".", ".."):
+        return False
+    return (media_dir() / name).is_file()
+
+
+def reply_fields(data):
+    text = data.get("text", "")
+    speaker = data.get("speaker", "")
+    audio = data.get("reply_audio", "")
+    if not isinstance(text, str) or not isinstance(speaker, str) or not isinstance(audio, str):
+        return None
+    text, speaker, audio = text.strip(), speaker.strip(), audio.strip()
+    if not speaker or len(speaker) > 60 or len(text) > 300:
+        return None
+    if audio and not _media_path(audio):
+        return None
+    if not text and not audio:
+        return None
+    return {"text": text, "speaker": speaker, "reply_audio": audio}
+
+
+def store_urgent_audio(upload):
+    filename, data = upload
+    ext = Path(filename).suffix.lower()
+    if ext not in AUDIO_EXTS:
+        raise BadInput(f"reply_audio must be one of {' '.join(AUDIO_EXTS)}")
+    if not data:
+        raise BadInput("reply_audio is empty")
+    if len(data) > MAX_BYTES:
+        raise BadInput("reply_audio is over 10 MB")
+    media_dir().mkdir(parents=True, exist_ok=True)
+    name = f"urgent-reply-{uuid.uuid4().hex}{ext}"
+    (media_dir() / name).write_bytes(data)
+    return f"/media/{name}"
 
 
 def meal_window_hours():
@@ -254,6 +309,9 @@ class Hub:
         self.last_event_at = ""
         self._offline = None
         self._offline_checked = 0.0
+        self.alert_active = False
+        self.lola_reply = None
+        self.lola_reply_got = set()
 
     def health_payload(self):
         now = time.monotonic()
@@ -380,6 +438,9 @@ class Hub:
                     "count": self._unknown_meal_count(),
                 })
         elif action == "urgent":
+            self.alert_active = True
+            self.lola_reply = None
+            self.lola_reply_got = set()
             play_chime()  # hub speaker, returns at once (docs/sino/hub-chime.md); never /lola
             deafen_for_chime()  # always-listening ignores the hub mic while the chime plays
             await self.send_to("caregiver", {"event": "alert", "transcript": text})
@@ -417,6 +478,34 @@ class Hub:
                 await ws.send_text(raw)
             except Exception:
                 self.clients.pop(ws, None)
+                continue
+            if screen == "lola" and payload.get("event") == "urgent_reply":
+                self.lola_reply_got.add(ws)
+
+    async def replay_lola(self, websocket):
+        payload = self.lola_reply
+        if payload is None or websocket in self.lola_reply_got:
+            return
+        try:
+            await websocket.send_text(json.dumps(payload, ensure_ascii=False))
+        except Exception:
+            return
+        self.lola_reply_got.add(websocket)
+
+    async def urgent_reply(self, fields):
+        if not self.alert_active:
+            return None
+        self.alert_active = False
+        stop_chime()
+        payload = {"event": "urgent_reply", **fields}
+        self.lola_reply = payload
+        self.lola_reply_got = set()
+        append_urgent_reply(fields["speaker"])
+        if fields["reply_audio"]:
+            deafen_for_reply()
+        for screen in SCREENS:
+            await self.send_to(screen, payload)
+        return payload
 
     async def on_message(self, websocket, screen, raw):
         try:
@@ -429,6 +518,14 @@ class Hub:
         if event == "meal_logged":
             if screen == "caregiver":
                 append_meal()
+            return
+        if event == "urgent_reply":
+            if screen != "caregiver":
+                return
+            fields = reply_fields(data)
+            if fields is None:
+                return
+            await self.urgent_reply(fields)
             return
         if event != "ask_about_lola" or screen != "caregiver":
             return
@@ -530,6 +627,46 @@ async def add_question(request: Request):
         return JSONResponse({"error": str(exc)}, status_code=400)
 
 
+@app.delete("/questions/{qid}")
+async def remove_question(qid: str):
+    try:
+        removed = delete_question(qid)
+    except BadInput as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except KeyError:
+        return JSONResponse({"error": "no question with that id"}, status_code=404)
+    event = {"event": "question_removed", "id": removed.get("id", qid)}
+    for screen in SCREENS:
+        await hub.send_to(screen, event)
+    return removed
+
+
+@app.get("/safety-words")
+def get_safety_words():
+    return safety_words_payload()
+
+
+@app.post("/safety-words")
+async def post_safety_word(request: Request):
+    try:
+        payload = await request.json()
+    except Exception:
+        return JSONResponse({"error": "empty"}, status_code=400)
+    if not isinstance(payload, dict):
+        return JSONResponse({"error": "empty"}, status_code=400)
+    raw = payload.get("word", "")
+    if not isinstance(raw, str):
+        return JSONResponse({"error": "empty"}, status_code=400)
+    try:
+        word = add_custom_safety_word(raw)
+    except SafetyWordError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    event = {"event": "safety_word", "word": word}
+    await hub.send_to("caregiver", event)
+    await hub.send_to("backstage", event)
+    return {"word": word}
+
+
 @app.post("/listen")
 async def listen(request: Request):
     try:
@@ -553,6 +690,34 @@ async def listen(request: Request):
     return Response(status_code=202)
 
 
+@app.post("/urgent-reply")
+async def urgent_reply_upload(request: Request):
+    try:
+        async with request.form() as form:
+            text = form.get("text")
+            speaker = form.get("speaker")
+            audio = await _upload(form.get("reply_audio"))
+    except Exception:
+        return JSONResponse({"error": "bad form"}, status_code=400)
+    text = text.strip() if isinstance(text, str) else ""
+    speaker = speaker.strip() if isinstance(speaker, str) else ""
+    if not speaker or len(speaker) > 60 or len(text) > 300 or (not text and audio is None):
+        return JSONResponse({"error": "text or a recording is required"}, status_code=400)
+    path = ""
+    if audio is not None:
+        try:
+            path = store_urgent_audio(audio)
+        except BadInput as exc:
+            return JSONResponse({"error": str(exc)}, status_code=400)
+    fields = reply_fields({"text": text, "speaker": speaker, "reply_audio": path})
+    if fields is None:
+        return JSONResponse({"error": "text or a recording is required"}, status_code=400)
+    payload = await hub.urgent_reply(fields)
+    if payload is None:
+        return JSONResponse({"error": "no active alert"}, status_code=409)
+    return payload
+
+
 @app.post("/listen/audio")
 async def listen_audio(request: Request):
     # Multipart: audio (file), source (optional). 202 empty, or 400 {"error"}. Results on /ws.
@@ -571,6 +736,8 @@ async def socket(websocket: WebSocket):
     try:
         payload = await asyncio.to_thread(hub.health_payload)
         await websocket.send_text(json.dumps(payload, ensure_ascii=False))
+        if screen == "lola":
+            await hub.replay_lola(websocket)
         while True:
             raw = await websocket.receive_text()
             await hub.on_message(websocket, screen, raw)
@@ -578,6 +745,7 @@ async def socket(websocket: WebSocket):
         pass
     finally:
         hub.clients.pop(websocket, None)
+        hub.lola_reply_got.discard(websocket)
 
 
 # One webcam frame when "Sino ka?" is comfort. cv2 may be absent; the server still starts.

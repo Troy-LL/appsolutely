@@ -51,13 +51,14 @@ interface Props {
   demoDays: boolean // fake feed: earlier days are sample data
   lastNote: Entry | null
   onRecord: (id: string) => void
+  onReply: () => void
   onAddNote: (label: [string, string], preset: string) => void
   onUndoNote: () => void
   onReceipt: () => void
 }
 
 // The whole log as a timeline. One Filter button (what + when) replaces the old chips.
-export function ActivityScreen({ t, entries, demoDays, lastNote, onRecord, onAddNote, onUndoNote, onReceipt }: Props) {
+export function ActivityScreen({ t, entries, demoDays, lastNote, onRecord, onReply, onAddNote, onUndoNote, onReceipt }: Props) {
   const now = Date.now()
   const [kind, setKind] = useState<Kind>('all')
   const [range, setRange] = useState<Range>('today')
@@ -145,6 +146,9 @@ export function ActivityScreen({ t, entries, demoDays, lastNote, onRecord, onAdd
           {s ? <p className="sn-tl__sub">{s}</p> : null}
           {e.kind === 'needs' && back === 0 ? (
             <button type="button" className="sn-btn sn-btn--wide" onClick={() => onRecord(e.id)}>{t.btn('record')}</button>
+          ) : null}
+          {e.kind === 'urgent' && back === 0 ? (
+            <button type="button" className="sn-btn sn-btn--wide" onClick={onReply}>{t.btn('onMyWay')}</button>
           ) : null}
         </div>
       </li>,

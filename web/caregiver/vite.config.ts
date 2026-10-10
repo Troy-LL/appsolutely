@@ -17,6 +17,8 @@ export default defineConfig({
     proxy: {
       '/ws': { target: HUB, ws: true, changeOrigin: true },
       '/questions': { target: HUB, changeOrigin: true },
+      '/safety-words': { target: HUB, changeOrigin: true },
+      '/urgent-reply': { target: HUB, changeOrigin: true },
       '/media': { target: HUB, changeOrigin: true },
       '/clips': { target: HUB, changeOrigin: true },
       '/health': { target: HUB, changeOrigin: true },

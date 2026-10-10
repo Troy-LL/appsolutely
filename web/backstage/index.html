@@ -68,6 +68,7 @@ html, body { margin: 0; background: var(--paper); color: var(--ink); font-family
 .row__why { font: 400 17px/1.4 var(--font-text); margin: var(--space-1) 0 0; }
 .row__caption { font: 500 15px/1.3 var(--font-heading); margin: var(--space-1) 0 0; }
 .row--dropped .row__heard { font-weight: 400; }
+.row[data-urgent="live"] { border-left: 6px solid var(--red); padding-left: var(--space-3); }
 
 #recent > .row:first-child { border: var(--outline) solid var(--ink); border-radius: var(--r-card); box-shadow: var(--shadow-flat); padding: var(--space-6); margin-bottom: var(--space-3); grid-template-columns: 48px minmax(0, 1fr); }
 #recent > .row:first-child .node { width: 48px; height: 48px; font-size: 24px; }
@@ -209,6 +210,11 @@ function onDecided(d) {
     heard = pendingFifo.shift() || null;
   }
   commit(heard, d);
+  if (d.action === "urgent") {
+    const row = $("recent").querySelector(":scope > .row");
+    if (row) row.dataset.urgent = "live";
+    showStatus("Urgent");
+  }
 }
 
 function setPart(part, up) {
@@ -241,12 +247,39 @@ function onEvent(msg) {
     case "heard": return onHeard(msg);
     case "decided": return onDecided(msg);
     case "health": return onHealth(msg);
+    case "urgent_reply":
+      document.querySelectorAll('[data-urgent="live"]').forEach((el) => { delete el.dataset.urgent; });
+      showStatus("");
+      return;
     case "face_seen":
       return setInfo("face", "Face seen: " + (msg.who || "nobody") + " · " + Number(msg.score || 0).toFixed(2));
     case "clip_scan": {
       const rooms = Array.isArray(msg.rooms) && msg.rooms.length ? msg.rooms.join(", ") : "no rooms";
       return setInfo("clips", "Clip scan: " + rooms + " · " + (msg.detections ?? 0) + " detections · " + seconds(msg.ms));
     }
+    case "safety_word":
+      return showSafetyWord(msg.word);
+  }
+}
+
+function showSafetyWord(word) {
+  const text = String(word || "").trim();
+  if (!text) return;
+  const item = document.querySelector('#info [data-kind="safety"]');
+  const prev = item ? item.textContent.replace(/^Safety words:\s*/, "") : "";
+  const words = prev ? prev.split(", ").filter(Boolean) : [];
+  if (!words.includes(text)) words.push(text);
+  setInfo("safety", "Safety words: " + words.join(", "));
+}
+
+async function loadSafetyWords() {
+  try {
+    const res = await fetch("/safety-words");
+    if (!res.ok) return;
+    const body = await res.json();
+    if (Array.isArray(body.custom)) body.custom.forEach(showSafetyWord);
+  } catch {
+    /* the next safety_word event still shows a word added while this page is open */
   }
 }
 
@@ -260,6 +293,7 @@ function openHubSocket() {
     ws.onopen = () => {
       attempt = 0;
       showEmpty("Nothing heard yet. Sino is listening.");
+      loadSafetyWords();
     };
     ws.onmessage = (e) => {
       let msg;

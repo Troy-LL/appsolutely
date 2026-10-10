@@ -88,6 +88,12 @@ export function applyHubEvent(state: FeedLog, event: HubEvent, at: number): Feed
     }
     return { ...state, entries: [entry, ...state.entries] }
   }
+  if (event.event === 'urgent_reply') {
+    return {
+      ...state,
+      entries: state.entries.map((x) => (x.kind === 'urgent' ? { ...x, kind: 'seen' } : x)),
+    }
+  }
   if (event.event === 'ask_caregiver') {
     const transcript = str(event.transcript)
     const count = typeof event.count === 'number' ? event.count : 1

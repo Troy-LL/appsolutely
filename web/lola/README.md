@@ -108,9 +108,11 @@ this screen; they need a team decision, not a change here.
   But both the hub (`brain/server.py`) and the fake feed route `heard` to
   `/backstage` only, so Lola's screen never receives it. The ring will light up
   the moment `heard` is also sent to the `lola` socket.
-- **No reply text.** `play_reply` carries `reply_id`, `reply_audio` and `photo`,
-  but no words. The reply line stays blank until the hub (or the questions file)
-  provides an optional `reply_text`. The screen does not invent a line.
+- **No reply text on `play_reply`.** That event carries `reply_id`, `reply_audio` and `photo`,
+  but no words. The reply line stays blank until the hub provides an optional `reply_text`.
+  A caregiver's urgent reply is a different event, `urgent_reply`: `text`, `speaker`, and
+  `reply_audio`. The screen shows the name and the text in the answer state (ink on paper),
+  plays the recording on the unlocked player when there is one, then returns to the clock.
 - **`MAX_VOLUME` is a placeholder.** Playback is capped at `0.8` in `lola.js`
   pending decision D5 (the real volume is set together on the iPad at test time).
 
