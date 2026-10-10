@@ -15,6 +15,33 @@ interface Props {
   onAsk: (question: string, intent?: AskIntent) => void
 }
 
+function AnswerBody({ text, fallback }: { text: string; fallback: string }) {
+  const dump = (text.match(/asked about/gi) ?? []).length >= 2
+  const shown = dump ? fallback : text
+  const lines = shown.split('\n').map((line) => line.trim()).filter(Boolean)
+  const chunks: ({ type: 'p'; text: string } | { type: 'ul'; items: string[] })[] = []
+  for (const line of lines) {
+    const bullet = /^[•*-]\s+(.*)$/.exec(line)
+    const last = chunks[chunks.length - 1]
+    if (bullet) {
+      if (last && last.type === 'ul') last.items.push(bullet[1])
+      else chunks.push({ type: 'ul', items: [bullet[1]] })
+    } else {
+      chunks.push({ type: 'p', text: line })
+    }
+  }
+  if (!chunks.some((chunk) => chunk.type === 'ul')) return <p className="pl">{shown}</p>
+  return (
+    <>
+      {chunks.map((chunk, index) => chunk.type === 'ul' ? (
+        <ul key={index} className="sn-asklist">{chunk.items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}</ul>
+      ) : (
+        <p key={index}>{chunk.text}</p>
+      ))}
+    </>
+  )
+}
+
 function Shot({ src, label }: { src: string; label?: string }) {
   const [shown, setShown] = useState(src)
   return (
@@ -68,7 +95,7 @@ export function AskScreen({ t, me, messages, busy, onAsk }: Props) {
                 ) : (
                   <>
                     {m.snapshot ? <Shot src={m.snapshot} label={m.label} /> : null}
-                    <p className="pl">{m.error ? <><span className="sn-dot" aria-hidden="true" /> </> : null}{m.text}</p>
+                    {m.error ? <p className="pl"><span className="sn-dot" aria-hidden="true" /> {m.text}</p> : <AnswerBody text={m.text} fallback={t.two('askChips')} />}
                   </>
                 )}
               </div>
