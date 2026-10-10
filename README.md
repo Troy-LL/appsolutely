@@ -1,8 +1,16 @@
-# Appsolutely
+# Sino
+
+<a href="https://github.com/Troy-LL/appsolutely/blob/main/assets/demo/sino-demo.mp4"><img src="assets/demo/sino-demo-poster.jpg" alt="Watch the Sino demo (with sound)" width="100%"></a>
+
+▶ **[Watch the demo with sound](https://github.com/Troy-LL/appsolutely/blob/main/assets/demo/sino-demo.mp4)**
+
+**Offline-first AI home assistant for people with dementia and their family.** Sino answers a lola's repeated questions in her family's own recorded voice and keeps working with no internet. Local AI, no cloud.
+
+**Live demo (simulated, seeded data):** https://sino-demo.onrender.com
 
 <img src="assets/brand/sino-logo.png" alt="Sino" width="280">
 
-Team repo for the **AppBuildersPH Hackathon 2026** (Team Appsolutely: Troy, Ayen, Donita, Viviene). It holds the planning docs (event facts, roles, philosophy, playbook, idea filter, submission checklist) and the Sino spec in `docs/sino/`. Per the rules, the project is built from scratch after the challenge reveal at 1:00 PM Fri Oct 9.
+Sino is our own project, built by Troy, Donita, Viviene, and Ayen. It started at the AppBuildersPH Hackathon 2026 and grew into something we care about. The planning docs and the full Sino spec live in `docs/sino/`.
 
 ## Our project: Sino
 
@@ -21,22 +29,14 @@ Sino is a small home hub that answers a lola's repeated questions in her family'
   - Playwright (Python, demo only, not part of the running app): `demo/sim/record.py` drives the three screens and records a simulated walkthrough. `ffmpeg` composes that film.
   - TODO, add the rest as each is introduced.
 - **APIs and cloud services:** no cloud AI API. The home hub runs with no model API. Test clips in brain/tests/audio/lola/ were generated before the event with ElevenLabs (synthetic, test input only; Sino itself runs offline).
-- **Hosting:** Fly.io (HTTPS) hosts the public demo. It is a web host, not a model API. That demo is simulated (stub decisions, seeded data, no Ollama, no microphone). The home hub setup below is unchanged. See [docs/sino/public-demo.md](docs/sino/public-demo.md).
+- **Hosting:** Render's free tier hosts the public demo over HTTPS. It is a web host, not a model API. That demo is simulated (stub decisions, seeded data, no Ollama, no microphone). The home hub setup below is unchanged. See [docs/sino/deploy.md](https://github.com/Troy-LL/appsolutely/blob/troy/public-demo/docs/sino/deploy.md).
 - **Existing code and assets:** open-source libraries only. Demo data (`brain/seed.json` and the teammate-recorded replies and photos) is labeled as demo data. The default replies in `brain/media/` are real human recordings: Joy's four comfort replies and three meal clips, and the three "Sino ka?" lines by Troy, Joy, and Donita (no ElevenLabs, no text-to-speech). The three demo room clips in `brain/clips/media/` (`dining.mp4` Kainan, `stairs.mp4` Hagdan, `balcony.mp4` Balkonahe) are in the clone: a person playing Lola sits at the dining table, and the staircase and balcony have no person. `.mov` and `.webm` with the same English stem count too (`stairs.MOV`, `dining.MOV`, `balcony.MOV`). Other files in that folder stay gitignored. `/backstage` serves the Fontsource OFL files already in `web/backstage/fonts/` (Fredoka 500/600, DM Sans 400/500/700). Official mark: `assets/brand/sino-logo.png` (house roofline, green word, amber dot on the i), plus the trimmed web copies next to it. No new runtime dependency.
 - **AI development tools:** Claude Code, Cursor, Grok Bot, Kiro (plus the Figma MCP if used). Kiro built Lola's iPad screen (`web/lola/`). Cursor placed the official mark in the READMEs, the favicons, the caregiver top bar, the backstage header, and the Lola idle corner. Claude Code wrote the Lola reply-playback browser test (`web/lola/reply.test.py`) and the tap-retry fix it found in `web/lola/lola.js`. Cursor (Grok) wired the caregiver's urgent reply through the hub to Lola's iPad. Cursor (Grok 4.7) fixed enrolled face photos on the family frames and made hub writes show again after a browser refresh or a hub restart. Cursor (Grok) wrote the simulated demo recorder in `demo/sim/record.py`. Cursor (Grok 4.7) fixed Lola's iPad so a recorded reply auto-plays after the one Simulan tap.
 
-## Key dates (PH time, UTC+8)
 
-| When | What |
-|---|---|
-| Fri Oct 9, 12:30 PM | Online room opens (12:45 PM briefing) |
-| Fri Oct 9, 1:00 PM | Challenge reveal. Build starts. |
-| Fri Oct 9, 4:00 PM | Pivot lock (no idea changes after this) |
-| Sat Oct 10, 3:30 AM | Sino MVP freeze (moved from 2:00 AM; see `docs/sino/mvp-plan.md`) |
-| Sat Oct 10, 7:00 AM | Feature freeze (team rule) |
-| Sat Oct 10, 8:30 AM | Our submit target (team rule) |
-| Sat Oct 10, 10:00 AM | **Submissions close. Repo must be public. No extensions.** |
-| Sat Oct 10, 12:00 PM | On-site at Cyberzone, SM Makati (required for finals) |
+## Thank you
+
+Sino started as a hackathon idea and became something we actually care about. To Donita, Viviene, and Ayen: thank you for building this with me, through the late nights, the broken hubs, and every "wait, it works now." And thank you to Joy for lending Sino her voice. I loved this problem, I loved this idea, and I loved building it with you. — Troy
 
 ## Start here
 
@@ -150,4 +150,4 @@ node web/lola/mic.test.mjs                                              # iPad m
 
 ## Hosted demo
 
-The public demo is simulated and hosted on Fly.io over HTTPS. Deploy it from a clean clone with [docs/sino/public-demo.md](docs/sino/public-demo.md). The Setup steps above are still how the home hub runs on the Mac.
+The public demo is simulated and hosted on Render's free tier over HTTPS. Deploy it from [docs/sino/deploy.md](https://github.com/Troy-LL/appsolutely/blob/troy/public-demo/docs/sino/deploy.md). The Setup steps above are still how the home hub runs on the Mac.
