@@ -60,6 +60,7 @@ export const tl = {
   saveFailed: 'Hindi na-save sa kahon: {why}. Subukan ulit.',
   fakeSaved: 'Fake feed: hindi ipinadala sa kahon.',
   tip: 'Mga 10 segundo o mas maikli. Magsalita na parang kausap mo siya.',
+  hearsNow: 'Maririnig agad ito ni Lola.',
   personReplies: 'Mga sagot ni {name}',
   recordedReplies: '{n} naka-record na sagot',
   noAudioYet: 'Wala pang recording',
