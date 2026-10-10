@@ -8,6 +8,8 @@ empty reply_audio/photo fields in an existing working copy are filled from the s
 A question whose id is in the seed stays. delete_question only removes one the family added.
 """
 
+from __future__ import annotations
+
 import copy
 import json
 import os
