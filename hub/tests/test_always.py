@@ -501,6 +501,7 @@ async def _run():
     if not whisper_up:
         server.WHISPER_URL = listen.WHISPER_INFERENCE = "http://127.0.0.1:9"
         listen.transcribe = _fake_transcribe
+        listen.transcribe_clip = lambda path: (_fake_transcribe(path), None)
         print("Whisper: fake transcriber (SKIP_WHISPER=1 or whisper-server not reachable)")
     always.write_wav = _spy_write_wav
     done = []

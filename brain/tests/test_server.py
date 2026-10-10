@@ -436,11 +436,11 @@ async def _stale(port, clients):
     seen = []
     gate = threading.Event()
 
-    def blocking(text):
+    def blocking(text, audio=None):
         seen.append(text)
         if len(seen) == 1:
             gate.wait(2)
-        return decide(text)
+        return decide(text, audio)
 
     server.hub.decide_call = blocking
     try:

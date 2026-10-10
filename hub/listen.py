@@ -161,9 +161,8 @@ def _hint():
     return hint
 
 
-def transcribe(path):
-    """Send the clip to whisper-server and return its text, trimmed."""
-    fields = {"response_format": "json", "temperature": "0.0"}
+def _whisper_body(path, response_format):
+    fields = {"response_format": response_format, "temperature": "0.0"}
     if os.environ.get("WHISPER_HINT") == "1":
         fields["prompt"] = _hint()
     boundary = uuid.uuid4().hex
@@ -178,8 +177,57 @@ def transcribe(path):
     req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
     with urllib.request.urlopen(req, timeout=WHISPER_TIMEOUT) as res:
         data = json.loads(res.read(1_000_000))
-    text = data.get("text") if isinstance(data, dict) else ""
-    return text.strip()[:MAX_TRANSCRIPT] if isinstance(text, str) else ""
+    return data if isinstance(data, dict) else {}
+
+
+def _whisper_meta(data):
+    segments = data.get("segments")
+    if not isinstance(segments, list):
+        return {}
+    logs, quiet = [], []
+    for segment in segments:
+        if not isinstance(segment, dict):
+            continue
+        logprob = segment.get("avg_logprob")
+        no_speech = segment.get("no_speech_prob")
+        if isinstance(logprob, (int, float)) and not isinstance(logprob, bool):
+            logs.append(float(logprob))
+        if isinstance(no_speech, (int, float)) and not isinstance(no_speech, bool):
+            quiet.append(float(no_speech))
+    meta = {}
+    if logs:
+        meta["avg_logprob"] = sum(logs) / len(logs)
+    if quiet:
+        meta["no_speech"] = max(quiet)
+    return meta
+
+
+_WHISPER_FORMAT = "verbose_json"
+
+
+def transcribe_clip(path):
+    """Text plus Whisper confidence, when the server sends segment scores."""
+    global _WHISPER_FORMAT
+    try:
+        data = _whisper_body(path, _WHISPER_FORMAT)
+    except Exception:
+        if _WHISPER_FORMAT == "json":
+            raise
+        _WHISPER_FORMAT = "json"
+        data = _whisper_body(path, "json")
+    text = data.get("text") if isinstance(data, dict) else None
+    if not isinstance(text, str) and _WHISPER_FORMAT != "json":
+        _WHISPER_FORMAT = "json"
+        data = _whisper_body(path, "json")
+        text = data.get("text") if isinstance(data, dict) else ""
+    cleaned = text.strip()[:MAX_TRANSCRIPT] if isinstance(text, str) else ""
+    return cleaned, _whisper_meta(data if isinstance(data, dict) else {})
+
+
+def transcribe(path):
+    """Send the clip to whisper-server and return its text, trimmed."""
+    text, _meta = transcribe_clip(path)
+    return text
 
 
 def spoken(text):
@@ -205,14 +253,14 @@ async def process_clip(hub, path, label="listen now", hub_mic=True):
     speech goes to decide(). Shared by listen now, always-listening (hub/always.py) and iPad
     uploads (hub/upload.py, hub_mic=False: those leave the hub mic's health light alone)."""
     global MIC_OK
-    text = ""
+    text, audio = "", None
     try:
         peak = await asyncio.to_thread(peak_dbfs, path)
         # All zeros means the mic is muted or macOS blocked it; a real room is never that quiet.
         if hub_mic:
             MIC_OK = peak > float("-inf")
         if peak >= quiet_dbfs():
-            text = await asyncio.to_thread(transcribe, path)
+            text, audio = await asyncio.to_thread(transcribe_clip, path)
     except Exception as exc:
         # Whisper down or a bad clip: nothing reaches Lola or the caregiver. Never print the words.
         print(f"{label}: transcription failed ({type(exc).__name__})", file=sys.stderr)
@@ -225,7 +273,7 @@ async def process_clip(hub, path, label="listen now", hub_mic=True):
                                         "dropped": True, "drop_reason": reason,
                                         "utterance_id": uuid.uuid4().hex})
     else:
-        await hub.submit(spoken(text))
+        await hub.submit(spoken(text), audio)
 
 
 _hold_always = False

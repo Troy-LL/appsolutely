@@ -24,7 +24,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 
 from clips.rooms import room_label
-from decide import MEDICATION_TOKENS, normalize, urgent_words
+from decide import MEDICATION_TOKENS, load_seed, normalize, urgent_words
 
 CASES_PATH = Path(__file__).resolve().parent / "tests" / "ask_cases.json"
 
@@ -426,6 +426,22 @@ def _near(left, right):
     return SequenceMatcher(None, left, right).ratio() >= NEAR_DUP
 
 
+def _question_label(reply_id):
+    if not reply_id:
+        return ""
+    try:
+        entries = load_seed()
+    except (OSError, ValueError):
+        return ""
+    for entry in entries:
+        if entry.get("id") != reply_id:
+            continue
+        question = entry.get("question")
+        if isinstance(question, str) and question.strip():
+            return question.strip()
+    return ""
+
+
 def _same_question(group, entry, norm):
     reply_id = entry.get("reply_id") or ""
     if reply_id and group["reply_id"] == reply_id:
@@ -443,30 +459,28 @@ def _repeated_questions(entries):
         transcript = entry.get("transcript", "")
         if not isinstance(transcript, str) or not transcript.strip():
             continue
+        reply_id = entry.get("reply_id") or ""
         norm = normalize(transcript)
         group = next((item for item in groups if _same_question(item, entry, norm)), None)
+        label = _question_label(reply_id) or transcript.strip()
         if group is None:
             groups.append({
-                "reply_id": entry.get("reply_id") or "",
+                "reply_id": reply_id,
                 "norm": norm,
                 "count": 1,
-                "forms": {transcript.strip(): 1},
+                "label": label,
             })
             continue
         group["count"] += 1
-        label = transcript.strip()
-        group["forms"][label] = group["forms"].get(label, 0) + 1
+        if reply_id and label:
+            group["label"] = label
     repeated = [group for group in groups if group["count"] >= 2]
     repeated.sort(key=lambda group: -group["count"])
     return repeated[:5]
 
 
 def _common_line(group):
-    best, best_n = "", -1
-    for text, count in group["forms"].items():
-        if count > best_n:
-            best, best_n = text, count
-    return best
+    return group.get("label") or ""
 
 
 def _saying_answer(log, t):
