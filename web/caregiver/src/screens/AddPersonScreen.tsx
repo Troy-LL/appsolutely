@@ -1,33 +1,56 @@
 import { useState } from 'react'
-import type { MemberColor, Person } from '../types'
+import type { MemberColor } from '../types'
 import type { T } from '../i18n/i18n'
 import { Frame } from '../components/Frame'
 import { SubHead } from '../components/SubHead'
 import { Camera } from '../components/Icons'
 
-// Adds a frame to the family wall on this phone only. The hub stores people only as a
-// question's `speaker`, so their replies are recorded in /setup (Ayen). Not sent anywhere.
 const CALLS = ['Ate', 'Kuya', 'Tita', 'Tito', 'Apo', 'Anak']
 const COLORS: { id: MemberColor; key: 'colorGreen' | 'colorAmber' | 'colorRed' }[] = [
   { id: 'green', key: 'colorGreen' }, { id: 'amber', key: 'colorAmber' }, { id: 'red', key: 'colorRed' },
 ]
 
-export function AddPersonScreen({ t, onCancel, onDone }: { t: T; onCancel: () => void; onDone: (p: Person) => void }) {
+export interface NewPerson {
+  name: string
+  color: MemberColor
+  photo?: File
+  preview: string
+}
+
+export function AddPersonScreen({ t, hub, onCancel, onDone }: {
+  t: T
+  hub: boolean
+  onCancel: () => void
+  onDone: (p: NewPerson) => void | Promise<void>
+}) {
   const [step, setStep] = useState(1)
   const [call, setCall] = useState('Ate')
   const [name, setName] = useState('')
+  const [file, setFile] = useState<File | undefined>()
   const [photo, setPhoto] = useState('')
   const [color, setColor] = useState<MemberColor>('green')
   const [tried, setTried] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
   const full = `${call} ${name.trim() || '…'}`
 
   const next = () => {
+    if (busy) return
     if (step === 1 && !name.trim()) return setTried(true)
     if (step < 3) return setStep(step + 1)
-    onDone({ name: `${call} ${name.trim()}`, color, local: true })
+    setBusy(true)
+    setError('')
+    Promise.resolve(onDone({ name: `${call} ${name.trim()}`, color, photo: file, preview: photo })).catch((err: unknown) => {
+      setBusy(false)
+      setError(err instanceof Error ? err.message : String(err))
+    })
   }
   const back = () => (step === 1 ? onCancel() : setStep(step - 1))
-  const pickPhoto = (f: File | undefined) => { if (f) setPhoto(URL.createObjectURL(f)) }
+  const pickPhoto = (f: File | undefined) => {
+    if (!f) return
+    setFile(f)
+    setPhoto(URL.createObjectURL(f))
+  }
 
   return (
     <>
@@ -84,13 +107,14 @@ export function AddPersonScreen({ t, onCancel, onDone }: { t: T; onCancel: () =>
                 </button>
               ))}
             </div>
-            <p className="sn-step__help pl" style={{ marginTop: 16 }}>{t.two('localOnly')}</p>
+            <p className="sn-step__help pl" style={{ marginTop: 16 }}>{t.two(hub ? 'savedOnHub' : 'localOnly')}</p>
+            {error ? <p className="sn-note pl" role="alert"><span className="sn-dot" aria-hidden="true" />{t.one('saveFailed', { why: error })}</p> : null}
           </>
         ) : null}
       </div>
       <div className="sn-foot">
-        <button type="button" className="sn-btn sn-btn--quiet" onClick={back}>{t.btn('back')}</button>
-        <button type="button" className="sn-btn" onClick={next}>{step === 3 ? t.btn('hang') : t.btn('next')}</button>
+        <button type="button" className="sn-btn sn-btn--quiet" onClick={back} disabled={busy}>{t.btn('back')}</button>
+        <button type="button" className="sn-btn" onClick={next} disabled={busy}>{busy ? t.btn('saving') : step === 3 ? t.btn('hang') : t.btn('next')}</button>
       </div>
     </>
   )

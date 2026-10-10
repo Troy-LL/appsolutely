@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } fro
 import type { Alarm, AskIntent, ChatMsg, Entry, Lang, MemberColor, Person, Question, Scale, Screen } from './types'
 import { makeT } from './i18n/i18n'
 import { initialLog, logReducer } from './data/log'
-import { deleteQuestion, loadQuestions, loadSafetyWords, postUrgentReply, useFeed, USING_HUB } from './data/hub'
+import { addFamilyMember, deleteQuestion, loadFamily, loadQuestions, loadSafetyWords, postUrgentReply, readMember, removeFamilyMember, useFeed, USING_HUB, type FamilyMember } from './data/hub'
 import { SAFETY_WORDS } from './data/safetyWords'
 import { entriesFromLog, readAbout } from './feed/events'
 import { armAlerts, type AlertStatus } from './feed/monitor'
@@ -41,8 +41,12 @@ function shotName(): string {
   return new URLSearchParams(window.location.search).get('shot') ?? ''
 }
 
+const FRAME_SHOT =
+  'data:image/svg+xml,' +
+  encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100"><rect width="80" height="100" fill="#e7d3b0"/><circle cx="40" cy="36" r="16" fill="#c48a62"/><path d="M18 92c4-18 14-28 22-28s18 10 22 28" fill="#1f6b4a"/></svg>')
+
 function screenFromShot(shot: string): Screen {
-  if (shot === 'monitor' || shot === 'knows' || shot === 'receipt') return shot
+  if (shot === 'monitor' || shot === 'knows' || shot === 'receipt' || shot === 'family') return shot
   if (shot === 'cal' || shot === 'cal-done' || shot === 'cal-missing') return 'calibrate'
   return 'home'
 }
@@ -88,6 +92,7 @@ export default function App() {
   const [recordId, setRecordId] = useState('')
   const [personName, setPersonName] = useState(() => (screenFromShot(shotName()).startsWith('cal') ? 'Troy' : ''))
   const [added, setAdded] = useState<Person[]>([])
+  const [family, setFamily] = useState<FamilyMember[]>([])
   const [justAdded, setJustAdded] = useState<Person | null>(null)
   const [questions, setQuestions] = useState<Question[] | null>(null)
   const [builtinWords, setBuiltinWords] = useState<string[]>(SAFETY_WORDS)
@@ -121,6 +126,18 @@ export default function App() {
   const refreshQuestions = () => {
     loadQuestions().then(setQuestions).catch((e: unknown) => setLoadError(e instanceof Error ? e.message : String(e)))
   }
+  const refreshFamily = () => {
+    loadFamily().then(setFamily).catch(() => undefined)
+  }
+  const rememberMember = (member: FamilyMember) => {
+    setFamily((list) => {
+      const index = list.findIndex((item) => item.id === member.id)
+      if (index < 0) return [...list, member]
+      const next = list.slice()
+      next[index] = member
+      return next
+    })
+  }
   const rememberWord = (word: string) => {
     if (!word || builtinWords.includes(word)) return
     setCustomWords((words) => (words.includes(word) ? words : [...words, word]))
@@ -138,6 +155,16 @@ export default function App() {
     }
     if (event.event === 'face_photo') {
       refreshQuestions()
+      return
+    }
+    if (event.event === 'family_added') {
+      const member = readMember(event)
+      if (member) rememberMember(member)
+      return
+    }
+    if (event.event === 'family_removed' && typeof event.id === 'string') {
+      const id = event.id
+      setFamily((list) => list.filter((item) => item.id !== id))
       return
     }
     if (event.event === 'log' && Array.isArray(event.entries)) {
@@ -159,10 +186,11 @@ export default function App() {
     dispatch({ type: 'event', event, at })
   }, {
     onStatus: setLink,
-    onVisible: refreshQuestions,
+    onVisible: () => { refreshQuestions(); refreshFamily() },
   })
   useEffect(() => {
     refreshQuestions()
+    refreshFamily()
     loadSafetyWords().then((list) => {
       setBuiltinWords(list.builtin)
       setCustomWords(list.custom)
@@ -221,13 +249,32 @@ export default function App() {
     const names: string[] = []
     for (const e of entries) if (e.kind === 'answered' && e.speaker && !names.includes(e.speaker)) names.push(e.speaker)
     for (const q of questions ?? []) if (q.speaker && !names.includes(q.speaker)) names.push(q.speaker)
-    const fromHub = names.map((name, i) => ({
-      name,
-      color: WALL_COLORS[i % WALL_COLORS.length],
-      photo: photoFor(name, questions) || undefined,
-    }))
-    return [...fromHub, ...added]
-  }, [entries, questions, added])
+    const known = new Set(names.map((name) => name.toLowerCase()))
+    const fromHub = names.map((name, i) => {
+      const saved = family.find((member) => member.name.toLowerCase() === name.toLowerCase())
+      return {
+        id: saved?.id,
+        name,
+        color: saved?.color ?? WALL_COLORS[i % WALL_COLORS.length],
+        photo: saved?.photo || photoFor(name, questions) || undefined,
+      }
+    })
+    const extras = family
+      .filter((member) => !known.has(member.name.toLowerCase()))
+      .map((member) => ({
+        id: member.id,
+        name: member.name,
+        color: member.color,
+        photo: member.photo || undefined,
+      }))
+    const locals = added.filter((person) => {
+      const key = person.name.toLowerCase()
+      return !known.has(key) && !family.some((member) => member.name.toLowerCase() === key)
+    })
+    let list: Person[] = [...fromHub, ...extras, ...locals]
+    if (shot === 'family' && list[0]) list = [{ ...list[0], photo: FRAME_SHOT }, ...list.slice(1)]
+    return list
+  }, [entries, questions, added, family, shot])
   // Home, Sino AI and the receipt are about today; the activity log can look back 7 days.
   const today = useMemo(() => entries.filter((e) => daysAgo(e.at, now) === 0), [entries, now])
   const replyCount = (name: string) => (questions ?? []).filter((q) => q.speaker === name).length
@@ -354,7 +401,16 @@ export default function App() {
 
       {screen === 'family' ? (
         <FamilyScreen t={t} people={people} replyCount={replyCount} justAdded={justAdded}
-          onUndoAdd={() => { setAdded(added.filter((p) => p !== justAdded)); setJustAdded(null) }}
+          onUndoAdd={() => {
+            if (justAdded?.id && !justAdded.local) {
+              const id = justAdded.id
+              setFamily((list) => list.filter((member) => member.id !== id))
+              void removeFamilyMember(id).catch(() => refreshFamily())
+            } else {
+              setAdded(added.filter((person) => person !== justAdded))
+            }
+            setJustAdded(null)
+          }}
           onPerson={(name) => { nav.current.personName = name; setPersonName(name); go('person') }}
           onAdd={() => { setJustAdded(null); go('add') }} />
       ) : null}
@@ -415,8 +471,19 @@ export default function App() {
       ) : null}
 
       {screen === 'add' ? (
-        <AddPersonScreen t={t} onCancel={back}
-          onDone={(p) => { setAdded([...added, p]); setJustAdded(p); finish('family') }} />
+        <AddPersonScreen t={t} hub={USING_HUB} onCancel={back}
+          onDone={async (draft) => {
+            const saved = await addFamilyMember({ name: draft.name, color: draft.color, photo: draft.photo })
+            if (saved === 'fake') {
+              const person: Person = { name: draft.name, color: draft.color, photo: draft.preview || undefined, local: true }
+              setAdded((list) => [...list, person])
+              setJustAdded(person)
+            } else {
+              rememberMember(saved)
+              setJustAdded({ id: saved.id, name: saved.name, color: saved.color, photo: saved.photo || draft.preview || undefined })
+            }
+            finish('family')
+          }} />
       ) : null}
 
       {screen === 'account' ? (

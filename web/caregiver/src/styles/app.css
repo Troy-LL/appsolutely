@@ -282,7 +282,7 @@ html, body, #root { margin: 0; height: 100%; background: var(--paper); }
 .sn-greet--tight { margin-bottom: 4px; }
 .sn-intro--tight { margin-bottom: 14px; }
 .sn-scroll--flush { padding-bottom: 0; }
-.sn-frame__photo img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--r-photo); }
+.sn-frame__photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: var(--r-photo); align-self: stretch; }
 .sn-field__label { font: 600 calc(16px * var(--s))/1.2 var(--font-heading); }
 .sn-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .sn-widget__empty { margin: 0; padding: 16px; font-size: calc(15px * var(--s)); line-height: 1.45; }

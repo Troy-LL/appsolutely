@@ -22,6 +22,7 @@ export default defineConfig({
       '/media': { target: HUB, changeOrigin: true },
       '/clips': { target: HUB, changeOrigin: true },
       '/face': { target: HUB, changeOrigin: true },
+      '/family': { target: HUB, changeOrigin: true },
       '/health': { target: HUB, changeOrigin: true },
     },
   },

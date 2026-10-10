@@ -68,6 +68,7 @@ from questions import (  # noqa: E402
     AUDIO_EXTS, MAX_BYTES, BadInput, data_dir, delete_question, ensure_working_copy, install_seed_media,
     media_dir, save_question, set_by_person_photo_if_empty,
 )
+from family import add_member, read_family, remove_member  # noqa: E402
 # hub/listen.py (Donita, D4): listen now records the hub mic, runs Whisper and the junk filter.
 from listen import enable_mic, mic_ok, start_listen  # noqa: E402
 # hub/chime.py (Donita, D6): the urgent chime on the hub speaker.
@@ -721,6 +722,44 @@ async def add_question(request: Request):
         return save_question(fields, audio, photo)
     except BadInput as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
+
+
+@app.get("/family")
+def get_family():
+    return {"members": read_family()}
+
+
+@app.post("/family")
+async def post_family(request: Request):
+    # Multipart: name, color (green|amber|red), optional file photo.
+    try:
+        async with request.form() as form:
+            name = form.get("name")
+            color = form.get("color")
+            photo = await _upload(form.get("photo"))
+        member = add_member(name, color, photo)
+    except BadInput as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except Exception:
+        return JSONResponse({"error": "bad form"}, status_code=400)
+    event = {"event": "family_added", **member}
+    for screen in SCREENS:
+        await hub.send_to(screen, event)
+    return member
+
+
+@app.delete("/family/{mid}")
+async def delete_family(mid: str):
+    try:
+        removed = remove_member(mid)
+    except BadInput as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except KeyError:
+        return JSONResponse({"error": "no family member with that id"}, status_code=404)
+    event = {"event": "family_removed", "id": removed.get("id", mid)}
+    for screen in SCREENS:
+        await hub.send_to(screen, event)
+    return removed
 
 
 @app.delete("/questions/{qid}")

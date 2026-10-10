@@ -61,10 +61,11 @@ export interface Alarm {
 }
 
 export interface Person {
+  id?: string // hub/data/family.json id, when this frame was added on the wall
   name: string // as Lola says it, e.g. "Joy"
   color: MemberColor
-  photo?: string // /media/... from by_person, or a question photo
-  local?: boolean // added on this phone only (not on the hub yet)
+  photo?: string // /media/... from by_person, a question photo, or an added member
+  local?: boolean // added on this phone only (fake feed, not on the hub)
 }
 
 // Ask Sino about Lola (T7). The caregiver socket sends ask_about_lola and gets about_lola back
