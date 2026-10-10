@@ -708,6 +708,7 @@ async def _upload(part):
 @app.post("/questions")
 async def add_question(request: Request):
     # Multipart form: id, question, speaker, phrasings (repeated); files reply_audio, photo.
+    # Optional play_now=1: the caregiver's reply to a yellow card, so Lola's iPad plays it now.
     try:
         async with request.form() as form:
             fields = {
@@ -716,12 +717,25 @@ async def add_question(request: Request):
                 "speaker": form.get("speaker"),
                 "phrasings": form.getlist("phrasings"),
             }
+            play_now = form.get("play_now") == "1"
             audio = await _upload(form.get("reply_audio"))
             photo = await _upload(form.get("photo"))
         # No await inside save_question, so two uploads cannot interleave their writes.
-        return save_question(fields, audio, photo)
+        saved = save_question(fields, audio, photo)
     except BadInput as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
+    # Quick setup and every other save leave out play_now, so they never make Lola's iPad speak.
+    if play_now and saved.get("reply_audio"):
+        # Same play_reply shape publish() sends for a comfort reply; Lola's screen already plays it.
+        await hub.send_to("lola", {
+            "event": "play_reply",
+            "reply_id": saved["id"],
+            "reply_audio": saved["reply_audio"],
+            "photo": saved.get("photo") or "",
+            "speaker": saved.get("speaker") or "",
+        })
+        deafen_for_reply()  # always-listening ignores the hub mic while the iPad speaks
+    return saved
 
 
 @app.get("/family")
