@@ -426,7 +426,8 @@ function onStart() {
   micStarted = true
   // The iPad listens (real hub only, mic.js). The mic prompt must come from this tap.
   // isPlaying: a family reply is playing, so the mic must not send it to the hub.
-  if (ON_HUB && params.get('mic') !== 'off') {
+  const micOff = params.get('mic') === 'off' || params.get('demo') === '1'
+  if (ON_HUB && !micOff) {
     hearing = true
     startMic({ ctx: audioCtx, hubBase, isPlaying: () => !!current && !current.paused })
   }
@@ -436,4 +437,70 @@ $('#start-btn').addEventListener('click', onStart)
 
 if (IS_FAKE && !ON_HUB) {
   const el = $('#fake-label'); el.textContent = t(STRINGS.fake, lang); el.classList.remove('hidden')
+}
+
+document.addEventListener('pointerdown', () => {
+  primeElement()
+  primeContext()
+}, { capture: true, once: true })
+
+const SAY_LINES = [
+  'Nasaan si Nanay?',
+  'Nasaan si Nanay? Abangan sa susunod na kabanata!',
+  'Kumain na ba ako?',
+  'Hirap huminga ako.',
+]
+
+function showDemoChrome() {
+  document.documentElement.classList.add('demo')
+  const banner = $('#demo-banner')
+  const say = $('#say')
+  if (banner) banner.hidden = false
+  if (say) say.hidden = false
+}
+
+async function postTyped(text) {
+  const status = $('#say-status')
+  try {
+    const res = await fetch(`${hubBase()}/listen`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'typed', text }),
+    })
+    if (status) status.textContent = res.status === 202 ? 'Sent.' : 'The hub did not take that.'
+  } catch {
+    if (status) status.textContent = 'The hub did not take that.'
+  }
+}
+
+const sayChips = $('#say-chips')
+if (sayChips) {
+  for (const line of SAY_LINES) {
+    const chip = document.createElement('button')
+    chip.type = 'button'
+    chip.textContent = line
+    chip.addEventListener('click', () => { void postTyped(line) })
+    sayChips.appendChild(chip)
+  }
+}
+const sayForm = $('#say')
+if (sayForm) {
+  sayForm.addEventListener('submit', (e) => {
+    e.preventDefault()
+    const input = $('#say-text')
+    const text = input && input.value.trim()
+    if (!text) return
+    void postTyped(text)
+    input.value = ''
+  })
+}
+
+if (params.get('demo') === '1') {
+  $('#start-sheet').classList.add('gone')
+  showDemoChrome()
+} else {
+  fetch(`${hubBase()}/health`)
+    .then((res) => (res.ok ? res.json() : null))
+    .then((body) => { if (body && body.simulated === true) showDemoChrome() })
+    .catch(() => {})
 }

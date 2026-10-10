@@ -8,7 +8,9 @@ export type LinkStatus = 'open' | 'reconnecting'
 
 function socketUrl(): string {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${proto}//${location.host}/ws?screen=caregiver&monitor=1`
+  const sid = new URLSearchParams(location.search).get('sid')
+  const sidQuery = sid ? `&sid=${encodeURIComponent(sid)}` : ''
+  return `${proto}//${location.host}/ws?screen=caregiver&monitor=1${sidQuery}`
 }
 
 export function openCaregiverSocket(
