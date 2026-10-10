@@ -4,7 +4,8 @@ import type { T } from '../i18n/i18n'
 import { useRecorder } from '../data/recorder'
 import { saveReply } from '../data/hub'
 import { Waveform } from '../components/bits'
-import { Back, Mic, Play, Redo } from '../components/Icons'
+import { SubHead } from '../components/SubHead'
+import { Mic, Play, Redo } from '../components/Icons'
 
 // RecordReply: answer one yellow card in your own voice. Save = POST /questions.
 export function RecordScreen({ t, entry, me, onBack, onSaved }: { t: T; entry: Entry; me: string; onBack: () => void; onSaved: (fake: boolean) => void }) {
@@ -31,10 +32,7 @@ export function RecordScreen({ t, entry, me, onBack, onSaved }: { t: T; entry: E
 
   return (
     <>
-      <div className="sn-subhead">
-        <button type="button" className="sn-icon-btn" aria-label={t.one('back')} onClick={onBack}><Back /></button>
-        <h2>{t.one('record')}</h2>
-      </div>
+      <SubHead title={t.one('record')} label={t.one('back')} onBack={onBack} />
       <div className="sn-scroll">
         <div className="sn-record">
           <div className="sn-askband">

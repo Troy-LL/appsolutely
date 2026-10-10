@@ -18,6 +18,7 @@ import time
 import urllib.request
 from pathlib import Path
 
+from clips.rooms import room_label
 from decide import MEDICATION_TOKENS, normalize
 
 SEED_PATH = Path(__file__).resolve().parent / "seed.json"
@@ -266,10 +267,11 @@ def _where_answer(log, t):
     last_seen = log.get("last_seen") if isinstance(log, dict) else None
     if not isinstance(last_seen, dict) or not last_seen.get("room"):
         return t["no_camera"]
+    room = room_label(last_seen.get("room"))
     if last_seen.get("source") == "recording":
         clock = _clip_clock(last_seen.get("clip_offset_s", 0))
-        return t["seen_recording"].format(room=last_seen.get("room"), clock=clock)
-    return t["seen_live"].format(room=last_seen.get("room"), n=last_seen.get("minutes_ago", 0))
+        return t["seen_recording"].format(room=room, clock=clock)
+    return t["seen_live"].format(room=room, n=last_seen.get("minutes_ago", 0))
 
 
 def _language(tokens):

@@ -1,0 +1,59 @@
+button.sn-btn:not(.sn-btn--quiet):not(:disabled):not(.sn-scale *):not(.sn-urgent *),
+.sn-chip--ok,
+.sn-chip--needs,
+.sn-tab.is-on,
+.sn-me,
+.sn-mic:not(.is-rec),
+.sn-sendbtn:not(:disabled),
+.sn-filter--needs.is-on,
+.sn-filter--answered.is-on {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+button.sn-btn.is-held:not(.sn-btn--quiet):not(.sn-scale *):not(.sn-urgent *),
+.sn-chip--ok.is-held,
+.sn-chip--needs.is-held,
+.sn-tab.is-on.is-held,
+.sn-me.is-held,
+.sn-mic.is-held:not(.is-rec),
+.sn-sendbtn.is-held:not(:disabled),
+.sn-filter--needs.is-on.is-held,
+.sn-filter--answered.is-on.is-held {
+  background: var(--red);
+  color: var(--white);
+}
+
+.sn-me.is-held span {
+  background: var(--red);
+  color: var(--white);
+}
+
+.sn-top:has(> .sn-icon-btn) {
+  padding-left: 12px;
+  padding-right: 16px;
+  gap: 8px;
+}
+
+.sn-top:has(> .sn-icon-btn) .sn-word {
+  margin-right: auto;
+}
+
+.sn-top:has(> .sn-icon-btn) .sn-fake {
+  display: none;
+}
+
+@media screen {
+  .sn-app {
+    height: 100svh;
+    height: 100dvh;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+.sn-tabs {
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}

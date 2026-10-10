@@ -8,7 +8,7 @@ export type LinkStatus = 'open' | 'reconnecting'
 
 function socketUrl(): string {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${proto}//${location.host}/ws?screen=caregiver`
+  return `${proto}//${location.host}/ws?screen=caregiver&monitor=1`
 }
 
 export function openCaregiverSocket(
