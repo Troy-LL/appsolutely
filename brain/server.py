@@ -18,7 +18,7 @@ from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request, WebSocket
-from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.datastructures import UploadFile
 from starlette.websockets import WebSocketDisconnect
@@ -33,21 +33,40 @@ from model import DEFAULT_HUB_URL
 # brain/face ships on troy/face-engine and may be absent. Script launch also tries face.
 try:
     from brain.face import load_gallery, identify_jpeg
+    from brain.face.enroll import MAX_FRAME, enroll_request, gallery_body, gallery_path
 except ImportError:
     try:
         from face import load_gallery, identify_jpeg
+        from face.enroll import MAX_FRAME, enroll_request, gallery_body, gallery_path
     except ImportError:
-        def load_gallery():
+        def load_gallery(_path=None):
             return None
 
         def identify_jpeg(_gallery, _jpeg):
             return {"who": None, "score": 0.0, "faces": 0, "ms": 0}
 
+        MAX_FRAME = 2 * 1024 * 1024
+
+        def enroll_request(person, blobs, _replace):
+            frames = [{"ok": False, "reason": "engine_missing"} for _blob in blobs]
+            return {
+                "person": person,
+                "engine": "missing",
+                "frames": frames,
+                "count": 0,
+            }, None, False
+
+        def gallery_body():
+            return {"engine": "missing", "people": {"troy": 0, "joy": 0, "donita": 0}}
+
+        def gallery_path():
+            return Path("gallery")
+
 # hub/questions.py (Donita, D5) stores new questions and their files. Appended last so brain/ wins.
 sys.path.append(str(Path(__file__).resolve().parent.parent / "hub"))
 from questions import (  # noqa: E402
     AUDIO_EXTS, MAX_BYTES, BadInput, delete_question, ensure_working_copy, install_seed_media, media_dir,
-    save_question,
+    save_question, set_by_person_photo_if_empty,
 )
 # hub/listen.py (Donita, D4): listen now records the hub mic, runs Whisper and the junk filter.
 from listen import enable_mic, mic_ok, start_listen  # noqa: E402
@@ -312,6 +331,7 @@ class Hub:
         self.alert_active = False
         self.lola_reply = None
         self.lola_reply_got = set()
+        self.monitors = set()
 
     def health_payload(self):
         now = time.monotonic()
@@ -471,13 +491,22 @@ class Hub:
 
     async def send_to(self, screen, payload):
         raw = json.dumps(payload, ensure_ascii=False)
-        for ws, role in list(self.clients.items()):
-            if role != screen:
-                continue
+        sockets = [ws for ws, role in list(self.clients.items()) if role == screen]
+        event = payload.get("event") if isinstance(payload, dict) else ""
+        copy = screen == "backstage" and (
+            event in ("heard", "face_seen")
+            or (event == "decided" and payload.get("action") == "silent")
+        )
+        if copy:
+            for ws in list(self.monitors):
+                if ws not in sockets and ws in self.clients:
+                    sockets.append(ws)
+        for ws in sockets:
             try:
                 await ws.send_text(raw)
             except Exception:
                 self.clients.pop(ws, None)
+                self.monitors.discard(ws)
                 continue
             if screen == "lola" and payload.get("event") == "urgent_reply":
                 self.lola_reply_got.add(ws)
@@ -733,6 +762,8 @@ async def socket(websocket: WebSocket):
         return
     await websocket.accept()
     hub.clients[websocket] = screen
+    if screen == "caregiver" and websocket.query_params.get("monitor") == "1":
+        hub.monitors.add(websocket)
     try:
         payload = await asyncio.to_thread(hub.health_payload)
         await websocket.send_text(json.dumps(payload, ensure_ascii=False))
@@ -746,6 +777,7 @@ async def socket(websocket: WebSocket):
     finally:
         hub.clients.pop(websocket, None)
         hub.lola_reply_got.discard(websocket)
+        hub.monitors.discard(websocket)
 
 
 # One webcam frame when "Sino ka?" is comfort. cv2 may be absent; the server still starts.
@@ -925,6 +957,53 @@ async def face_frame(request: Request):
     return result
 
 
+@app.get("/face/gallery")
+def face_gallery():
+    try:
+        return gallery_body()
+    except Exception:
+        return {"engine": "missing", "people": {"troy": 0, "joy": 0, "donita": 0}}
+
+
+@app.post("/face/enroll/{person}")
+async def face_enroll(person: str, request: Request):
+    global _gallery, _gallery_tried
+    if person not in ("troy", "joy", "donita"):
+        return JSONResponse({"error": "unknown person"}, status_code=400)
+    try:
+        async with request.form() as form:
+            replace = form.get("replace") == "1"
+            uploads = [item for item in form.getlist("frames") if isinstance(item, UploadFile)]
+            if len(uploads) < 1 or len(uploads) > 5:
+                return JSONResponse({"error": "send 1 to 5 jpegs"}, status_code=400)
+            blobs = [await item.read(MAX_FRAME + 1) for item in uploads]
+    except Exception:
+        return JSONResponse({"error": "send 1 to 5 jpegs"}, status_code=400)
+    try:
+        body, first, changed = await asyncio.to_thread(enroll_request, person, blobs, replace)
+    except Exception:
+        body = {
+            "person": person,
+            "engine": "missing",
+            "frames": [{"ok": False, "reason": "engine_missing"} for _blob in blobs],
+            "count": 0,
+        }
+        first = None
+        changed = False
+    if changed:
+        try:
+            _gallery = load_gallery(str(gallery_path()))
+        except Exception:
+            _gallery = None
+        _gallery_tried = True
+    if first:
+        try:
+            set_by_person_photo_if_empty(person, first)
+        except Exception:
+            pass
+    return body
+
+
 def _ssl_kwargs():
     cert = os.environ.get("CERT", "")
     key = os.environ.get("KEY", "")
@@ -1069,9 +1148,14 @@ async def post_clips(request: Request):
     return summary
 
 
+@app.get("/clips/rooms")
+def clips_rooms():
+    return {"rooms": clipwhere.room_catalog()}
+
+
 @app.get("/clips/snapshot")
-def clips_snapshot():
-    jpeg = clipwhere.snapshot_jpeg()
+def clips_snapshot(room: str = ""):
+    jpeg = clipwhere.snapshot_jpeg(room or None)
     if not jpeg:
         return Response(status_code=404)
     return Response(
@@ -1079,6 +1163,17 @@ def clips_snapshot():
         media_type="image/jpeg",
         headers={"Cache-Control": "no-store"},
     )
+
+
+_CLIP_TYPES = {".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm"}
+
+
+@app.get("/clips/file/{room}")
+def clips_file(room: str):
+    path = clipwhere.clip_path(room)
+    if path is None:
+        return Response(status_code=404)
+    return FileResponse(path, media_type=_CLIP_TYPES.get(path.suffix.lower(), "application/octet-stream"))
 
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"

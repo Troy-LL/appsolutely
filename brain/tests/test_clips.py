@@ -14,6 +14,7 @@ import sys
 import tempfile
 import threading
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -79,7 +80,7 @@ def test_person_room_time_snapshot():
         if summary["rooms"] != ["sala"] or summary["frames"] != 5 or summary["detections"] != 5:
             raise AssertionError(summary)
         result = _where(_recording_log())
-        if result["answer"] != "Huling nakita sa recording: sala (clip 0:02).":
+        if result["answer"] != "Huling nakita sa recording: Sala (clip 0:02).":
             raise AssertionError(result["answer"])
         extra, card = clips.followup(result, _recording_log())
         if extra != {"snapshot": "/clips/snapshot", "label": clips.LABEL}:
@@ -128,7 +129,7 @@ def test_later_sighting_wins():
         if seen["room"] != "sala" or seen["clip_offset_s"] != 12.0:
             raise AssertionError(seen)
         answer = _where(_recording_log())["answer"]
-        if answer != "Huling nakita sa recording: sala (clip 0:12).":
+        if answer != "Huling nakita sa recording: Sala (clip 0:12).":
             raise AssertionError(answer)
 
 
@@ -201,13 +202,30 @@ def test_one_detection_does_not_count():
             raise AssertionError("score under CLIP_HOG_MIN counted")
 
 
+def test_room_names():
+    from clips.rooms import ROOMS, room_label
+
+    ids = [item["id"] for item in ROOMS]
+    if ids != ["hagdan", "sala", "balkonahe"]:
+        raise AssertionError(ids)
+    if room_label("hagdan") != "Hagdan" or room_label("balkonahe") != "Balkonahe":
+        raise AssertionError(room_label("hagdan"))
+    if room_label("sala") != "Sala" or room_label("kusina") != "kusina":
+        raise AssertionError(room_label("kusina"))
+    names = [row["id"] for row in clips.room_catalog(Path("/tmp/sino-no-such-clips"))]
+    if names != ["hagdan", "sala", "balkonahe"]:
+        raise AssertionError(names)
+    if any(row["file"] for row in clips.room_catalog(Path("/tmp/sino-no-such-clips"))):
+        raise AssertionError("missing folder looked like footage")
+
+
 def test_recording_wording():
     log = {
         "entries": [],
         "last_seen": {"room": "sala", "clip_offset_s": 42, "source": "recording"},
     }
     answer = _where(log)["answer"]
-    if answer != "Huling nakita sa recording: sala (clip 0:42).":
+    if answer != "Huling nakita sa recording: Sala (clip 0:42).":
         raise AssertionError(answer)
     if "ngayon" in answer.lower() or "minuto na" in answer.lower():
         raise AssertionError(answer)
@@ -305,7 +323,7 @@ async def test_server_paths():
                 raise AssertionError(scan)
             await caregiver.send(json.dumps({"event": "ask_about_lola", "question": "Nasaan si Lola?"}))
             reply = await _recv(caregiver)
-            if reply.get("answer") != "Huling nakita sa recording: sala (clip 0:02).":
+            if reply.get("answer") != "Huling nakita sa recording: Sala (clip 0:02).":
                 raise AssertionError(reply)
             if reply.get("snapshot") != "/clips/snapshot" or reply.get("label") != clips.LABEL:
                 raise AssertionError(reply)
@@ -320,6 +338,28 @@ async def test_server_paths():
                     raise AssertionError(res.status)
             if not shot.startswith(b"\xff\xd8"):
                 raise AssertionError(shot[:4])
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/clips/snapshot?room=sala", timeout=2) as res:
+                if res.status != 200 or not res.read().startswith(b"\xff\xd8"):
+                    raise AssertionError("room snapshot")
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/clips/rooms", timeout=2) as res:
+                catalog = json.loads(res.read().decode("utf-8"))
+            ids = [row["id"] for row in catalog["rooms"]]
+            if ids != ["hagdan", "sala", "balkonahe"]:
+                raise AssertionError(ids)
+            sala = next(row for row in catalog["rooms"] if row["id"] == "sala")
+            if not sala["file"] or not sala["detected"] or sala["tl"] != "Sala":
+                raise AssertionError(sala)
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/clips/file/sala", timeout=2) as res:
+                if res.status != 200 or res.headers.get("Content-Type") != "video/mp4":
+                    raise AssertionError(res.headers.get("Content-Type"))
+            missing = urllib.request.Request(f"http://127.0.0.1:{port}/clips/file/kusina")
+            try:
+                urllib.request.urlopen(missing, timeout=2)
+            except urllib.error.HTTPError as exc:
+                if exc.code != 404:
+                    raise AssertionError(exc.code) from exc
+            else:
+                raise AssertionError("unknown room was served")
 
             for path in Path(media.name).glob("*.mp4"):
                 path.unlink()
@@ -357,6 +397,7 @@ def main():
         test_unreadable_skipped,
         test_no_clips_card,
         test_one_detection_does_not_count,
+        test_room_names,
         test_recording_wording,
     ]
     passed = 0

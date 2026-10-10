@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from ask import NO_CAMERA_ANSWER
+from clips.rooms import ROOMS, room_ids
 
 # cv2 is imported on first use. A top-level import can stall on this Mac.
 _MISSING = object()
@@ -269,11 +270,48 @@ def last_seen_for_log():
         }
 
 
-def snapshot_jpeg():
+def snapshot_jpeg(room=None):
     with _scan_lock:
+        if room:
+            record = _rooms.get(room)
+            if not record:
+                return None
+            return record["jpeg_bytes"]
         if not _winner:
             return None
         return _winner["jpeg_bytes"]
+
+
+def room_catalog(folder=None):
+    """The three rooms, whether a file is on disk, and the last detected frame."""
+    folder = Path(folder) if folder else media_dir()
+    files = {}
+    for path in _clip_files(folder):
+        files.setdefault(path.stem, path)
+    with _scan_lock:
+        rows = []
+        for spec in ROOMS:
+            record = _rooms.get(spec["id"])
+            rows.append({
+                "id": spec["id"],
+                "tl": spec["tl"],
+                "en": spec["en"],
+                "file": spec["id"] in files,
+                "detected": record is not None,
+                "clip_offset_s": None if record is None else record["clip_offset_s"],
+                "scanned_at": "" if record is None else record["scanned_at"],
+            })
+        return rows
+
+
+def clip_path(room, folder=None):
+    if room not in room_ids():
+        return None
+    folder = Path(folder) if folder else media_dir()
+    for path in _clip_files(folder):
+        if path.stem == room:
+            return path
+    return None
 
 
 def room_rows():

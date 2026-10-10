@@ -174,6 +174,71 @@ def _store_media(filename, data):
     return f"/media/{filename}"
 
 
+def _is_seed(path):
+    try:
+        return path.resolve() == SEED.resolve()
+    except OSError:
+        return True
+
+
+def set_by_person_photo_if_empty(person, jpeg_bytes) -> str | None:
+    """Set sino-ka by_person[person].photo when it is empty. Never writes brain/seed.json."""
+    if person not in ("troy", "joy", "donita"):
+        return None
+    if not isinstance(jpeg_bytes, (bytes, bytearray)) or not jpeg_bytes:
+        return None
+    path = questions_path()
+    if _is_seed(path):
+        return None
+    try:
+        if not path.is_file():
+            ensure_working_copy()
+            path = questions_path()
+            if _is_seed(path):
+                return None
+        entries = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(entries, list):
+        return None
+    entry = next(
+        (item for item in entries if isinstance(item, dict) and item.get("id") == "sino-ka"),
+        None,
+    )
+    if entry is None:
+        return None
+    people = entry.get("by_person")
+    if people is None:
+        people = {}
+        entry["by_person"] = people
+    if not isinstance(people, dict):
+        return None
+    row = people.get(person)
+    if row is None:
+        row = {}
+        people[person] = row
+    if not isinstance(row, dict):
+        return None
+    current = row.get("photo", "")
+    if current is None:
+        current = ""
+    if not isinstance(current, str) or current != "":
+        return None
+    try:
+        if _is_seed(path):
+            return None
+        media_dir().mkdir(parents=True, exist_ok=True)
+        media = _store_media(f"sino-ka-{person}-photo.jpg", bytes(jpeg_bytes))
+        row["photo"] = media
+        text = json.dumps(entries, ensure_ascii=False, indent=2) + "\n"
+        if _is_seed(path):
+            return None
+        _write_atomic(path, text.encode("utf-8"))
+    except OSError:
+        return None
+    return media
+
+
 def save_question(fields, audio=None, photo=None):
     """Add a new question, or re-record an existing id. Returns the stored object.
 
