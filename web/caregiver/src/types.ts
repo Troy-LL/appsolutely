@@ -2,7 +2,7 @@
 
 export type Lang = 'tl' | 'en' | 'both'
 export type Scale = 0 | 1 | 2 // A, A+, A++
-export type Screen = 'home' | 'family' | 'ask' | 'activity' | 'receipt' | 'knows' | 'record' | 'person' | 'add' | 'account'
+export type Screen = 'home' | 'family' | 'ask' | 'activity' | 'receipt' | 'knows' | 'record' | 'person' | 'add' | 'account' | 'monitor' | 'calibrate'
 export type MemberColor = 'green' | 'amber' | 'red'
 
 // health event (plus the additive model / last_event_at fields)

@@ -74,7 +74,7 @@ What `brain/decide.py` does today: the TV-word rule (`TV_PHRASES` and `TV_TOKENS
 | Voice activity detection | Silero VAD | hub | Starts capture only when someone speaks |
 | Speech to text | Whisper small (default); medium only as the fallback below | whisper.cpp (`-l tl`) | See the selection rule below |
 | Decision for unclear lines | Qwen2.5-3B (`qwen2.5:3b`) (default); Qwen2.5-1.5B (`qwen2.5:1.5b`) only with the medium fallback | Ollama | Must return JSON matching the decision interface. No AI phrasing for the recap |
-| Add-on a: face match (T6) | OpenCV YuNet (detect) + SFace (recognise), a few MB | OpenCV, hub CPU | **Un-cut Sat 3:23 AM.** After the core runs on the hub and T5 passes; hard stop 5 AM. One frame per "Sino ka?". Not built yet ([features.md](features.md#should-after-the-330-am-freeze)) |
+| Add-on a: face match (T6) | OpenCV YuNet (detect) + SFace (recognise), a few MB | OpenCV, hub CPU | Enrollment and `POST /face/frame` are on the hub. Missing OpenCV returns a calm `engine: "missing"` and writes nothing. A real match is to verify when OpenCV is installed ([features.md](features.md#should-after-the-330-am-freeze)) |
 | Add-on b: recorded clip | OpenCV HOG people detector | OpenCV, hub CPU | **Sat ~4:30 AM.** Files on the hub, scanned before the question. Not a live camera. Live CCTV stays a next step ([features.md](features.md)) |
 | Add-on c: speaker match | n/a | n/a | **Cut. Not built** ([mvp-plan.md](mvp-plan.md)) |
 
@@ -136,7 +136,7 @@ Changing an interface needs a post in the team chat, because every screen depend
 
 ## Running the hub server
 
-`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `POST /listen/audio`, `POST /urgent-reply`, `GET /questions`, `POST /questions`, `DELETE /questions/{id}`, `GET /safety-words`, `POST /safety-words`, `POST /clips`, `GET /clips/snapshot`, and `/media`, and it calls `decide()` and `answer_about_lola()`. When `web/caregiver/dist` exists it also serves that build at `/caregiver` (`index.html` with `Cache-Control: no-cache`); the phone opens `https://<hub>:8000/caregiver/?feed=hub` so `/ws`, `/questions`, `/media` and `/clips/snapshot` share one origin. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
+`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `POST /listen/audio`, `POST /urgent-reply`, `GET /questions`, `POST /questions`, `DELETE /questions/{id}`, `GET /safety-words`, `POST /safety-words`, `POST /clips`, `GET /clips/rooms`, `GET /clips/snapshot`, `GET /clips/file/{room}`, `POST /face/frame`, `POST /face/enroll/{person}`, `GET /face/gallery`, and `/media`, and it calls `decide()` and `answer_about_lola()`. When `web/caregiver/dist` exists it also serves that build at `/caregiver` (`index.html` with `Cache-Control: no-cache`); the phone opens `https://<hub>:8000/caregiver/?feed=hub` so `/ws`, `/questions`, `/media`, `/clips`, and `/face` share one origin. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
 
 TODO: contract gap — custom safety words. Additive, nothing renamed. The built-in stems stay in `brain/decide.py` (`URGENT_STEMS`). The caregiver card can add a word; it cannot remove a built-in.
 
@@ -146,7 +146,7 @@ TODO: contract gap — custom safety words. Additive, nothing renamed. The built
 
 TODO: contract gap — the interfaces do not name a listen port. `PORT` defaults to 8000. `HOST` defaults to `0.0.0.0`.
 
-TODO: contract gap — `/ws` does not say which socket is `/lola`, `/caregiver`, or `/backstage`. Additive query `screen` is one of `lola`, `caregiver`, `backstage`.
+TODO: contract gap — `/ws` does not say which socket is `/lola`, `/caregiver`, or `/backstage`. Additive query `screen` is one of `lola`, `caregiver`, `backstage`. A caregiver socket may also send `monitor=1`. That socket also receives `heard`, `face_seen`, and silent `decided`. A plain caregiver socket stays quiet on those. `clip_scan` stays on backstage only.
 
 TODO: contract gap — `decided` has no transcript. Additive field `transcript` (same string as `heard.transcript`). Silent `decided` goes to `/backstage` only. Comfort, caregiver, and urgent go to every screen.
 
@@ -173,17 +173,21 @@ TODO: contract gap — `play_reply` has no speaker name. Additive field `speaker
 TODO: contract gap — recorded-clip demo, all additive, nothing renamed. Post them in the team chat. Footage stays on the hub (`brain/clips/media/`, gitignored). Frames stay in memory. The snapshot goes to the caregiver only, never to Lola's screen.
 
 - `POST /clips`: optional multipart file `clip` (`.mp4`, `.mov`, `.webm`). Saving a file, or a POST with no file, scans the folder again. The scan also runs at startup, in the background when clips are present, and never when the question is asked.
-- `GET /clips/snapshot`: the latest in-memory JPEG, or 404 when nothing was detected.
-- `about_lola` gains `snapshot` (`"/clips/snapshot"`) and `label` (`"RECORDED CLIP · DEMO"`) only when the answer comes from a recording.
+- `GET /clips/snapshot`: the latest in-memory JPEG, or 404 when nothing was detected. Optional `?room=` (`hagdan`, `kainan`, or `balkonahe`) returns that room's JPEG instead of the winner.
+- `GET /clips/rooms`: `{rooms:[{id,tl,en,file,detected,clip_offset_s,scanned_at}]}` for Hagdan, Kainan, and Balkonahe, in that order, even when a file is missing. `stairs.MOV` is Hagdan, `dining.MOV` is Kainan, `balcony.MOV` is Balkonahe.
+- `GET /clips/file/{room}`: that room's video (`video/mp4`, `video/quicktime`, or `video/webm`). Unknown ids (including `kusina`) are 404.
+- `about_lola` gains `snapshot` (`"/clips/snapshot"`) and `label` (`"RECORDED CLIP · DEMO"`) only when the answer comes from a recording. The spoken room is the Tagalog name (Hagdan, Kainan, Balkonahe). The files are `stairs.MOV`, `dining.MOV`, and `balcony.MOV`.
 - `clip_card` (caregiver socket only, when nothing was detected): `{"event":"clip_card","text":"Hindi ko sigurado kung nasaan si Lola. Pakitingnan."}`.
 - `clip_scan` (backstage, one per scan): `{"event":"clip_scan","rooms":[],"frames":0,"detections":0,"ms":0}`.
 
-**Add-on a, face match (after the freeze, not built yet; Sat 3:23 AM).** TODO: contract gaps, all additive, nothing renamed. Post them in the team chat when built:
+**Add-on a, face match.** TODO: contract gaps, all additive, nothing renamed. `POST /face/frame` is unchanged.
 
-- `POST /face/frame`: one JPEG, sent **once per "Sino ka?" trigger** (no stream, no polling loop). Recognises against the enrolled family (troy, joy, donita). In memory only.
-- `face_seen` (to `/backstage` only): who was recognised and the score, or nobody.
+- `POST /face/frame`: one JPEG, sent **once per "Sino ka?" trigger** (no stream, no polling loop). Recognises against the enrolled family (troy, joy, donita). That frame stays in memory.
+- `face_seen` (to `/backstage`, and to a caregiver socket with `monitor=1`): who was recognised and the score, or nobody.
 - `decided.who`: additive field on a "Sino ka?" decision, the matched person on a high-confidence match, `""` otherwise.
 - Seed `sino-ka` gains additive `by_person`: the reply per enrolled person. No high-confidence match → Troy's line.
+- `POST /face/enroll/<person>`: multipart field `frames`, 1 to 5 JPEGs, person exactly `troy`, `joy`, or `donita`. Optional `replace=1`. Unknown person is 400 `{"error":"unknown person"}`. Zero or more than five files is 400 `{"error":"send 1 to 5 jpegs"}`. HTTP 200 is `{person, engine: "ok"|"missing", frames: [{ok:true}|{ok:false, reason:"no_face"|"engine_missing"}], count}`. A frame over 2 MB or a bad embed is `no_face`, not 500. Missing OpenCV writes nothing.
+- `GET /face/gallery`: `{engine, people:{troy,joy,donita}}` counts. Enrollment crops stay in that person's gallery on the hub and do not leave the LAN. The first good frame may fill an empty `by_person.photo` on the hub working copy only; `brain/seed.json` is never written.
 
 TODO: contract gap — the local log is not named as SQLite or JSONL. This server appends one JSON object per decision to `brain/decisions.jsonl` (`SINO_LOG` overrides the path). `answer_about_lola` reads those rows.
 
@@ -234,7 +238,7 @@ hub/start.sh stop     # stop only what hub/start.sh started
 - The family sets it up and controls everything. Pitch the caregiver as the user.
 - The mic is always on, so **nothing it hears leaves the house**. No audio is stored by default. Only transcripts and decisions go into the local log, and the family can delete it.
 - No voice samples are collected (voice ID is cut). No CCTV (cut). Family recordings and photos for replies stay on the hub.
-- Face match (add-on, after the freeze): the 3 family members are enrolled on the hub; their photos stay there and are gitignored, never committed. One frame is grabbed only when "Sino ka?" fires, processed in memory, and never written to disk.
+- Face match: troy, joy, and donita enroll from the caregiver phone. Gallery crops stay on the hub, are gitignored, and never leave the LAN. The one "Sino ka?" frame stays in memory. Recorded room clips stay on the hub too. There is no live camera on the caregiver monitor.
 - No cloned or synthetic family voices, ever.
 - Not a medical device, not a diagnosis. It always escalates to a human.
 
@@ -259,6 +263,6 @@ None of these are facts yet. Log real results in `docs/NOTES.md` (Model smoke te
 | iPad mic (`/lola` listening, Sat ~7:15 AM) | a "Tulong!" said at the iPad reaches the hub and alerts | not tested yet: to verify on the iPad |
 | Hub cold start with `start.sh` | under 2 min with seed loaded | to verify at smoke test |
 | Hub on battery through the demo | needed only if we show it unplugged | to verify at smoke test |
-| Add-on (a) face match | runs on the hub CPU next to Whisper and Qwen without swapping; if the hub swaps, fall back to `qwen2.5:1.5b` | un-cut Sat 3:23 AM, not built yet; to verify after T5 passes |
+| Add-on (a) face match | runs on the hub CPU next to Whisper and Qwen without swapping; if the hub swaps, fall back to `qwen2.5:1.5b` | routes are in; a real YuNet/SFace run is to verify when OpenCV is installed |
 | Add-on (b) person detector | n/a | cut, not built |
 | Add-on (c) voice ID | cut, not built | not measured |

@@ -65,7 +65,7 @@ A registered person asks on `/caregiver`. "Kamusta si Lola?" and "Ano ang mga ta
 
 ### Optional: recorded clip (only if it is reliable on the demo clips)
 
-Joy asks "Nasaan si Lola?" on the caregiver phone. Sino answers "Huling nakita sa recording: sala (clip 0:42)" and shows that frame, labeled "RECORDED CLIP · DEMO". Troy says out loud that it is a recorded clip, not where she is right now. Live cameras stay on the next-steps slide. Skip this beat if no clip was scanned, or if it is not reliable: it goes back to the next-steps slide.
+Joy asks "Nasaan si Lola?" on the caregiver phone. Sino answers "Huling nakita sa recording: Kainan (clip 0:42)" and shows that frame, labeled "RECORDED CLIP · DEMO". The rooms are Hagdan, Kainan, and Balkonahe. Troy says out loud that it is a recorded clip, not where she is right now. Live cameras stay on the next-steps slide. Skip this beat if no clip was scanned, or if it is not reliable: it goes back to the next-steps slide.
 
 ## Optional: meals check
 

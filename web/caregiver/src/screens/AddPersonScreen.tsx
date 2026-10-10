@@ -2,7 +2,8 @@ import { useState } from 'react'
 import type { MemberColor, Person } from '../types'
 import type { T } from '../i18n/i18n'
 import { Frame } from '../components/Frame'
-import { Camera, Close } from '../components/Icons'
+import { SubHead } from '../components/SubHead'
+import { Camera } from '../components/Icons'
 
 // Adds a frame to the family wall on this phone only. The hub stores people only as a
 // question's `speaker`, so their replies are recorded in /setup (Ayen). Not sent anywhere.
@@ -30,10 +31,7 @@ export function AddPersonScreen({ t, onCancel, onDone }: { t: T; onCancel: () =>
 
   return (
     <>
-      <div className="sn-subhead">
-        <button type="button" className="sn-icon-btn" aria-label={t.one('cancel')} onClick={onCancel}><Close /></button>
-        <h2>{t.one('addTitle')}</h2>
-      </div>
+      <SubHead title={t.one('addTitle')} label={t.one('back')} onBack={onCancel} />
       <div className="sn-scroll sn-steps">
         <p className="sn-step__count">{t.one('stepOf', { n: step })}</p>
         <div className="sn-progress">{[1, 2, 3].map((i) => <span key={i} className={i <= step ? 'is-done' : ''} />)}</div>

@@ -1,0 +1,86 @@
+.sn-cal { display: grid; gap: 16px; padding-top: 20px; }
+.sn-cal__col { display: grid; gap: 16px; }
+.sn-cal__card {
+  margin: 0;
+  padding: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--ink);
+  font: 400 calc(16px * var(--s)) / 1.45 var(--font-text);
+  white-space: pre-line;
+}
+.sn-cal__stage {
+  position: relative;
+  width: min(100%, 280px);
+  margin: 0 auto;
+  aspect-ratio: 1;
+  color: var(--ink);
+}
+.sn-cal__ring { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sn-cal__oval {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58%;
+  height: 74%;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  overflow: hidden;
+  background: transparent;
+}
+.sn-cal__oval video,
+.sn-cal__mat { display: block; width: 100%; height: 100%; object-fit: cover; background: transparent; }
+.sn-cal__oval video { transform: scaleX(-1); background: var(--paper); }
+.sn-cal__prompt {
+  margin: 0;
+  text-align: center;
+  color: var(--ink);
+  font: 600 calc(26px * var(--s)) / 1.15 var(--font-heading);
+}
+.sn-subhead h2 small,
+.sn-cal__prompt small {
+  display: block;
+  margin-top: 4px;
+  font: 500 calc(15px * var(--s)) / 1.35 var(--font-heading);
+}
+.sn-cal__privacy {
+  margin: 0;
+  text-align: center;
+  color: var(--ink);
+  font: 400 calc(13px * var(--s)) / 1.4 var(--font-text);
+  white-space: pre-line;
+}
+.sn-cal__actions { display: grid; gap: 12px; }
+.sn-cal__actions .sn-btn { width: 100%; }
+.sn-cal__pick { position: relative; }
+.sn-cal__wait {
+  margin: 0;
+  text-align: center;
+  color: var(--ink);
+  font: 600 calc(18px * var(--s)) / 1.25 var(--font-heading);
+  white-space: pre-line;
+}
+.sn-cal__thumbs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sn-cal__thumb {
+  box-sizing: border-box;
+  display: block;
+  width: 52px;
+  height: 66px;
+  flex: none;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--ink);
+  object-fit: cover;
+}
+.sn-person .sn-btn--wide { align-self: stretch; margin-top: 8px; }

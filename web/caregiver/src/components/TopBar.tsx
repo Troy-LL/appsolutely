@@ -1,6 +1,6 @@
 import type { Lang } from '../types'
 import type { T } from '../i18n/i18n'
-import { Globe } from './Icons'
+import { Back, Globe } from './Icons'
 import { LangOptions } from './bits'
 
 interface Props {
@@ -12,13 +12,16 @@ interface Props {
   onToggleLang: () => void
   onPickLang: (l: Lang) => void
   onAccount: () => void
+  onBack?: () => void
+  backLabel?: string
 }
 
-export function TopBar({ t, lang, langOpen, fake, me, onToggleLang, onPickLang, onAccount }: Props) {
+export function TopBar({ t, lang, langOpen, fake, me, onToggleLang, onPickLang, onAccount, onBack, backLabel }: Props) {
   const langName = lang === 'tl' ? 'Tagalog' : lang === 'en' ? 'English' : 'Pareho'
   return (
     <>
       <header className="sn-top">
+        {onBack ? <button type="button" className="sn-icon-btn" aria-label={backLabel} onClick={onBack}><Back /></button> : null}
         <p className="sn-word">
           <img src={`${import.meta.env.BASE_URL}sino-logo.webp`} alt="Sino" />
           {fake ? <span className="sn-fake">{t.one('fakeFeed')}</span> : null}

@@ -1,8 +1,8 @@
 import type { Health, Lang, Scale } from '../types'
 import type { T } from '../i18n/i18n'
 import { Frame } from '../components/Frame'
+import { SubHead } from '../components/SubHead'
 import { Heading, LangOptions, TextScale } from '../components/bits'
-import { Back } from '../components/Icons'
 
 interface Props {
   t: T
@@ -26,10 +26,7 @@ export function AccountScreen({ t, me, health, lang, scale, onLang, onScale, onB
   const h = (k: Parameters<T['head']>[0]) => t.head(k)
   return (
     <>
-      <div className="sn-subhead">
-        <button type="button" className="sn-icon-btn" aria-label={t.one('back')} onClick={onBack}><Back /></button>
-        <h2>{t.one('account')}</h2>
-      </div>
+      <SubHead title={t.one('account')} label={t.one('back')} onBack={onBack} />
       <div className="sn-scroll">
         <div className="sn-profile">
           <Frame name={me} color="green" show />

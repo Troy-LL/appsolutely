@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import '../styles/monitor.css'
 import type { Entry, Health, Person } from '../types'
 import { dateLine, greetingKey, type T } from '../i18n/i18n'
 import { SalaScene } from '../components/SalaScene'
@@ -23,6 +24,7 @@ interface Props {
   lastNote: Entry | null
   onAte: () => void
   onUndoNote: () => void
+  onMonitor?: () => void
 }
 
 const TILTS = ['l', '', 'r'] as const
@@ -49,6 +51,18 @@ export function HomeScreen(p: Props) {
   const hNeeds = t.head('needs')
   const hFam = t.head('family')
   const hAns = t.head('answeredToday')
+  const sala = (
+    <>
+      <SalaScene initials={p.people.slice(0, 3).map((x) => x.name[0]?.toUpperCase() ?? '')} />
+      <div className={`sn-salabar${ok ? '' : ' is-down'}`}>
+        <div>
+          <b>{ok ? t.one('salaOn') : t.one('salaDown')}</b>
+          <span>{ok ? t.one('salaSub') : t.one('salaDownSub', { parts: down.join(', ') })}</span>
+        </div>
+        <span className="sn-live" aria-hidden="true" />
+      </div>
+    </>
+  )
 
   return (
     <div className="sn-scroll">
@@ -57,16 +71,9 @@ export function HomeScreen(p: Props) {
         <h1 className="sn-greet">{t.one(greetingKey(p.now))}, {p.me}</h1>
       </div>
 
-      <div className="sn-salacard">
-        <SalaScene initials={p.people.slice(0, 3).map((x) => x.name[0]?.toUpperCase() ?? '')} />
-        <div className={`sn-salabar${ok ? '' : ' is-down'}`}>
-          <div>
-            <b>{ok ? t.one('salaOn') : t.one('salaDown')}</b>
-            <span>{ok ? t.one('salaSub') : t.one('salaDownSub', { parts: down.join(', ') })}</span>
-          </div>
-          <span className="sn-live" aria-hidden="true" />
-        </div>
-      </div>
+      {p.onMonitor
+        ? <button type="button" className="sn-salacard sn-salacard--tap" onClick={p.onMonitor}>{sala}</button>
+        : <div className="sn-salacard">{sala}</div>}
 
       <button type="button" className="sn-btn sn-btn--wide sn-ate" onClick={p.onAte}>{t.btn('kumainNa')}</button>
       {p.lastNote?.preset === 'ate' ? (

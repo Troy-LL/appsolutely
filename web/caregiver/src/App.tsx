@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { Alarm, AskIntent, ChatMsg, Entry, Lang, MemberColor, Person, Question, Scale, Screen } from './types'
 import { makeT } from './i18n/i18n'
 import { initialLog, logReducer } from './data/log'
@@ -23,6 +23,11 @@ import { KnowsScreen } from './screens/KnowsScreen'
 import { RecordScreen } from './screens/RecordScreen'
 import { AddPersonScreen } from './screens/AddPersonScreen'
 import { AccountScreen } from './screens/AccountScreen'
+import { MonitorScreen } from './screens/MonitorScreen'
+import { CalibrateScreen } from './screens/CalibrateScreen'
+import { emptyLive, reduceLive, type LiveState } from './feed/live'
+import { faceId } from './data/faceEnroll'
+import { bindHoldRed } from './hold'
 
 // TODO: the caregiver's name should come from setup. Placeholder until then.
 const ME = 'Joy'
@@ -30,15 +35,58 @@ const ME = 'Joy'
 const WALL_COLORS: MemberColor[] = ['green', 'amber', 'red']
 const TABS: Screen[] = TAB_SCREENS
 const ASK_TIMEOUT_MS = 15_000 // no about_lola by then: say so and let them ask again
+const SCREEN_SET = new Set<Screen>(['home', 'family', 'ask', 'activity', 'receipt', 'knows', 'record', 'person', 'add', 'account', 'monitor', 'calibrate'])
+
+function shotName(): string {
+  return new URLSearchParams(window.location.search).get('shot') ?? ''
+}
+
+function screenFromShot(shot: string): Screen {
+  if (shot === 'monitor' || shot === 'knows' || shot === 'receipt') return shot
+  if (shot === 'cal' || shot === 'cal-done' || shot === 'cal-missing') return 'calibrate'
+  return 'home'
+}
+
+function calPreview(shot: string): { step: number; done?: boolean; engine?: 'ok' | 'missing' } | undefined {
+  const step = Number(new URLSearchParams(window.location.search).get('step') ?? '0')
+  if (shot === 'cal-done') return { step: 4, done: true }
+  if (shot === 'cal-missing') return { step: 0, engine: 'missing' }
+  if (shot === 'cal') return { step }
+  return undefined
+}
+
+interface Hist {
+  screen: Screen
+  tab: Screen
+  personName?: string
+  recordId?: string
+}
+
+function isScreen(v: unknown): v is Screen {
+  return typeof v === 'string' && SCREEN_SET.has(v as Screen)
+}
+
+function readHist(v: unknown): Hist | null {
+  if (!v || typeof v !== 'object') return null
+  const raw = v as Partial<Hist>
+  if (!isScreen(raw.screen) || !isScreen(raw.tab)) return null
+  return {
+    screen: raw.screen,
+    tab: raw.tab,
+    personName: typeof raw.personName === 'string' ? raw.personName : undefined,
+    recordId: typeof raw.recordId === 'string' ? raw.recordId : undefined,
+  }
+}
 
 export default function App() {
   const [lang, setLang] = useState<Lang>('both')
   const [scale, setScale] = useState<Scale>(0)
-  const [screen, setScreen] = useState<Screen>('home')
+  const shot = useMemo(() => shotName(), [])
+  const [screen, setScreen] = useState<Screen>(() => screenFromShot(shotName()))
   const [tab, setTab] = useState<Screen>('home') // where Back returns to
   const [langOpen, setLangOpen] = useState(false)
   const [recordId, setRecordId] = useState('')
-  const [personName, setPersonName] = useState('')
+  const [personName, setPersonName] = useState(() => (screenFromShot(shotName()).startsWith('cal') ? 'Troy' : ''))
   const [added, setAdded] = useState<Person[]>([])
   const [justAdded, setJustAdded] = useState<Person | null>(null)
   const [questions, setQuestions] = useState<Question[] | null>(null)
@@ -51,12 +99,17 @@ export default function App() {
   // "Turn on alerts" (real hub only) and the full-screen red alarm (components/Alarm.tsx)
   const [alerts, setAlerts] = useState<AlertStatus | 'arming'>('off')
   const [alarm, setAlarm] = useState<Alarm | null>(null)
+  // what the live monitor screen shows (feed/live.ts)
+  const [live, setLive] = useState<LiveState>(emptyLive)
   const t = useMemo(() => makeT(lang), [lang])
 
   // Sino AI thread. One question at a time; pendingId is the Sino bubble waiting for about_lola.
   const [messages, setMessages] = useState<ChatMsg[]>([])
   const pendingId = useRef('')
   const askTimer = useRef(0)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const applyingPop = useRef(false)
+  const nav = useRef({ personName: '', recordId: '' })
   const answer = (patch: Partial<ChatMsg>) => {
     const id = pendingId.current
     if (!id) return
@@ -93,7 +146,9 @@ export default function App() {
     if (event.event === 'alert') setAlarm({ ringing: true, silent: !audioRunning() })
     // Someone answered (this phone, another phone, or a voice reply): stop ringing here too.
     if (event.event === 'urgent_reply') endAlarm()
-    dispatch({ type: 'event', event, at: Date.now() })
+    const at = Date.now()
+    setLive((state) => reduceLive(state, event, at))
+    dispatch({ type: 'event', event, at })
   }, {
     onStatus: setLink,
     onVisible: refreshQuestions,
@@ -125,7 +180,13 @@ export default function App() {
   }
 
   // Last 7 days: restore what this phone saved (real hub), or sample days (fake feed).
-  useEffect(() => { dispatch({ type: 'load', entries: USING_HUB ? loadSaved() : demoHistory() }) }, [])
+  useEffect(() => {
+    const entries = USING_HUB ? loadSaved() : demoHistory()
+    if (shot === 'hold' && !USING_HUB) {
+      entries.unshift({ id: 'shot-needs', kind: 'needs', transcript: 'Nasaan yung aso?', at: Date.now(), count: 1 })
+    }
+    dispatch({ type: 'load', entries })
+  }, [shot])
   useEffect(() => { if (USING_HUB) save(log.entries) }, [log.entries])
   const [lastNote, setLastNote] = useState<Entry | null>(null)
   const addNote = (label: [string, string], preset: string) => {
@@ -192,34 +253,84 @@ export default function App() {
 
   const go = (s: Screen) => {
     setLangOpen(false)
+    const nextTab = TABS.includes(s) ? s : tab
     setScreen(s)
     if (TABS.includes(s)) setTab(s)
+    if (applyingPop.current) return
+    history.pushState({ screen: s, tab: nextTab, personName: nav.current.personName, recordId: nav.current.recordId }, '')
   }
-  const back = () => go(tab)
+  const finish = (s: Screen) => {
+    setLangOpen(false)
+    const nextTab = TABS.includes(s) ? s : tab
+    setScreen(s)
+    if (TABS.includes(s)) setTab(s)
+    history.replaceState({ screen: s, tab: nextTab, personName: nav.current.personName, recordId: nav.current.recordId }, '')
+  }
+  const back = () => history.back()
+
+  useLayoutEffect(() => {
+    history.replaceState({ screen, tab }, '')
+    const onPop = (e: PopStateEvent) => {
+      applyingPop.current = true
+      setLangOpen(false)
+      const st = readHist(e.state)
+      if (!st) {
+        nav.current = { personName: '', recordId: '' }
+        setPersonName('')
+        setRecordId('')
+        setTab('home')
+        setScreen('home')
+      } else {
+        setScreen(st.screen)
+        setTab(st.tab)
+        if (st.personName !== undefined) {
+          nav.current.personName = st.personName
+          setPersonName(st.personName)
+        }
+        if (st.recordId !== undefined) {
+          nav.current.recordId = st.recordId
+          setRecordId(st.recordId)
+        }
+      }
+      applyingPop.current = false
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el) return
+    return bindHoldRed(el)
+  }, [])
   const recordEntry = entries.find((e) => e.id === recordId)
   const alarmEntry = entries.find((e) => e.kind === 'urgent') // newest first
   const person = people.find((p) => p.name === personName)
   const onTab = TABS.includes(screen) || screen === 'receipt'
 
+  const calibrateId = faceId(person?.name ?? personName)
   return (
-    <div className={`sn-app${scale === 1 ? ' s2' : scale === 2 ? ' s3' : ''}`} lang={lang === 'en' ? 'en' : 'tl'}>
+    <div ref={rootRef} className={`sn-app${scale === 1 ? ' s2' : scale === 2 ? ' s3' : ''}`} lang={lang === 'en' ? 'en' : 'tl'}>
       {onTab ? (
         <TopBar t={t} lang={lang} langOpen={langOpen} fake={!USING_HUB} me={ME}
           onToggleLang={() => setLangOpen(!langOpen)} onPickLang={(l) => { setLang(l); setLangOpen(false) }}
-          onAccount={() => go('account')} />
+          onAccount={() => go('account')}
+          onBack={screen === 'receipt' ? back : undefined} backLabel={t.one('back')} />
       ) : null}
 
       {link === 'reconnecting' ? <p className="sn-reconnect" role="status">{t.one('reconnecting')}</p> : null}
-      {USING_HUB ? <AlertsBar t={t} status={alerts} onArm={() => void turnOnAlerts()} /> : null}
+      {/* hidden in screenshot mode (?shot=), like the old "Start monitoring" bar */}
+      {USING_HUB && !shot ? <AlertsBar t={t} status={alerts} onArm={() => void turnOnAlerts()} /> : null}
 
       {screen === 'home' ? (
         <HomeScreen t={t} me={ME} now={now} health={log.health} entries={today} people={people} replyCount={replyCount}
-          onRecord={(id) => { setRecordId(id); go('record') }}
+          onRecord={(id) => { nav.current.recordId = id; setRecordId(id); go('record') }}
           onReply={replyUrgent}
           onUnread={(id) => dispatch({ type: 'unmarkRead', id })}
-          onPerson={(name) => { setPersonName(name); go('person') }}
+          onPerson={(name) => { nav.current.personName = name; setPersonName(name); go('person') }}
           onFamily={() => go('family')}
           lastNote={lastNote}
+          onMonitor={() => go('monitor')}
           onAte={() => addNote(['Kumain', 'Ate a meal'], 'ate')}
           onUndoNote={() => { if (lastNote) dispatch({ type: 'removeNote', id: lastNote.id }); setLastNote(null) }} />
       ) : null}
@@ -227,7 +338,7 @@ export default function App() {
       {screen === 'family' ? (
         <FamilyScreen t={t} people={people} replyCount={replyCount} justAdded={justAdded}
           onUndoAdd={() => { setAdded(added.filter((p) => p !== justAdded)); setJustAdded(null) }}
-          onPerson={(name) => { setPersonName(name); go('person') }}
+          onPerson={(name) => { nav.current.personName = name; setPersonName(name); go('person') }}
           onAdd={() => { setJustAdded(null); go('add') }} />
       ) : null}
 
@@ -235,7 +346,7 @@ export default function App() {
 
       {screen === 'activity' ? (
         <ActivityScreen t={t} entries={entries} demoDays={!USING_HUB} lastNote={lastNote}
-          onRecord={(id) => { setRecordId(id); go('record') }}
+          onRecord={(id) => { nav.current.recordId = id; setRecordId(id); go('record') }}
           onReply={() => replyUrgent()}
           onAddNote={addNote}
           onUndoNote={() => { if (lastNote) dispatch({ type: 'removeNote', id: lastNote.id }); setLastNote(null) }}
@@ -266,15 +377,28 @@ export default function App() {
             dispatch({ type: 'replySaved', id: recordEntry.id, speaker: ME })
             // refresh the list so the new question shows in "What Sino knows"
             loadQuestions().then(setQuestions).catch(() => undefined)
-            go('home')
+            finish('home')
           }} />
       ) : null}
 
-      {screen === 'person' && person ? <PersonScreen t={t} person={person} questions={questions ?? []} onBack={back} /> : null}
+      {screen === 'person' && person ? (
+        <PersonScreen t={t} person={person} questions={questions ?? []} onBack={back}
+          onCalibrate={faceId(person.name) ? () => go('calibrate') : undefined} />
+      ) : null}
+
+      {screen === 'monitor' ? (
+        <MonitorScreen t={t} health={log.health} link={link} hub={USING_HUB} rows={live.rows} face={live.face}
+          onBack={back} preview={shot === 'monitor'} />
+      ) : null}
+
+      {screen === 'calibrate' && calibrateId ? (
+        <CalibrateScreen t={t} name={person?.name ?? personName} personId={calibrateId} onBack={back}
+          preview={calPreview(shot)} />
+      ) : null}
 
       {screen === 'add' ? (
-        <AddPersonScreen t={t} onCancel={() => go('family')}
-          onDone={(p) => { setAdded([...added, p]); setJustAdded(p); go('family') }} />
+        <AddPersonScreen t={t} onCancel={back}
+          onDone={(p) => { setAdded([...added, p]); setJustAdded(p); finish('family') }} />
       ) : null}
 
       {screen === 'account' ? (
