@@ -21,7 +21,8 @@ npm run dev            # fake feed: http://localhost:5173/
 
 | Event / call | On screen |
 |---|---|
-| `alert` | Red card, pinned on top, a two-note tone every 4 s until **Papunta na ako / On my way** (or a short recording). That sends `urgent_reply`; the card leaves the red state. The same button is on today's urgent rows in the activity log. Calling is cut, see design-system gap 1. |
+| `alert` | **Full-screen red alert**: the newest red card, bigger, with Lola's exact words, and a loud alarm once a second until **Papunta na ako / On my way** (or a short recording) on that card. That sends `urgent_reply`; the card leaves the red state. An `urgent_reply` from the hub (another phone answered) also stops it. The sound stops by itself after 2 minutes; the red screen stays. See [Alerts](#alerts). The same button is on today's urgent rows in the activity log. Calling is cut, see design-system gap 1. |
+| `urgent_reply` | Stops the alarm and closes the full-screen red; the red cards leave the red state. |
 | `ask_caregiver` | Quiet yellow card. Repeats of the same words share one card ("2 times since …"). **Record a reply** opens the recorder. |
 | `decided` (comfort) | Green "Answered" card, with whose voice played (looked up by `reply_id` in the questions file). |
 | `ask_about_lola` → `about_lola` | **Sino AI** tab: three fixed questions (design-system gap 4, no free-text box) worded to match `brain/ask.py`'s rules. Answers show as a chat thread with where they came from and the seconds taken. On the fake feed a local copy of ask.py's logic answers (`src/data/askLocal.ts`). No answer in 15 s says so. |
@@ -34,6 +35,21 @@ npm run dev            # fake feed: http://localhost:5173/
 | `GET /questions` | The family wall (one frame per `speaker`) and "What Sino knows". |
 
 Also: Tagalog / English / Both (`src/i18n/tl.ts`, `en.ts`), text size A / A+ / A++, times in words.
+
+## Alerts
+
+Since Sat ~8:05 AM (Donita) the urgent alarm rings on this phone, not on the hub laptop (the laptop chime plays only with `CHIME=1`, [hub-chime.md](../../docs/sino/hub-chime.md)). With no internet there is no push, so this page must be open.
+
+1. Open `/caregiver/?feed=hub` from the hub in Safari and tap **Buksan ang abiso / Turn on alerts** once. That tap allows sound, asks the iPhone to ring even when the ring/silent switch is on silent (`navigator.audioSession.type = 'playback'`, where Safari has it), and asks for a screen wake lock so the screen stays on. The bar then says **Bukas ang abiso / Alerts on**. If the phone can't keep the screen on, the bar says so: set Auto-Lock to **Never** (Settings › Display & Brightness › Auto-Lock), or use Guided Access.
+2. Keep the page open and in front, with the volume up. A reload needs the tap again. When the page comes back after being hidden, it asks for the wake lock again and checks the sound; if sound is blocked, **Turn on alerts** shows again.
+3. On `alert`: full-screen red with Lola's words and a high-low tone once a second (square waves, 1400 Hz then 1050 Hz, level 0.8; Web Audio, no file). A second alert while it rings only shows the new words; it never starts a second alarm.
+4. It rings until **Papunta na ako / On my way** (or a voice reply) on the red card, or an `urgent_reply` from the hub. While a voice reply is recording the beeps pause, so the recording does not catch the alarm. Safety cap: the sound stops after **2 minutes**; the red screen stays until someone answers.
+
+Limits: if the phone is locked or Safari is closed, it cannot ring (no push offline). Older iOS may still follow the ring/silent switch: keep the switch on ring for the demo. Next step: a native app with lock-screen alerts.
+
+On the fake feed there is no **Turn on alerts** bar; the scripted "Masakit dibdib ko" opens the same full-screen alert, and the first tap anywhere allows sound.
+
+Not tested on the iPhone yet. Measured on desktop Chrome only (Sat Oct 10, rendered offline, nothing played): one beep peaks at 0.79 of full scale (under clipping), and its average level (RMS) over one second is about 11 times the old two-note tone's (+21 dB). How loud that is on the iPhone speaker is to verify.
 
 ## Where the 7 days come from
 
@@ -55,13 +71,14 @@ src/
   types.ts             interface shapes (Question, Health, events) + card types
   data/hub.ts          /ws via web/fake-feed, GET and POST /questions
   data/log.ts          events -> cards
-  data/recorder.ts     MediaRecorder + live waveform levels
-  data/urgentSound.ts  the urgent tone (Web Audio, no file)
+  data/recorder.ts     MediaRecorder + live waveform levels (tells urgentSound.ts while it has the mic)
+  data/urgentSound.ts  the urgent alarm: two tones once a second, 2-minute cap, rings on silent (Web Audio, no file)
+  feed/monitor.ts      Turn on alerts: unlock sound + screen wake lock, checked again when the page is visible
   data/safetyWords.ts  copy of URGENT_STEMS
   data/askLocal.ts     fake-feed answers for Sino AI (mirrors brain/ask.py) + keyword intent for typed questions
   data/history.ts      7-day log on this phone (localStorage), sample days for the fake feed
   i18n/                tl.ts, en.ts, helpers (one / two / btn / head), times in words
-  components/          Frame (MemoryFrame), SalaScene, Cards (urgent, needs, done), SummaryChips, TopBar, TabBar, bits
+  components/          Frame (MemoryFrame), SalaScene, Cards (urgent, needs, done), Alarm (Turn on alerts bar, full-screen red), SummaryChips, TopBar, TabBar, bits
   screens/             Home, Family, Ask (Sino AI), Activity, Receipt, Knows, Person, Record, AddPerson, Account
   styles/              tokens.css (design-system Appendix A), app.css
   assets/fonts/        Fredoka 500/600, DM Sans 400/700 (SIL OFL, Fontsource 5.3.0)

@@ -2,7 +2,10 @@
 
 Spec: docs/sino/hub-chime.md. brain/server.py calls play_chime() at the moment the `alert`
 goes to /caregiver. /lola never gets a chime. Only brain/server.py main() calls
-enable_chime(), so tests that import the app never make a sound. CHIME=0 keeps it off.
+enable_chime(), so tests that import the app never make a sound.
+
+Off by default (Donita, Sat ~8:05 AM): the urgent alarm now rings on the caregiver iPhone.
+CHIME=1 turns this laptop chime back on as a backup.
 """
 
 import os
@@ -43,7 +46,8 @@ def _start(cmd):
 def play_chime():
     """Start one alarm without blocking. Never raises: a sound problem must not stop the alert."""
     global _alarm
-    if not ENABLED or os.environ.get("CHIME") == "0":
+    # Plays only when the hub process enabled it AND CHIME is exactly "1" (off when unset).
+    if not ENABLED or os.environ.get("CHIME") != "1":
         return
     try:
         # poll() is None while the process is still running: that alarm is still sounding, skip.

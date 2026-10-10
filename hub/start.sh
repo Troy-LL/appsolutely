@@ -21,6 +21,7 @@ CERT="${CERT:-$HOME/sino/certs/hub.pem}"
 KEY="${KEY:-$HOME/sino/certs/hub-key.pem}"
 PORT="${PORT:-8000}"
 ALWAYS_LISTEN="${ALWAYS_LISTEN:-0}"   # 1 = the hub mic listens all the time (hub/always.py)
+CHIME="${CHIME:-0}"   # 1 = the laptop also plays the urgent chime (hub/chime.py); urgent rings on the caregiver iPhone
 RUN_DIR="${RUN_DIR:-$HOME/sino/run}"    # PID files of what this script started
 LOG_DIR="${LOG_DIR:-$HOME/sino/logs}"   # one log file per part
 
@@ -164,7 +165,7 @@ do_start() {
     fail "Hub server" "certificate missing ($CERT, $KEY)"
   else
     (cd "$ROOT" && launch server env HOST=0.0.0.0 PORT="$PORT" SINO_MODEL=ollama \
-      ALWAYS_LISTEN="$ALWAYS_LISTEN" HUB_URL="$OLLAMA_URL" CERT="$CERT" KEY="$KEY" "$PY" brain/server.py)
+      ALWAYS_LISTEN="$ALWAYS_LISTEN" CHIME="$CHIME" HUB_URL="$OLLAMA_URL" CERT="$CERT" KEY="$KEY" "$PY" brain/server.py)
   fi
 
   # 4. Wait for each part to answer (WAIT_SECONDS in total, not per part).
@@ -241,6 +242,12 @@ do_status() {
     say "  Always-listening: ON (shell env; hub not answering)"
   else
     say "  Always-listening: OFF (set ALWAYS_LISTEN=1 and restart to turn on)"
+  fi
+  # From this shell's CHIME (the hub's /health has no chime field).
+  if [ "$CHIME" = "1" ]; then
+    say "  Laptop chime: ON"
+  else
+    say "  Laptop chime: OFF (urgent rings on the caregiver iPhone; CHIME=1 and restart to turn on)"
   fi
   if pid="$(running_pid keep-warm)"; then
     say "  OK    Keep-warm loop (pid $pid)"

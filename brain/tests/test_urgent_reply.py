@@ -26,8 +26,11 @@ os.environ["SINO_SEED"] = str(TMP / "data" / "questions.json")
 os.environ["SINO_MODEL"] = "stub"
 os.environ["SINO_LOG"] = str(TMP / "decisions.jsonl")
 os.environ["OFFLINE_PROBE"] = "http://127.0.0.1:9"
-for name in ("CERT", "KEY", "CHIME"):
+for name in ("CERT", "KEY"):
     os.environ.pop(name, None)
+# The laptop chime is off unless CHIME=1 (hub/chime.py). Turn it on here so this test can
+# check that urgent_reply stops it. chime._start is still a fake: no sound.
+os.environ["CHIME"] = "1"
 sys.path.insert(0, str(ROOT / "brain"))
 
 import uvicorn  # noqa: E402
