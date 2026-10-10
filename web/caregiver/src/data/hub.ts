@@ -82,6 +82,8 @@ export function idFor(text: string): string {
 
 // POST /questions as multipart (architecture.md, "POST /questions field encoding").
 // One tap on a yellow card: Lola's words become a question, the recording its reply.
+// play_now=1 asks the hub to also play the reply on Lola's iPad right away.
+// Only this yellow-card reply sends it; other POST /questions callers just save.
 export async function saveReply(opts: { transcript: string; speaker: string; audio: Blob }): Promise<Question | 'fake'> {
   if (!USING_HUB) return 'fake'
   const ext = opts.audio.type.includes('mp4') ? 'm4a' : opts.audio.type.includes('ogg') ? 'ogg' : 'webm'
@@ -92,6 +94,7 @@ export async function saveReply(opts: { transcript: string; speaker: string; aud
   form.append('phrasings', opts.transcript.slice(0, 300))
   form.append('speaker', opts.speaker.slice(0, 60))
   form.append('reply_audio', opts.audio, `${id}-reply.${ext}`)
+  form.append('play_now', '1')
   const res = await fetch('/questions', { method: 'POST', body: form })
   if (!res.ok) {
     let why = `HTTP ${res.status}`

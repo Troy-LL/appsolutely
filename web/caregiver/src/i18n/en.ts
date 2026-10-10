@@ -61,6 +61,7 @@ export const en: Record<keyof typeof tl, string> = {
   saveFailed: "Not saved to the box: {why}. Try again.",
   fakeSaved: 'Fake feed: not sent to the box.',
   tip: "About 10 seconds or less. Speak as if she's right there.",
+  hearsNow: 'Lola will hear this right away.',
   personReplies: "{name}'s replies",
   recordedReplies: '{n} recorded replies',
   noAudioYet: 'No recording yet',
