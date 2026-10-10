@@ -42,7 +42,7 @@ Sino lets the family answer once and keep answering. They record what they want 
 ## How it works
 
 ```mermaid
-flowchart LR
+flowchart TD
     A["iPad / hub mic"] --> B["whisper.cpp<br/>(speech to text, Tagalog)"]
     B --> C["Safety rules +<br/>known-question matcher"]
     C -->|unclear lines only| D["Qwen2.5 3B<br/>(Ollama)"]
@@ -67,9 +67,9 @@ Everything in that picture runs inside the house, on one Mac acting as the hub. 
 | **Backstage** (`/backstage`) | Mac | Every decision, line by line, with an OFFLINE badge, a health light for each part, and a box to type a test question. |
 
 <p align="center">
-  <img src="web/caregiver/shots/home-red-yellow.png" alt="Caregiver phone with a red urgent card and a yellow meal card" width="300">
+  <img src="web/caregiver/shots/home-red-yellow.png" alt="Caregiver phone with a red urgent card and a yellow meal card" height="320">
   &nbsp;&nbsp;
-  <img src="web/backstage/proof-hub.png" alt="Backstage log showing a question decided by a rule" width="520">
+  <img src="web/backstage/proof-hub.png" alt="Backstage log showing a question decided by a rule" height="320">
 </p>
 <p align="center"><sub>Left: the caregiver phone with an urgent card and a "no meal logged" card. Right: backstage, showing a rule decide a known question.</sub></p>
 
@@ -80,7 +80,8 @@ Everything in that picture runs inside the house, on one Mac acting as the hub. 
 **On your own machine, no models needed:**
 
 ```bash
-SINO_MODEL=stub python3 brain/tests/run_t5.py     # the decision rules, standard library only
+# the decision rules, standard library only
+SINO_MODEL=stub python3 brain/tests/run_t5.py
 ```
 
 ## Run it at home
@@ -108,14 +109,17 @@ Sources: [DONITA-SETUP.md](docs/sino/DONITA-SETUP.md), [hub/start.sh](hub/start.
 3. **Hub packages:**
    ```bash
    python3 -m venv ~/sino/hub-venv
-   ~/sino/hub-venv/bin/pip install fastapi 'uvicorn[standard]' python-multipart websockets
+   ~/sino/hub-venv/bin/pip install \
+       fastapi 'uvicorn[standard]' python-multipart websockets
    ```
    Face match and the recorded-clip search also need `~/sino/hub-venv/bin/pip install -r brain/requirements.txt` (OpenCV). Without it, face match reports `engine: "missing"` and saves nothing.
 4. **Caregiver screen:** `cd web/caregiver && npm ci && npm run build`.
 5. **HTTPS certificate** (Safari only allows the iPad mic over HTTPS):
    ```bash
    mkcert -install && mkdir -p ~/sino/certs
-   mkcert -cert-file ~/sino/certs/hub.pem -key-file ~/sino/certs/hub-key.pem <hub-ip> localhost
+   mkcert -cert-file ~/sino/certs/hub.pem \
+          -key-file ~/sino/certs/hub-key.pem \
+          <hub-ip> localhost
    ```
    AirDrop `rootCA.pem` (in the folder `mkcert -CAROOT` prints) to the iPad and iPhone, install it, and trust it under Settings → General → About → Certificate Trust Settings.
 
@@ -124,9 +128,9 @@ Sources: [DONITA-SETUP.md](docs/sino/DONITA-SETUP.md), [hub/start.sh](hub/start.
 **Run**, from the repo root:
 
 ```bash
-hub/start.sh          # start everything, load qwen2.5:3b, print the health light
-hub/start.sh status   # health light only
-hub/start.sh stop     # stop what start.sh started
+hub/start.sh        # start everything, load qwen2.5:3b, print the health light
+hub/start.sh status # health light only
+hub/start.sh stop   # stop what start.sh started
 ```
 
 Then open the screens on the same network:
@@ -161,7 +165,7 @@ node web/lola/mic.test.mjs
 
 ## Team
 
-| | |
+| Builder | GitHub |
 |---|---|
 | **Troy Lazaro** | [@Troy-LL](https://github.com/Troy-LL) |
 | **Donita Salonga** | [@DonitaSalonga](https://github.com/DonitaSalonga) |
