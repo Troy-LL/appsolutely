@@ -1,10 +1,11 @@
-"""Hub copy of the questions list (D5): add or re-record one question and store its files.
+"""Hub copy of the questions list (D5): add, re-record, or remove one question.
 
 brain/seed.json is never changed. The hub works on hub/data/questions.json (copied from
 the seed the first time) and keeps uploaded replies and photos in hub/data/media/,
 served at /media/<file>. HUB_DATA overrides the data folder (tests use a temp folder).
 Default recordings ship in brain/media/ and are copied into hub/data/media/ when missing;
 empty reply_audio/photo fields in an existing working copy are filled from the seed.
+A question whose id is in the seed stays. delete_question only removes one the family added.
 """
 
 import copy
@@ -27,6 +28,7 @@ MAX_TEXT = 300
 MAX_PHRASINGS = 10
 MAX_SPEAKER = 60
 MAX_QUESTIONS = 50
+BUILT_IN = "built-in questions stay"
 
 
 class BadInput(ValueError):
@@ -213,3 +215,52 @@ def save_question(fields, audio=None, photo=None):
     text = json.dumps(entries, ensure_ascii=False, indent=2) + "\n"
     _write_atomic(questions_path(), text.encode("utf-8"))
     return entry
+
+
+def seed_ids():
+    """Ids that shipped in brain/seed.json. Missing or unreadable seed refuses a delete."""
+    try:
+        data = json.loads(SEED.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise BadInput("could not read the built-in questions") from exc
+    if isinstance(data, dict):
+        data = data.get("questions")
+    if not isinstance(data, list):
+        raise BadInput("could not read the built-in questions")
+    return {entry.get("id") for entry in data if isinstance(entry, dict)}
+
+
+def _owned_media(qid, value):
+    # Only this question's own reply or photo, never a path that leaves media/.
+    if not isinstance(value, str) or not value.startswith("/media/"):
+        return ""
+    name = Path(value).name
+    if name.startswith(f"{qid}-reply") or name.startswith(f"{qid}-photo"):
+        return name
+    return ""
+
+
+def delete_question(qid):
+    """Remove one family-added question from the working copy. Returns the removed object.
+
+    An id from brain/seed.json raises BadInput and writes nothing. An unknown id raises KeyError.
+    """
+    if not (isinstance(qid, str) and ID_PATTERN.fullmatch(qid)):
+        raise BadInput("id must be 1-64 of a-z, 0-9, -")
+    if qid in seed_ids():
+        raise BadInput(BUILT_IN)
+    entries = read_questions()
+    removed = next((entry for entry in entries if entry.get("id") == qid), None)
+    if removed is None:
+        raise KeyError(qid)
+    kept = [entry for entry in entries if entry.get("id") != qid]
+    text = json.dumps(kept, ensure_ascii=False, indent=2) + "\n"
+    _write_atomic(questions_path(), text.encode("utf-8"))
+    for key in MEDIA_FIELDS:
+        name = _owned_media(qid, removed.get(key))
+        if not name:
+            continue
+        path = media_dir() / name
+        if path.is_file():
+            path.unlink()
+    return removed

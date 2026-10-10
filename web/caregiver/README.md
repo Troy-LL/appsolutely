@@ -42,7 +42,7 @@ The hub has no route for past days, so on `?feed=hub` this phone keeps its own c
 ## Not connected yet (UI only, said on screen)
 
 - **Add a family member** keeps the new frame on this phone only. The hub has people only as a question's `speaker`; their replies are added in `/setup`.
-- **What Sino knows** is read-only: there is no delete route, so each question's trash button says so on screen and deletes nothing. Safety words are copied from `brain/decide.py` (`URGENT_STEMS`), keep in sync.
+- **What Sino knows** can remove a question the family added (`DELETE /questions/{id}`). The trash turns red while it is pressed and while it asks "Burahin? / Delete?"; the card leaves at once and comes back if the hub refuses. A built-in question (an id in `brain/seed.json`) stays, and the card says so. Safety words are copied from `brain/decide.py` (`URGENT_STEMS`), keep in sync.
 - The caregiver's name is a placeholder (`ME` in `src/App.tsx`). TODO.
 - Not built (Should items, after the freeze): "Kumain na", recap counts.
 - The tab bar order is Home, Family, Sino AI, Activity log, Sino knows. The amber number on Activity is how many cards need you. The day receipt opens from Activity; your account from the initial tile in the top bar.

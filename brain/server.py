@@ -46,7 +46,8 @@ except ImportError:
 # hub/questions.py (Donita, D5) stores new questions and their files. Appended last so brain/ wins.
 sys.path.append(str(Path(__file__).resolve().parent.parent / "hub"))
 from questions import (  # noqa: E402
-    MAX_BYTES, BadInput, ensure_working_copy, install_seed_media, media_dir, save_question,
+    MAX_BYTES, BadInput, delete_question, ensure_working_copy, install_seed_media, media_dir,
+    save_question,
 )
 # hub/listen.py (Donita, D4): listen now records the hub mic, runs Whisper and the junk filter.
 from listen import enable_mic, mic_ok, start_listen  # noqa: E402
@@ -530,6 +531,20 @@ async def add_question(request: Request):
         return save_question(fields, audio, photo)
     except BadInput as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
+
+
+@app.delete("/questions/{qid}")
+async def remove_question(qid: str):
+    try:
+        removed = delete_question(qid)
+    except BadInput as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except KeyError:
+        return JSONResponse({"error": "no question with that id"}, status_code=404)
+    event = {"event": "question_removed", "id": removed.get("id", qid)}
+    for screen in SCREENS:
+        await hub.send_to(screen, event)
+    return removed
 
 
 @app.get("/safety-words")

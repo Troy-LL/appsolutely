@@ -45,6 +45,29 @@ export async function loadQuestions(): Promise<Question[]> {
   return (await res.json()) as Question[]
 }
 
+// Ids that shipped in brain/seed.json. Those stay; only a question the family added can go.
+export function isBuiltIn(id: string): boolean {
+  return (seed as Question[]).some((q) => q.id === id)
+}
+
+// DELETE /questions/{id}. 404 means it is already gone. A built-in id throws the hub's error.
+export async function deleteQuestion(id: string): Promise<void> {
+  if (!USING_HUB) {
+    if (isBuiltIn(id)) throw new Error('built-in questions stay')
+    return
+  }
+  const res = await fetch(`/questions/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  if (res.ok || res.status === 404) return
+  let why = `HTTP ${res.status}`
+  try {
+    const body = (await res.json()) as { error?: string }
+    if (body.error) why = body.error
+  } catch {
+    /* keep the status code */
+  }
+  throw new Error(why)
+}
+
 // Turn Lola's words into an id the hub accepts (1-64 of a-z 0-9 -).
 export function idFor(text: string): string {
   const id = text
