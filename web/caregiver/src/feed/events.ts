@@ -74,6 +74,70 @@ export function readAbout(event: HubEvent): AboutLola | null {
   }
 }
 
+function atMs(row: Record<string, unknown>): number {
+  if (typeof row.ts === 'string') {
+    const parsed = Date.parse(row.ts)
+    if (!Number.isNaN(parsed)) return parsed
+  }
+  if (typeof row.at === 'string') {
+    const match = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(row.at.trim())
+    if (match) {
+      let hour = Number(match[1]) % 12
+      if (match[3].toUpperCase() === 'PM') hour += 12
+      const day = new Date()
+      day.setHours(hour, Number(match[2]), 0, 0)
+      return day.getTime()
+    }
+  }
+  return Date.now()
+}
+
+export function entriesFromLog(rows: unknown[]): Entry[] {
+  const out: Entry[] = []
+  rows.forEach((row, i) => {
+    if (!row || typeof row !== 'object') return
+    const item = row as Record<string, unknown>
+    const id = `log-${i}`
+    if (item.event === 'meal_logged') {
+      out.push({
+        id,
+        kind: 'note',
+        transcript: 'Kumain',
+        label: ['Kumain', 'Ate a meal'],
+        preset: 'ate',
+        at: atMs(item),
+        count: 1,
+        sentToHub: true,
+      })
+      return
+    }
+    if (item.event === 'urgent_reply') {
+      for (const entry of out) if (entry.kind === 'urgent') entry.kind = 'seen'
+      return
+    }
+    if (typeof item.transcript !== 'string' || typeof item.action !== 'string') return
+    const at = atMs(item)
+    if (item.action === 'comfort') {
+      const who = str(item.who)
+      out.push({
+        id,
+        kind: 'answered',
+        transcript: item.transcript,
+        at,
+        count: 1,
+        replyId: str(item.reply_id) || undefined,
+        who: who || undefined,
+        replyVariant: variantOf(item.reply_variant),
+      })
+    } else if (item.action === 'caregiver') {
+      out.push({ id, kind: 'needs', transcript: item.transcript, at, firstAt: at, count: 1 })
+    } else if (item.action === 'urgent') {
+      out.push({ id, kind: 'urgent', transcript: item.transcript, at, count: 1 })
+    }
+  })
+  return out.sort((a, b) => b.at - a.at)
+}
+
 export function applyHubEvent(state: FeedLog, event: HubEvent, at: number): FeedLog {
   if (event.event === 'health') return { ...state, health: event as unknown as Health }
   if (event.event === 'alert') {

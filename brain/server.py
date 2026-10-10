@@ -65,8 +65,8 @@ except ImportError:
 # hub/questions.py (Donita, D5) stores new questions and their files. Appended last so brain/ wins.
 sys.path.append(str(Path(__file__).resolve().parent.parent / "hub"))
 from questions import (  # noqa: E402
-    AUDIO_EXTS, MAX_BYTES, BadInput, delete_question, ensure_working_copy, install_seed_media, media_dir,
-    save_question, set_by_person_photo_if_empty,
+    AUDIO_EXTS, MAX_BYTES, BadInput, data_dir, delete_question, ensure_working_copy, install_seed_media,
+    media_dir, save_question, set_by_person_photo_if_empty,
 )
 # hub/listen.py (Donita, D4): listen now records the hub mic, runs Whisper and the junk filter.
 from listen import enable_mic, mic_ok, start_listen  # noqa: E402
@@ -119,6 +119,7 @@ def append_decision(text, result):
         "latency_ms": result.get("latency_ms", 0),
         "source": result.get("source", ""),
         "ignored": result.get("ignored", ""),
+        "ts": datetime.now().astimezone().isoformat(timespec="seconds"),
     }
     for key in ("reply_variant", "last_meal_ts", "food_asks_since_meal"):
         if key in result:
@@ -150,6 +151,58 @@ def append_urgent_reply(speaker):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def urgent_ack_path():
+    return data_dir() / "urgent-ack.json"
+
+
+def save_urgent_ack(active, transcript, reply):
+    payload = {
+        "active": bool(active),
+        "transcript": transcript if isinstance(transcript, str) else "",
+        "reply": reply if isinstance(reply, dict) else None,
+    }
+    path = urgent_ack_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False) + "\n", encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def load_urgent_ack():
+    path = urgent_ack_path()
+    if not path.is_file():
+        return False, "", None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False, "", None
+    if not isinstance(data, dict):
+        return False, "", None
+    transcript = data.get("transcript") if isinstance(data.get("transcript"), str) else ""
+    reply = data.get("reply") if isinstance(data.get("reply"), dict) else None
+    if reply is not None:
+        reply = reply_fields(reply)
+    return bool(data.get("active")), transcript, reply
+
+
+def restore_urgent():
+    active, transcript, reply = load_urgent_ack()
+    hub.alert_active = active
+    hub.urgent_transcript = transcript
+    hub.lola_reply = None
+    hub.lola_reply_got = set()
+    if reply and not active:
+        hub.lola_reply = {"event": "urgent_reply", **reply}
+
+
+def _log_snapshot():
+    logged = read_log()
+    rows = logged.get("entries") if isinstance(logged, dict) else None
+    if not isinstance(rows, list) or not rows:
+        return None
+    return {"event": "log", "entries": rows}
 
 
 def _media_path(path):
@@ -329,6 +382,7 @@ class Hub:
         self._offline = None
         self._offline_checked = 0.0
         self.alert_active = False
+        self.urgent_transcript = ""
         self.lola_reply = None
         self.lola_reply_got = set()
         self.monitors = set()
@@ -443,6 +497,10 @@ class Hub:
             else:
                 audio, photo = media_for(result["reply_id"])
                 speaker = speaker_for(result["reply_id"])
+                if result.get("reply_id") == "sino-ka" and not photo:
+                    troy = _person_entry("troy")
+                    if troy is not None and troy[1]:
+                        photo = troy[1]
             await self.send_to("lola", {
                 "event": "play_reply",
                 "reply_id": result["reply_id"],
@@ -461,6 +519,8 @@ class Hub:
             self.alert_active = True
             self.lola_reply = None
             self.lola_reply_got = set()
+            self.urgent_transcript = text
+            save_urgent_ack(True, text, None)
             play_chime()  # hub speaker, returns at once (docs/sino/hub-chime.md); never /lola
             deafen_for_chime()  # always-listening ignores the hub mic while the chime plays
             await self.send_to("caregiver", {"event": "alert", "transcript": text})
@@ -530,6 +590,7 @@ class Hub:
         self.lola_reply = payload
         self.lola_reply_got = set()
         append_urgent_reply(fields["speaker"])
+        save_urgent_ack(False, "", fields)
         if fields["reply_audio"]:
             deafen_for_reply()
         for screen in SCREENS:
@@ -594,6 +655,7 @@ hub = Hub()
 
 @asynccontextmanager
 async def lifespan(_app):
+    restore_urgent()
     hub.queue = asyncio.Queue()
     worker = asyncio.create_task(hub.worker())
     watch = asyncio.create_task(hub.watch_health())
@@ -628,6 +690,11 @@ def health():
 @app.get("/questions")
 def questions():
     return load_seed()
+
+
+@app.get("/log")
+def activity_log():
+    return read_log()
 
 
 async def _upload(part):
@@ -767,6 +834,10 @@ async def socket(websocket: WebSocket):
     try:
         payload = await asyncio.to_thread(hub.health_payload)
         await websocket.send_text(json.dumps(payload, ensure_ascii=False))
+        if screen in ("caregiver", "backstage"):
+            snap = await asyncio.to_thread(_log_snapshot)
+            if snap:
+                await websocket.send_text(json.dumps(snap, ensure_ascii=False))
         if screen == "lola":
             await hub.replay_lola(websocket)
         while True:
@@ -902,7 +973,7 @@ def _gallery_or_none():
         return _gallery
     _gallery_tried = True
     try:
-        _gallery = load_gallery()
+        _gallery = load_gallery(str(gallery_path()))
     except Exception:
         _gallery = None
     return _gallery
@@ -996,11 +1067,15 @@ async def face_enroll(person: str, request: Request):
         except Exception:
             _gallery = None
         _gallery_tried = True
+    photo = None
     if first:
         try:
-            set_by_person_photo_if_empty(person, first)
+            photo = set_by_person_photo_if_empty(person, first)
         except Exception:
-            pass
+            photo = None
+    if isinstance(photo, str) and photo:
+        body["photo"] = photo
+        await hub.send_to("caregiver", {"event": "face_photo", "person": person, "photo": photo})
     return body
 
 

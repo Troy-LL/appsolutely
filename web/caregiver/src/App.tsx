@@ -4,7 +4,7 @@ import { makeT } from './i18n/i18n'
 import { initialLog, logReducer } from './data/log'
 import { deleteQuestion, loadQuestions, loadSafetyWords, postUrgentReply, useFeed, USING_HUB } from './data/hub'
 import { SAFETY_WORDS } from './data/safetyWords'
-import { readAbout } from './feed/events'
+import { entriesFromLog, readAbout } from './feed/events'
 import { startMonitoring } from './feed/monitor'
 import type { LinkStatus } from './feed/connect'
 import { useUrgentSound } from './data/urgentSound'
@@ -25,7 +25,7 @@ import { AccountScreen } from './screens/AccountScreen'
 import { MonitorScreen } from './screens/MonitorScreen'
 import { CalibrateScreen } from './screens/CalibrateScreen'
 import { emptyLive, reduceLive, type LiveState } from './feed/live'
-import { faceId } from './data/faceEnroll'
+import { faceId, photoFor } from './data/faceEnroll'
 import { bindHoldRed } from './hold'
 
 // TODO: the caregiver's name should come from setup. Placeholder until then.
@@ -132,6 +132,14 @@ export default function App() {
       setQuestions((list) => (list ? list.filter((item) => item.id !== id) : list))
       return
     }
+    if (event.event === 'face_photo') {
+      refreshQuestions()
+      return
+    }
+    if (event.event === 'log' && Array.isArray(event.entries)) {
+      dispatch({ type: 'hubLog', entries: entriesFromLog(event.entries) })
+      return
+    }
     const about = readAbout(event)
     if (about) {
       answer(about)
@@ -154,15 +162,20 @@ export default function App() {
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 60_000); return () => window.clearInterval(id) }, [])
   useUrgentSound(log.entries.some((e) => e.kind === 'urgent'))
 
-  // Last 7 days: restore what this phone saved (real hub), or sample days (fake feed).
+  // Phone notes stay on this phone. Decisions and meals are loaded from the hub after that.
+  const [notesReady, setNotesReady] = useState(false)
   useEffect(() => {
-    const entries = USING_HUB ? loadSaved() : demoHistory()
+    const entries = USING_HUB ? loadSaved().filter((e) => e.id.startsWith('note-') && !e.sentToHub) : demoHistory()
     if (shot === 'hold' && !USING_HUB) {
       entries.unshift({ id: 'shot-needs', kind: 'needs', transcript: 'Nasaan yung aso?', at: Date.now(), count: 1 })
     }
     dispatch({ type: 'load', entries })
+    setNotesReady(true)
   }, [shot])
-  useEffect(() => { if (USING_HUB) save(log.entries) }, [log.entries])
+  useEffect(() => {
+    if (!USING_HUB || !notesReady) return
+    save(log.entries.filter((e) => e.id.startsWith('note-') && !e.sentToHub))
+  }, [log.entries, notesReady])
   const [lastNote, setLastNote] = useState<Entry | null>(null)
   const addNote = (label: [string, string], preset: string) => {
     const sentToHub = preset === 'ate' && USING_HUB
@@ -183,7 +196,11 @@ export default function App() {
     const names: string[] = []
     for (const e of entries) if (e.kind === 'answered' && e.speaker && !names.includes(e.speaker)) names.push(e.speaker)
     for (const q of questions ?? []) if (q.speaker && !names.includes(q.speaker)) names.push(q.speaker)
-    const fromHub = names.map((name, i) => ({ name, color: WALL_COLORS[i % WALL_COLORS.length] }))
+    const fromHub = names.map((name, i) => ({
+      name,
+      color: WALL_COLORS[i % WALL_COLORS.length],
+      photo: photoFor(name, questions) || undefined,
+    }))
     return [...fromHub, ...added]
   }, [entries, questions, added])
   // Home, Sino AI and the receipt are about today; the activity log can look back 7 days.
@@ -371,6 +388,7 @@ export default function App() {
 
       {screen === 'calibrate' && calibrateId ? (
         <CalibrateScreen t={t} name={person?.name ?? personName} personId={calibrateId} onBack={back}
+          onEnrolled={refreshQuestions}
           preview={calPreview(shot)} />
       ) : null}
 
