@@ -55,6 +55,7 @@ The family's whole setup, and the live proof that the family wrote the replies:
 - Live log.
 - **Red (urgent):** card with Lola's exact words. The only card that makes a sound.
 - **Yellow (caregiver):** quiet card, repeats grouped ("Lola asked about the aso 3×"), with one-tap record-a-reply.
+- **Record-a-reply plays at once (Donita, Sat ~9:30 AM):** a reply recorded on a yellow card now plays on Lola's iPad right away (`play_now=1` on `POST /questions`) and is saved for the next time she asks. Quick setup never plays. To verify on the iPad.
 - **Green (comforted):** quiet log entry.
 - `/caregiver` only receives alerts while it is open on the hub's local network. There are no push notifications with the internet off (iOS push needs Apple's servers).
 - **Safety words:** the card lists the built-in urgent words. A + chip at the end of that list adds one more (see M2). Built-in words stay.

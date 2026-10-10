@@ -101,6 +101,15 @@ async def _recv_event(ws, name, timeout=3):
             return msg
 
 
+async def _no_event(ws, name, timeout=0.5):
+    # True when no `name` event arrives within `timeout` seconds.
+    try:
+        await _recv_event(ws, name, timeout)
+    except asyncio.TimeoutError:
+        return True
+    return False
+
+
 def _passed(done, name):
     done.append(name)
     print(f"{name}: PASS")
@@ -216,6 +225,24 @@ async def _cases(port, done):
     _check("g", SEED.read_bytes() == seed_bytes)
     _passed(done, "g DELETE removes an added question and keeps the seed")
 
+    # (h) play_now=1 (a reply to a yellow card) plays on Lola's screen at once; without it, nothing.
+    form = [("id", "nasaan-ang-salamin"), ("question", "Nasaan ang salamin?"),
+            ("phrasings", "Nasaan ang salamin?"), ("speaker", "Donita")]
+    async with websockets.connect(f"ws://127.0.0.1:{port}/ws?screen=lola") as lola:
+        await _recv_event(lola, "health")
+        status, quiet = _post_question(port, form, [("reply_audio", "r.webm", AUDIO_1)])
+        _check("h", status == 200, quiet)
+        _check("h", await _no_event(lola, "play_reply"), "play_reply without play_now")
+        status, saved = _post_question(port, form + [("play_now", "1")],
+                                       [("reply_audio", "r.webm", AUDIO_2)])
+        _check("h", status == 200 and saved == quiet, saved)
+        play = await _recv_event(lola, "play_reply")
+    _check("h", play == {"event": "play_reply", "reply_id": "nasaan-ang-salamin",
+                         "reply_audio": "/media/nasaan-ang-salamin-reply.webm", "photo": "",
+                         "speaker": "Donita"}, play)
+    _check("h", _request(port, play["reply_audio"]) == (200, AUDIO_2))
+    _passed(done, "h play_now=1 plays the reply on Lola's screen; without it, silent")
+
 
 async def _run():
     port = _free_port()
@@ -233,8 +260,8 @@ async def _run():
         runner.should_exit = True
         thread.join(timeout=5)
         shutil.rmtree(TMP, ignore_errors=True)
-    print(f"PASS {len(done)}/8")
-    return len(done) == 8
+    print(f"PASS {len(done)}/9")
+    return len(done) == 9
 
 
 if __name__ == "__main__":
