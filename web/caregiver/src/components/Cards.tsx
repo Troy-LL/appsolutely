@@ -1,12 +1,24 @@
 // The three kinds of moment on the caregiver phone (design system: LogEntry).
 // Status is always mark + word + colour.
+import { useEffect, useRef } from 'react'
 import type { Entry } from '../types'
 import { timeBoth, timeInWords, type T } from '../i18n/i18n'
 import { USING_HUB } from '../data/hub'
+import { useRecorder } from '../data/recorder'
 import { mealKey, voiceOf } from '../feed/events'
 
-export function UrgentCard({ t, entry, onRead }: { t: T; entry: Entry; onRead: () => void }) {
+export function UrgentCard({ t, entry, onReply }: { t: T; entry: Entry; onReply: (audio?: Blob) => void }) {
+  const rec = useRecorder()
+  const onReplyRef = useRef(onReply)
+  const sentVoice = useRef(false)
+  onReplyRef.current = onReply
+  useEffect(() => {
+    if (sentVoice.current || rec.state !== 'done' || !rec.blob) return
+    sentVoice.current = true
+    onReplyRef.current(rec.blob)
+  }, [rec.state, rec.blob])
   const h = t.head('urgentHead')
+  const micLabel = rec.state === 'recording' ? t.btn('stopBtn') : t.btn('recordBtn')
   return (
     <section className="sn-urgent" aria-label={h.main} role="alert">
       <p className="sn-urgent__head">
@@ -24,8 +36,9 @@ export function UrgentCard({ t, entry, onRead }: { t: T; entry: Entry; onRead: (
       <div className="sn-urgent__meta">
         <span className="sn-urgent__tag"><i aria-hidden="true">✓</i><span className="pl">{t.two('ipadSame')}</span></span>
       </div>
-      {/* docs/sino/design-system.md gap 1: calling is cut, so the one action is "Mark as read" (TODO: Troy) */}
-      <button type="button" className="sn-btn sn-btn--wide sn-btn--big" onClick={onRead}>{t.btn('markRead')}</button>
+      <button type="button" className="sn-btn sn-btn--wide sn-btn--big" onClick={() => onReply()}>{t.btn('onMyWay')}</button>
+      <button type="button" className="sn-btn sn-btn--wide" style={{ marginTop: 10 }}
+        onClick={() => (rec.state === 'recording' ? rec.stop() : void rec.start())}>{micLabel}</button>
     </section>
   )
 }

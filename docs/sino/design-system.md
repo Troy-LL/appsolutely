@@ -390,7 +390,7 @@ Lola's iPad as one wall of the sala: a clock while Sino waits, one framed memory
 - Listening: a thick ink ring breathing on a 4s cycle (scale 1 to 1.05); static with reduced motion. States fade in 400ms.
 - Answer: one `MemoryFrame` (`frame-l`, straight, no shadow), the name in `name-m` (Fredoka), the reply in `text-l`.
 - No photo yet: the name in `name-l` inside the empty frame. Never a gray box, silhouette or stock face.
-- No green, amber or red on this screen. Urgent changes nothing here. No buttons, hints, countdowns or auto-dim.
+- No green, amber or red on this screen. The urgent alert changes nothing here. A caregiver reply uses this answer state, then the clock. No buttons, hints, countdowns or auto-dim.
 - Waiting is the one exception: a 36px official mark in the corner. It is not faded (this file forbids opacity tricks) and it is absent from Listening and Answer, so it does not sit with the clock or a reply. A full-colour mark is still outside the ink-on-paper rule above; the corner placement is the calmest fit, not a new colour on Lola's wall.
 
 ### StepIndicator
@@ -450,7 +450,7 @@ Sino's log: the day printed as a torn paper receipt, with each decision on a tim
 
 People decide these, not the document. Until decided, build to "Today".
 
-- **D1 · Urgent and Lola's screen.** Today: nothing changes, so she isn't frightened. Risk: silence while she is in pain. Decide with a caregiver of someone with dementia, and decide whether a holding clip should ever play here.
+- **D1 · Urgent and Lola's screen.** Today: the alert itself changes nothing, so she isn't frightened. When the caregiver replies, her screen shows that reply in the calm answer state (their name, their words, and their recording if they made one), then returns to the clock. Never red. Risk: silence while she is in pain, until someone replies. Decide with a caregiver of someone with dementia, and decide whether a holding clip should ever play here.
 - **D2 · Holding clip.** Yes or no, and the exact words, written by the family.
 - **D3 · Lola's default text size.** `text-l` (35) or Bigger (`text-l-big`, 44). Test on the real iPad.
 - **D4 · Night variant.** Worth building (paper and ink swapped, clock only), or leave the family to dim the iPad. Not a theme here until decided.

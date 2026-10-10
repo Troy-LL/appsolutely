@@ -21,7 +21,7 @@ npm run dev            # fake feed: http://localhost:5173/
 
 | Event / call | On screen |
 |---|---|
-| `alert` | Red card, pinned on top, a two-note tone every 4 s until **Nabasa na / Mark as read** (Undo available). Calling is cut, see design-system gap 1. |
+| `alert` | Red card, pinned on top, a two-note tone every 4 s until **Papunta na ako / On my way** (or a short recording). That sends `urgent_reply`; the card leaves the red state. The same button is on today's urgent rows in the activity log. Calling is cut, see design-system gap 1. |
 | `ask_caregiver` | Quiet yellow card. Repeats of the same words share one card ("2 times since …"). **Record a reply** opens the recorder. |
 | `decided` (comfort) | Green "Answered" card, with whose voice played (looked up by `reply_id` in the questions file). |
 | `ask_about_lola` → `about_lola` | **Sino AI** tab: three fixed questions (design-system gap 4, no free-text box) worded to match `brain/ask.py`'s rules. Answers show as a chat thread with where they came from and the seconds taken. On the fake feed a local copy of ask.py's logic answers (`src/data/askLocal.ts`). No answer in 15 s says so. |
