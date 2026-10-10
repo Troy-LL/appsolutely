@@ -19,3 +19,5 @@ wt-*
 **/wt-*
 **/*.mov
 **/*.MOV
+brain/clips/models/*.caffemodel
+brain/clips/models/*.prototxt

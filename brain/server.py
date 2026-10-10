@@ -23,6 +23,11 @@ from fastapi.staticfiles import StaticFiles
 from starlette.datastructures import UploadFile
 from starlette.websockets import WebSocketDisconnect
 
+# uvicorn brain.server:app does not put this directory on sys.path.
+_BRAIN_DIR = Path(__file__).resolve().parent
+if str(_BRAIN_DIR) not in sys.path:
+    sys.path.insert(0, str(_BRAIN_DIR))
+
 import clips as clipwhere
 from ask import answer_about_lola
 from decide import (

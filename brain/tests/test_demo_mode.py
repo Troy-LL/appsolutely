@@ -165,7 +165,7 @@ async def _run():
             if _sid_header(headers)[0]:
                 raise AssertionError("health created a session")
             home = _open(port, "/")
-            if home[0] == 200 or (home[1] and b'"landing"' in home[1]):
+            if home[0] != 200 or b"Demo mode" not in home[1]:
                 raise AssertionError((home[0], home[1][:80]))
             passed += 1
             print("health simulated: PASS")

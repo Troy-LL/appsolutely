@@ -9,7 +9,8 @@ hub/data/
 brain/face/models/
 brain/face/gallery/*
 !brain/face/gallery/README.md
-brain/clips/cache/
+brain/clips/cache/*
+!brain/clips/cache/scan.json
 brain/clips/media/*
 !brain/clips/media/README.md
 !brain/clips/media/dining.mp4

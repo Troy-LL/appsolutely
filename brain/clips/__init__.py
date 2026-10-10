@@ -346,6 +346,27 @@ def _stamp(folder):
     return rows
 
 
+def _sizes_match(stamped, folder):
+    if not isinstance(stamped, list) or not stamped:
+        return False
+    by_name = {}
+    for row in stamped:
+        if not isinstance(row, dict):
+            return False
+        name = row.get("name")
+        size = row.get("size")
+        if not isinstance(name, str) or isinstance(size, bool) or not isinstance(size, int):
+            return False
+        by_name[name] = size
+    present = _clip_files(folder)
+    if not present:
+        return False
+    for path in present:
+        if by_name.get(path.name) != path.stat().st_size:
+            return False
+    return True
+
+
 def _read_cache(folder):
     path = cache_path(folder)
     if not path.is_file():
@@ -354,9 +375,18 @@ def _read_cache(folder):
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, UnicodeError):
         return None
-    if not isinstance(data, dict) or data.get("detector") != detector_name():
+    if not isinstance(data, dict):
         return None
-    if data.get("files") != _stamp(folder):
+    name = data.get("detector")
+    if name not in (DETECTOR_SSD, DETECTOR_HOG):
+        return None
+    stamped = data.get("files")
+    exact = stamped == _stamp(folder)
+    if not exact and not _sizes_match(stamped, folder):
+        return None
+    if exact and _cv2 not in (_MISSING, None) and name != detector_name():
+        return None
+    if not exact and _load_cv() is not None:
         return None
     return data
 

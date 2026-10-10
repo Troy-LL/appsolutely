@@ -127,7 +127,7 @@ Recording replies from family abroad (OFW), learning which voice calms her best,
 
 ## Public demo
 
-`SINO_MODE=demo` is a simulated public hub: stub decisions and a seeded day for each visitor, not the family's home hub. Nothing is heard from a live mic, and Ollama is not called. The home hub is `SINO_MODE` left unset.
+`SINO_MODE=demo` is a simulated public hub: stub decisions and a seeded day for each visitor, not the family's home hub. Nothing is heard from a live mic, and Ollama is not called. The home hub is `SINO_MODE` left unset. Render's free tier hosts it ([deploy.md](deploy.md)).
 
 ## UX rules
 

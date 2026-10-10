@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: sino-demo
+    runtime: docker
+    repo: https://github.com/Troy-LL/appsolutely
+    branch: troy/public-demo
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: SINO_MODE
+        value: demo
+      - key: SINO_MODEL
+        value: stub
