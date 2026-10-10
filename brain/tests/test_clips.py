@@ -80,7 +80,7 @@ def test_person_room_time_snapshot():
         if summary["rooms"] != ["sala"] or summary["frames"] != 5 or summary["detections"] != 5:
             raise AssertionError(summary)
         result = _where(_recording_log())
-        if result["answer"] != "Huling nakita sa recording: Sala (clip 0:02).":
+        if result["answer"] != "Huling nakita sa recording: sala (clip 0:02).":
             raise AssertionError(result["answer"])
         extra, card = clips.followup(result, _recording_log())
         if extra != {"snapshot": "/clips/snapshot", "label": clips.LABEL}:
@@ -129,7 +129,7 @@ def test_later_sighting_wins():
         if seen["room"] != "sala" or seen["clip_offset_s"] != 12.0:
             raise AssertionError(seen)
         answer = _where(_recording_log())["answer"]
-        if answer != "Huling nakita sa recording: Sala (clip 0:12).":
+        if answer != "Huling nakita sa recording: sala (clip 0:12).":
             raise AssertionError(answer)
 
 
@@ -203,29 +203,45 @@ def test_one_detection_does_not_count():
 
 
 def test_room_names():
-    from clips.rooms import ROOMS, room_label
+    from clips.rooms import ROOMS, room_id_for_stem, room_label
 
     ids = [item["id"] for item in ROOMS]
-    if ids != ["hagdan", "sala", "balkonahe"]:
+    if ids != ["hagdan", "kainan", "balkonahe"]:
         raise AssertionError(ids)
-    if room_label("hagdan") != "Hagdan" or room_label("balkonahe") != "Balkonahe":
-        raise AssertionError(room_label("hagdan"))
-    if room_label("sala") != "Sala" or room_label("kusina") != "kusina":
+    if room_label("hagdan") != "Hagdan" or room_label("kainan") != "Kainan" or room_label("balkonahe") != "Balkonahe":
+        raise AssertionError(room_label("kainan"))
+    if room_label("sala") != "sala" or room_label("kusina") != "kusina":
         raise AssertionError(room_label("kusina"))
+    if room_id_for_stem("stairs") != "hagdan" or room_id_for_stem("dining") != "kainan" or room_id_for_stem("BALCONY") != "balkonahe":
+        raise AssertionError(room_id_for_stem("dining"))
     names = [row["id"] for row in clips.room_catalog(Path("/tmp/sino-no-such-clips"))]
-    if names != ["hagdan", "sala", "balkonahe"]:
+    if names != ["hagdan", "kainan", "balkonahe"]:
         raise AssertionError(names)
     if any(row["file"] for row in clips.room_catalog(Path("/tmp/sino-no-such-clips"))):
         raise AssertionError("missing folder looked like footage")
+    with tempfile.TemporaryDirectory() as tmp:
+        folder = Path(tmp)
+        (folder / "dining.MOV").write_bytes(b"x")
+        (folder / "stairs.MOV").write_bytes(b"x")
+        (folder / "balcony.MOV").write_bytes(b"x")
+        rows = {row["id"]: row for row in clips.room_catalog(folder)}
+        if not rows["kainan"]["file"] or rows["kainan"]["tl"] != "Kainan" or rows["kainan"]["en"] != "Dining":
+            raise AssertionError(rows["kainan"])
+        if clips.clip_path("kainan", folder).name != "dining.MOV":
+            raise AssertionError(clips.clip_path("kainan", folder))
+        if clips.clip_path("hagdan", folder).name != "stairs.MOV" or clips.clip_path("balkonahe", folder).name != "balcony.MOV":
+            raise AssertionError("stairs or balcony file was not found")
+        if clips.clip_path("sala", folder) is not None:
+            raise AssertionError("sala is not a room")
 
 
 def test_recording_wording():
     log = {
         "entries": [],
-        "last_seen": {"room": "sala", "clip_offset_s": 42, "source": "recording"},
+        "last_seen": {"room": "kainan", "clip_offset_s": 42, "source": "recording"},
     }
     answer = _where(log)["answer"]
-    if answer != "Huling nakita sa recording: Sala (clip 0:42).":
+    if answer != "Huling nakita sa recording: Kainan (clip 0:42).":
         raise AssertionError(answer)
     if "ngayon" in answer.lower() or "minuto na" in answer.lower():
         raise AssertionError(answer)
@@ -302,10 +318,10 @@ async def test_server_paths():
                     raise AssertionError(health)
             await _quiet(backstage)
 
-            clip_path = Path(media.name) / "sala.mp4"
+            clip_path = Path(media.name) / "dining.mp4"
             _write_clip(clip_path, 5)
             clips.detect_people = _hits([0.9, 0.9, 0.9, 0.9, 0.9])
-            boundary, body = _multipart("sala.mp4", clip_path.read_bytes())
+            boundary, body = _multipart("dining.mp4", clip_path.read_bytes())
             req = urllib.request.Request(
                 f"http://127.0.0.1:{port}/clips",
                 data=body,
@@ -314,16 +330,16 @@ async def test_server_paths():
             )
             with urllib.request.urlopen(req, timeout=5) as res:
                 posted = json.loads(res.read().decode("utf-8"))
-            if posted["rooms"] != ["sala"] or posted["detections"] != 5:
+            if posted["rooms"] != ["kainan"] or posted["detections"] != 5:
                 raise AssertionError(posted)
             scan = await _recv(backstage)
-            if scan.get("event") != "clip_scan" or scan.get("rooms") != ["sala"]:
+            if scan.get("event") != "clip_scan" or scan.get("rooms") != ["kainan"]:
                 raise AssertionError(scan)
             if not isinstance(scan.get("ms"), int):
                 raise AssertionError(scan)
             await caregiver.send(json.dumps({"event": "ask_about_lola", "question": "Nasaan si Lola?"}))
             reply = await _recv(caregiver)
-            if reply.get("answer") != "Huling nakita sa recording: Sala (clip 0:02).":
+            if reply.get("answer") != "Huling nakita sa recording: Kainan (clip 0:02).":
                 raise AssertionError(reply)
             if reply.get("snapshot") != "/clips/snapshot" or reply.get("label") != clips.LABEL:
                 raise AssertionError(reply)
@@ -338,18 +354,18 @@ async def test_server_paths():
                     raise AssertionError(res.status)
             if not shot.startswith(b"\xff\xd8"):
                 raise AssertionError(shot[:4])
-            with urllib.request.urlopen(f"http://127.0.0.1:{port}/clips/snapshot?room=sala", timeout=2) as res:
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/clips/snapshot?room=kainan", timeout=2) as res:
                 if res.status != 200 or not res.read().startswith(b"\xff\xd8"):
                     raise AssertionError("room snapshot")
             with urllib.request.urlopen(f"http://127.0.0.1:{port}/clips/rooms", timeout=2) as res:
                 catalog = json.loads(res.read().decode("utf-8"))
             ids = [row["id"] for row in catalog["rooms"]]
-            if ids != ["hagdan", "sala", "balkonahe"]:
+            if ids != ["hagdan", "kainan", "balkonahe"]:
                 raise AssertionError(ids)
-            sala = next(row for row in catalog["rooms"] if row["id"] == "sala")
-            if not sala["file"] or not sala["detected"] or sala["tl"] != "Sala":
-                raise AssertionError(sala)
-            with urllib.request.urlopen(f"http://127.0.0.1:{port}/clips/file/sala", timeout=2) as res:
+            kainan = next(row for row in catalog["rooms"] if row["id"] == "kainan")
+            if not kainan["file"] or not kainan["detected"] or kainan["tl"] != "Kainan" or kainan["en"] != "Dining":
+                raise AssertionError(kainan)
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/clips/file/kainan", timeout=2) as res:
                 if res.status != 200 or res.headers.get("Content-Type") != "video/mp4":
                     raise AssertionError(res.headers.get("Content-Type"))
             missing = urllib.request.Request(f"http://127.0.0.1:{port}/clips/file/kusina")
