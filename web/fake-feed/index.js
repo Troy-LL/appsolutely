@@ -144,7 +144,10 @@ export function openFakeFeed(screen, onEvent, { speed = 1, loop = true } = {}) {
 // Same interface as openFakeFeed, but on the real hub socket.
 export function openHubFeed(screen, onEvent, { url, onStatus } = {}) {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const ws = new WebSocket(url || `${proto}//${location.host}/ws?screen=${screen}`)
+  const sid = new URLSearchParams(location.search).get('sid')
+  let target = url || `${proto}//${location.host}/ws?screen=${screen}`
+  if (sid && !/[?&]sid=/.test(target)) target += `${target.includes('?') ? '&' : '?'}sid=${encodeURIComponent(sid)}`
+  const ws = new WebSocket(target)
   ws.onmessage = (e) => {
     try { onEvent(JSON.parse(e.data)) } catch { /* ignore a bad frame */ }
   }

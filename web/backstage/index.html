@@ -306,7 +306,9 @@ function showEmpty(text) { const empty = $("empty"); if (empty) empty.textConten
 function openHubSocket() {
   let attempt = 0;
   const connect = () => {
-    const ws = new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws?screen=backstage`);
+    const sid = new URLSearchParams(location.search).get('sid');
+    const extra = sid ? `&sid=${encodeURIComponent(sid)}` : '';
+    const ws = new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws?screen=backstage${extra}`);
     ws.onopen = () => {
       attempt = 0;
       showEmpty("Nothing heard yet. Sino is listening.");

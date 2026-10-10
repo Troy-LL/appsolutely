@@ -340,7 +340,7 @@ function connect() {
   const onStatus = (status) => { if (gen === feedGen) feedStatus(status) }
   try {
     feed = openFeed('lola', onEvent, {
-      url: params.get('hub') ? `${hubBase().replace(/^http/, 'ws')}/ws?screen=lola` : undefined,
+      url: params.get('hub') ? `${hubBase().replace(/^http/, 'ws')}/ws?screen=lola${params.get('sid') ? '&sid=' + encodeURIComponent(params.get('sid')) : ''}` : undefined,
       onStatus,
     })
   } catch { scheduleReconnect() }

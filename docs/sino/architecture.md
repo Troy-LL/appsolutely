@@ -277,3 +277,11 @@ None of these are facts yet. Log real results in `docs/NOTES.md` (Model smoke te
 | Add-on (a) face match | runs on the hub CPU next to Whisper and Qwen without swapping; if the hub swaps, fall back to `qwen2.5:1.5b` | routes are in; a real YuNet/SFace run is to verify when OpenCV is installed |
 | Add-on (b) person detector | n/a | cut, not built |
 | Add-on (c) voice ID | cut, not built | not measured |
+
+## Public demo mode
+
+`SINO_MODE=demo` is the public simulated hub. `SINO_MODEL` stays `stub` or `ollama`, but demo mode never calls Ollama: `decide()` takes the stub path. The home hub is unchanged when `SINO_MODE` is unset.
+
+Each visitor gets a session: cookie `sino_demo_sid` (HttpOnly, SameSite=Lax) or `?sid=` on HTTP and `/ws`, so iframes can share one session. A session has its own decisions log, questions, family, safety words, urgent file, and socket fan-out. It starts from a copy of the seed plus one realistic day: Joy, Troy, and Donita, one meal, a repeat cluster of "Nasaan si Nanay?", and one urgent that is already resolved. `POST /demo/reset` wipes that session and seeds it again. `GET /demo/state` returns `sid`, `mode`, `simulated`, and `seeded`.
+
+`health` gains `mode` (`demo`, or the model mode `stub`/`ollama` when `SINO_MODE` is unset) and `simulated` (true only in demo). `GET /health` returns that same object. Demo mode does not open the mic, the webcam, or the laptop chime. Typed `POST /listen` still runs `decide()` for that session.

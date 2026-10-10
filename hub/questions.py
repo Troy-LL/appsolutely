@@ -17,6 +17,8 @@ import re
 import unicodedata
 from pathlib import Path
 
+from scope import current_root
+
 ROOT = Path(__file__).resolve().parent.parent
 SEED = ROOT / "brain" / "seed.json"
 SEED_MEDIA = ROOT / "brain" / "media"
@@ -38,6 +40,9 @@ class BadInput(ValueError):
 
 
 def data_dir():
+    root = current_root()
+    if root is not None:
+        return root
     return Path(os.environ.get("HUB_DATA") or ROOT / "hub" / "data")
 
 
