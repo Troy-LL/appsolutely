@@ -123,5 +123,16 @@
   {"id": "us29", "bucket": "urgent", "text": "Masakit dibdib ko, kumain na ba ako", "expected": "urgent", "reply_id": ""},
   {"id": "us30", "bucket": "urgent", "text": "Too long, I can't breathe.", "expected": "urgent"},
   {"id": "us31", "bucket": "urgent", "text": "Too long.", "expected": "urgent"},
-  {"id": "us32", "bucket": "urgent", "text": "Too long!", "expected": "urgent"}
+  {"id": "us32", "bucket": "urgent", "text": "Too long!", "expected": "urgent"},
+  {"id": "r01", "bucket": "comfort", "text": "Joy na saan ka", "expected": "comfort", "reply_id": "nasaan-si-joy"},
+  {"id": "r02", "bucket": "comfort", "text": "Joy na san ka na.", "expected": "comfort", "reply_id": "nasaan-si-joy"},
+  {"id": "r03", "bucket": "comfort", "text": "Joina san kana?", "expected": "comfort", "reply_id": "nasaan-si-joy"},
+  {"id": "r04", "bucket": "comfort", "text": "Joina san kana? Joina san kana?", "expected": "comfort", "reply_id": "nasaan-si-joy"},
+  {"id": "r05", "bucket": "comfort", "text": "where mother", "expected": "comfort", "reply_id": "nasaan-si-nanay", "reason": "repeat", "alternate": "nasaan-ako"},
+  {"id": "g01", "bucket": "new", "text": "Dakat pala ginakastant alon to nga eh", "expected": "silent", "reason": "unclear"},
+  {"id": "g02", "bucket": "new", "text": "Weird shit.", "expected": "silent", "reason": "unclear"},
+  {"id": "g03", "bucket": "urgent", "text": "Masakit dibdib ko dakat pala ginakastant", "expected": "urgent"},
+  {"id": "g04", "bucket": "urgent", "text": "Tulong", "expected": "urgent", "no_speech": 0.95},
+  {"id": "g05", "bucket": "new", "text": "Nasaan yung aso?", "expected": "silent", "reason": "unclear", "avg_logprob": -1.4},
+  {"id": "g06", "bucket": "comfort", "text": "Nasaan si Nanay?", "expected": "comfort", "reply_id": "nasaan-si-nanay", "avg_logprob": -1.4}
 ]

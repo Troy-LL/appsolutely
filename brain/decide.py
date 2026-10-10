@@ -3,10 +3,16 @@ import os
 import re
 import threading
 import time
+import urllib.request
 from difflib import SequenceMatcher
 from pathlib import Path
 
 from model import classify
+
+try:
+    from rapidfuzz.fuzz import ratio as _rapidfuzz_ratio
+except ImportError:
+    _rapidfuzz_ratio = None
 
 SEED_PATH = Path(__file__).resolve().parent / "seed.json"
 
@@ -40,6 +46,26 @@ _ENGLISH_URGENT = (
 MATCH_FILLER = {"po", "opo", "lola", "ma", "na", "ba"}
 MATCH_ALIASES = {"asan": "nasaan"}
 MATCH_THRESHOLD = 0.85
+REPEAT_HIGH = 0.90
+REPEAT_BORDER = 0.80
+REPEAT_OVERLAP = 0.50
+UNKNOWN_SHARE = 0.40
+WHISPER_LOGPROB = -1.0
+WHISPER_NO_SPEECH = 0.6
+_TIE_GAP = 0.06
+_PHRASE_CAP = 24
+_GLUE_TAILS = ("na", "ka", "ko", "mo", "ba", "po")
+# Seed phrasings supply the content words. These are the small function-word list.
+_FUNCTION_WORDS = {
+    "a", "am", "an", "and", "ang", "ano", "are", "at", "ay", "ba", "dahil", "daw",
+    "din", "do", "eh", "for", "have", "he", "her", "his", "ho", "how", "i", "in",
+    "is", "it", "ito", "iyan", "ka", "kanina", "kapag", "kasi", "kay", "kayo", "ko",
+    "kung", "lang", "may", "me", "mga", "mo", "my", "na", "naman", "nang", "ng",
+    "nga", "ngayon", "ni", "niya", "noong", "nung", "nya", "of", "on", "opo", "or",
+    "pa", "pag", "pala", "para", "pero", "po", "raw", "rin", "sa", "she", "si",
+    "siya", "sya", "that", "the", "this", "to", "we", "what", "where", "who", "yan",
+    "you", "yun", "yung",
+}
 URGENT_TYPOS = {"masaket": "masakit", "didip": "dibdib", "dibdip": "dibdib"}
 FUZZY_SOLO = (
     "natumba", "nadulas", "nadapa", "nahulog", "bumagsak",
@@ -161,12 +187,22 @@ def load_seed(path=SEED_PATH):
 load_seed()
 
 
+_EXTRA_PHRASINGS = {}
+_PHRASE_LOCK = threading.Lock()
+
+
+def _candidates(entry):
+    phrases = [entry.get("question", "")] + list(entry.get("phrasings") or [])
+    phrases.extend(_EXTRA_PHRASINGS.get(entry.get("id"), []))
+    return phrases
+
+
 def _best_seed_match(key):
     if not key:
         return None, 0.0
     best_id, best_ratio = None, 0.0
     for entry in load_seed():
-        for candidate in [entry.get("question", "")] + list(entry.get("phrasings", [])):
+        for candidate in _candidates(entry):
             phrase = _match_key(candidate)
             if not phrase:
                 continue
@@ -181,7 +217,7 @@ def _best_seed_match(key):
 def _seed_words():
     words = set()
     for entry in load_seed():
-        for candidate in [entry.get("question", "")] + list(entry.get("phrasings", [])):
+        for candidate in _candidates(entry):
             words.update(word for word in _match_key(candidate).split() if word)
     return words
 
@@ -276,8 +312,8 @@ def _match_known_question(text):
     return None, ratio
 
 
-def _result(action, reason, trigger_words, confidence, started, reply_id="", source="rule", ignored=""):
-    return {
+def _result(action, reason, trigger_words, confidence, started, reply_id="", source="rule", ignored="", alternate=""):
+    result = {
         "action": action,
         "reply_id": reply_id,
         "reason": reason,
@@ -287,6 +323,9 @@ def _result(action, reason, trigger_words, confidence, started, reply_id="", sou
         "source": source,
         "ignored": ignored,
     }
+    if alternate:
+        result["alternate"] = alternate
+    return result
 
 
 def _has_body_word(text):
@@ -512,7 +551,250 @@ def _urgent_hits(normalized):
     return hits
 
 
-def decide(text: str) -> dict:
+def _ratio(left, right):
+    if left == right:
+        return 1.0
+    if not left or not right:
+        return 0.0
+    if _rapidfuzz_ratio is not None:
+        return _rapidfuzz_ratio(left, right) / 100.0
+    return SequenceMatcher(None, left, right).ratio()
+
+
+def _yi_same(left, right):
+    if len(left) != len(right):
+        return False
+    for a, b in zip(left, right):
+        if a != b and {a, b} != {"y", "i"}:
+            return False
+    return True
+
+
+def _split_heard(token):
+    if token == "san":
+        return ["saan"]
+    if token in _seed_words() or token in _FUNCTION_WORDS or token in MATCH_FILLER:
+        return [token]
+    for word in sorted((w for w in _seed_words() if len(w) >= 2), key=len, reverse=True):
+        for tail in _GLUE_TAILS:
+            if _yi_same(token, word + tail):
+                return [word, tail]
+    return [token]
+
+
+def _heard_key(text):
+    parts = []
+    for token in normalize(text).split():
+        parts.extend(_split_heard(token))
+    joined = []
+    index = 0
+    while index < len(parts):
+        if index + 1 < len(parts) and parts[index] == "na" and parts[index + 1] == "saan":
+            joined.append("nasaan")
+            index += 2
+            continue
+        joined.append(parts[index])
+        index += 1
+    seen = []
+    for token in joined:
+        if token in MATCH_FILLER or token in seen:
+            continue
+        seen.append(token)
+    return " ".join(seen)
+
+
+def _pair_score(left, right):
+    if not left or not right:
+        return 0.0, 0.0
+    seq = _ratio(left, right)
+    sort = _ratio(" ".join(sorted(left.split())), " ".join(sorted(right.split())))
+    lt, rt = set(left.split()), set(right.split())
+    overlap = (len(lt & rt) / len(lt | rt)) if lt and rt else 0.0
+    return max(seq, sort), overlap
+
+
+def _repeat_scores(text):
+    keys = []
+    for key in (_heard_key(text), _match_key(text), _fuzzy_seed_key(text)):
+        if key and key not in keys:
+            keys.append(key)
+    ranked = []
+    for entry in load_seed():
+        qid = entry.get("id", "")
+        best = 0.0
+        best_overlap = 0.0
+        for candidate in _candidates(entry):
+            phrase = _match_key(candidate) or _heard_key(candidate)
+            if not phrase:
+                continue
+            for key in keys:
+                score, overlap = _pair_score(key, phrase)
+                if score > best:
+                    best, best_overlap = score, overlap
+        ranked.append((best, best_overlap, qid))
+    ranked.sort(reverse=True)
+    return ranked
+
+
+def _qwen_id(text, left, right):
+    if os.environ.get("SINO_MODEL", "stub") != "ollama":
+        return None
+    prompt = (
+        "Pick which known question this transcript repeats. Reply with JSON only: "
+        "{\"id\":\"...\"}. id is \"" + left + "\" or \"" + right + "\" or \"none\".\n"
+        "Transcript:\n" + text + "\nJSON:"
+    )
+    hub = os.environ.get("HUB_URL", "http://localhost:11434").rstrip("/")
+    payload = json.dumps({
+        "model": "qwen2.5:3b",
+        "prompt": prompt,
+        "stream": False,
+        "format": "json",
+        "options": {"temperature": 0, "num_predict": 16},
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        hub + "/api/generate",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=1.5) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError):
+        return None
+    raw = body.get("response") if isinstance(body, dict) else ""
+    if not isinstance(raw, str):
+        return None
+    try:
+        picked = json.loads(raw.strip()).get("id")
+    except (ValueError, AttributeError):
+        return None
+    if picked in (left, right):
+        return picked
+    return None
+
+
+def _repeat_match(text):
+    ranked = _repeat_scores(text)
+    if not ranked:
+        return None
+    score, overlap, qid = ranked[0]
+    second_score, _second_overlap, second_id = ranked[1] if len(ranked) > 1 else (0.0, 0.0, "")
+    if overlap < REPEAT_OVERLAP or score < REPEAT_BORDER:
+        return None
+    tied = bool(second_id) and second_score >= REPEAT_BORDER and score - second_score < _TIE_GAP
+    if tied:
+        picked = _qwen_id(text, qid, second_id)
+        if picked and picked != qid:
+            second_id, qid = qid, picked
+    if score >= REPEAT_HIGH and not tied:
+        return qid, score, "", False
+    return qid, min(score, 0.89), second_id, True
+
+
+def _known_words():
+    return _seed_words() | _FUNCTION_WORDS | set(MATCH_ALIASES) | set(URGENT_STEMS) | set(FUZZY_SOLO)
+
+
+def _unknown_share(tokens):
+    if not tokens:
+        return 1.0
+    known = _known_words()
+    unknown = [token for token in tokens if token not in known and MATCH_ALIASES.get(token, token) not in known]
+    return len(unknown) / len(tokens), len(unknown)
+
+
+def _whisper_low(audio):
+    if not isinstance(audio, dict):
+        return False
+    logprob = audio.get("avg_logprob")
+    if isinstance(logprob, (int, float)) and not isinstance(logprob, bool) and float(logprob) < WHISPER_LOGPROB:
+        return True
+    no_speech = audio.get("no_speech")
+    if no_speech is None:
+        no_speech = audio.get("no_speech_prob")
+    if isinstance(no_speech, (int, float)) and not isinstance(no_speech, bool) and float(no_speech) > WHISPER_NO_SPEECH:
+        return True
+    return False
+
+
+def _is_noise(text, audio):
+    if _whisper_low(audio):
+        return True
+    tokens = normalize(text).split()
+    if len(tokens) <= 2:
+        return True
+    share, count = _unknown_share(tokens)
+    if count >= 2 and share >= UNKNOWN_SHARE:
+        best = _repeat_scores(text)
+        near = best[0][0] if best else 0.0
+        if near < REPEAT_BORDER:
+            return True
+    return False
+
+
+def _phrasing_saved(qid, heard):
+    key = _match_key(heard)
+    for entry in load_seed():
+        if entry.get("id") != qid:
+            continue
+        for phrase in _candidates(entry):
+            other = _match_key(phrase)
+            if other and (other == key or _ratio(other, key) >= 0.92):
+                return True
+    return False
+
+
+def remember_phrasing(qid, text):
+    heard = " ".join(str(text).split())
+    if not qid or not heard or _phrasing_saved(qid, heard):
+        return
+    with _PHRASE_LOCK:
+        if _phrasing_saved(qid, heard):
+            return
+        bucket = _EXTRA_PHRASINGS.setdefault(qid, [])
+        if len(bucket) >= _PHRASE_CAP:
+            return
+        bucket.append(heard)
+        _persist_phrasing(qid, heard)
+
+
+def _persist_phrasing(qid, heard):
+    raw = os.environ.get("SINO_SEED", "")
+    if not raw:
+        return
+    path = Path(raw)
+    try:
+        if not path.is_file() or path.resolve() == SEED_PATH.resolve():
+            return
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    entries = data.get("questions") if isinstance(data, dict) else data
+    if not isinstance(entries, list):
+        return
+    for entry in entries:
+        if not isinstance(entry, dict) or entry.get("id") != qid:
+            continue
+        phrasings = entry.get("phrasings")
+        if not isinstance(phrasings, list):
+            phrasings = []
+            entry["phrasings"] = phrasings
+        if heard in phrasings or len(phrasings) >= _PHRASE_CAP:
+            return
+        phrasings.append(heard)
+        break
+    else:
+        return
+    tmp = path.with_name(path.name + ".tmp")
+    try:
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        return
+
+
+def decide(text: str, audio=None) -> dict:
     started = time.monotonic()
     normalized = normalize(text)
 
@@ -547,5 +829,18 @@ def decide(text: str) -> dict:
     reply_id, ratio = _match_known_question(text)
     if reply_id is not None:
         return _result("comfort", "known question", [], round(ratio, 3), started, reply_id=reply_id)
+
+    repeat = _repeat_match(text)
+    if repeat is not None:
+        qid, score, alternate, low = repeat
+        if low:
+            return _result(
+                "comfort", "repeat", [], round(min(score, 0.49), 3), started,
+                reply_id=qid, alternate=alternate,
+            )
+        return _result("comfort", "known question", [], round(score, 3), started, reply_id=qid)
+
+    if _is_noise(text, audio):
+        return _result("silent", "unclear", [], 1.0, started)
 
     return _from_model(classify(text), started, text)

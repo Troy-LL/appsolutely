@@ -26,7 +26,8 @@ from starlette.websockets import WebSocketDisconnect
 import clips as clipwhere
 from ask import answer_about_lola
 from decide import (
-    SafetyWordError, add_custom_safety_word, decide, load_seed, safety_words_payload, urgent_words,
+    SafetyWordError, add_custom_safety_word, decide, load_seed, remember_phrasing,
+    safety_words_payload, urgent_words,
 )
 from model import DEFAULT_HUB_URL
 
@@ -122,7 +123,7 @@ def append_decision(text, result):
         "ignored": result.get("ignored", ""),
         "ts": datetime.now().astimezone().isoformat(timespec="seconds"),
     }
-    for key in ("reply_variant", "last_meal_ts", "food_asks_since_meal"):
+    for key in ("reply_variant", "last_meal_ts", "food_asks_since_meal", "alternate", "repeat_count"):
         if key in result:
             entry[key] = result[key]
     path = log_path()
@@ -407,13 +408,13 @@ class Hub:
             "last_event_at": self.last_event_at,
         }
 
-    async def submit(self, text):
+    async def submit(self, text, audio=None):
         self.generation += 1
-        await self.queue.put((self.generation, text))
+        await self.queue.put((self.generation, text, audio))
 
     async def worker(self):
         while True:
-            gen, text = await self.queue.get()
+            gen, text, audio = await self.queue.get()
             while True:
                 try:
                     newer = self.queue.get_nowait()
@@ -421,17 +422,17 @@ class Hub:
                     break
                 # The throttle drops older lines, but never one with an urgent word (QA D-01).
                 if urgent_words(text):
-                    await self.publish(text, await self._decide(text))
-                gen, text = newer
-            result = await self._decide(text)
+                    await self.publish(text, await self._decide(text, audio))
+                gen, text, audio = newer
+            result = await self._decide(text, audio)
             # A newer line came in while deciding: drop this one, unless it is urgent.
             if gen != self.generation and result["action"] != "urgent":
                 continue
             await self.publish(text, result)
 
-    async def _decide(self, text):
+    async def _decide(self, text, audio=None):
         try:
-            return await asyncio.to_thread(self.decide_call, text)
+            return await asyncio.to_thread(self.decide_call, text, audio)
         except Exception:
             return {
                 "action": "caregiver",
@@ -449,6 +450,18 @@ class Hub:
         if result.get("action") == "comfort" and result.get("reply_id") == "meal-check":
             meal = meal_choice(read_log()["entries"])
             result = {**result, **meal}
+        if result.get("action") == "comfort" and result.get("reply_id"):
+            prior = sum(
+                1
+                for entry in read_log()["entries"]
+                if entry.get("action") == "comfort" and entry.get("reply_id") == result["reply_id"]
+            )
+            result = {**result, "repeat_count": prior + 1}
+            if result.get("confidence", 0) >= 0.85:
+                try:
+                    remember_phrasing(result["reply_id"], text)
+                except Exception:
+                    pass
         append_decision(text, result)
         self.last_event_at = datetime.now().astimezone().isoformat(timespec="seconds")
         utterance_id = uuid.uuid4().hex

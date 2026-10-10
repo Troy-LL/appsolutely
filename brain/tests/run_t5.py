@@ -43,6 +43,15 @@ def run_mode():
     return MODES[raw]
 
 
+def _audio_hint(row):
+    hint = {}
+    if "avg_logprob" in row:
+        hint["avg_logprob"] = row["avg_logprob"]
+    if "no_speech" in row:
+        hint["no_speech"] = row["no_speech"]
+    return hint or None
+
+
 def is_model_path(decision):
     # source, not reason: in ollama mode Qwen writes its own reason (QA D-11).
     return decision.get("source") == "model"
@@ -192,8 +201,8 @@ def _stub_model_checks():
     try:
         for case_id, output, expected in probes:
             decide_mod.classify = lambda _text, output=output: output
-            row = {"id": case_id, "bucket": "new", "text": "hello there", "expected": expected}
-            found.append((row, decide("hello there")))
+            row = {"id": case_id, "bucket": "new", "text": "Nasaan yung aso?", "expected": expected}
+            found.append((row, decide("Nasaan yung aso?")))
     finally:
         decide_mod.classify = saved
     return found
@@ -202,7 +211,7 @@ def _stub_model_checks():
 def run_text():
     mode = run_mode()
     rows = json.loads(CASES.read_text(encoding="utf-8"))
-    checked = [(row, decide(row["text"])) for row in rows]
+    checked = [(row, decide(row["text"], _audio_hint(row))) for row in rows]
     if mode == "stub":
         checked.extend(_stub_model_checks())
 
@@ -216,6 +225,8 @@ def run_text():
         if "reply_id" in row and decision["reply_id"] != row["reply_id"]:
             return False
         if "reason" in row and decision["reason"] != row["reason"]:
+            return False
+        if "alternate" in row and decision.get("alternate", "") != row["alternate"]:
             return False
         return True
 
