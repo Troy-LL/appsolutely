@@ -79,9 +79,14 @@ html, body { margin: 0; background: var(--paper); color: var(--ink); font-family
 
 .row--new { animation: slide-in 0.6s ease-out; }
 @keyframes slide-in { from { opacity: 0; transform: translateY(-24px); } }
+.demo-banner { margin: 0; padding: 8px 16px; text-align: center; background: var(--paper); color: var(--ink); border-bottom: var(--outline) solid var(--ink); font: 500 14px/1.3 var(--font-heading); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chip { min-height: var(--tap-min); padding: 8px 12px; border: var(--outline) solid var(--ink); border-radius: var(--r-button); background: var(--paper); color: var(--ink); font: 600 16px/1.25 var(--font-heading); cursor: pointer; text-align: left; }
+.chip:active { box-shadow: none; transform: translateY(2px); }
+
 @media (prefers-reduced-motion: reduce) {
   .row--new { animation: none; }
-  .btn:active { transform: none; }
+  .btn:active, .chip:active { transform: none; }
 }
 
 .empty { font: 400 22px/1.45 var(--font-text); padding: var(--space-6) 0; border-top: var(--outline) dashed var(--ink); }
@@ -89,6 +94,7 @@ html, body { margin: 0; background: var(--paper); color: var(--ink); font-family
 </style>
 </head>
 <body>
+<p class="demo-banner" id="demo-banner" hidden>Demo mode · seeded data · simulated model</p>
 <div class="offline" id="offline" hidden>OFFLINE</div>
 
 <main class="page">
@@ -111,10 +117,16 @@ html, body { margin: 0; background: var(--paper); color: var(--ink); font-family
     <section class="controls" aria-label="Controls">
       <button class="btn listen" id="listen-btn" type="button">Listen now</button>
       <form class="ask" id="ask-form">
-        <label for="q">Type a question</label>
+        <label for="q">Say as Lola</label>
         <input id="q" type="text" autocomplete="off" maxlength="2000" placeholder="Si Mama asan?">
         <button class="btn btn--quiet" type="submit">Send</button>
       </form>
+      <div class="chips" id="say-chips">
+        <button type="button" class="chip" data-line="Nasaan si Nanay?">Nasaan si Nanay?</button>
+        <button type="button" class="chip" data-line="Nasaan si Nanay? Abangan sa susunod na kabanata!">Nasaan si Nanay? Abangan sa susunod na kabanata!</button>
+        <button type="button" class="chip" data-line="Kumain na ba ako?">Kumain na ba ako?</button>
+        <button type="button" class="chip" data-line="Hirap huminga ako.">Hirap huminga ako.</button>
+      </div>
       <p class="status" id="status" role="status"></p>
     </section>
 
@@ -305,8 +317,10 @@ function showEmpty(text) { const empty = $("empty"); if (empty) empty.textConten
 
 function openHubSocket() {
   let attempt = 0;
+  const sid = new URLSearchParams(location.search).get("sid");
+  const sidQuery = sid ? `&sid=${encodeURIComponent(sid)}` : "";
   const connect = () => {
-    const ws = new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws?screen=backstage`);
+    const ws = new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws?screen=backstage${sidQuery}`);
     ws.onopen = () => {
       attempt = 0;
       showEmpty("Nothing heard yet. Sino is listening.");
@@ -370,6 +384,22 @@ $("ask-form").addEventListener("submit", async (e) => {
     showStatus("Sent to the hub.");
   }
 });
+
+$("say-chips").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-line]");
+  if (!btn) return;
+  const text = btn.getAttribute("data-line");
+  if (text && await postListen({ mode: "typed", text })) showStatus("Sent to the hub.");
+});
+
+const pageParams = new URLSearchParams(location.search);
+if (pageParams.get("demo") === "1") {
+  $("demo-banner").hidden = false;
+} else {
+  fetch("/health").then((res) => res.ok ? res.json() : null).then((body) => {
+    if (body && body.simulated === true) $("demo-banner").hidden = false;
+  }).catch(() => {});
+}
 
 if (new URLSearchParams(location.search).get("feed") === "hub") openHubSocket();
 else openFakeFeed();

@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="lola.css" />
 </head>
 <body>
+  <p id="demo-banner" class="demo-banner" hidden>Demo mode · seeded data · simulated model</p>
   <!-- One wall. Each .state is a layer; lola.js shows exactly one at a time
        and fades (400ms) between them. All visible words are filled from
        strings.js by lola.js — never hardcoded here. -->
@@ -71,6 +72,16 @@
   <!-- Small FAKE label (ink on paper) shown only while the practice feed is on. -->
   <div id="fake-label" class="hidden"></div>
 
-  <script type="module" src="lola.js?v=reply-auto"></script>
+  <form id="say" class="say" hidden>
+    <p class="say-label">Say as Lola</p>
+    <div class="say-chips" id="say-chips"></div>
+    <div class="say-row">
+      <input id="say-text" type="text" maxlength="2000" autocomplete="off" aria-label="Say as Lola">
+      <button type="submit">Send</button>
+    </div>
+    <p id="say-status" class="say-status" role="status"></p>
+  </form>
+
+  <script type="module" src="lola.js?v=demo-views"></script>
 </body>
 </html>

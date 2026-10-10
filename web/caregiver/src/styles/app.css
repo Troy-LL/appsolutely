@@ -1,6 +1,7 @@
 /* Caregiver phone styles: the sala. Ported from the Design canvas prototype.
    Only paper, ink, green, amber, red and white. Values come from tokens.css. */
 .sn-app { --s: 1; position: relative; width: 100%; max-width: 430px; height: 100vh; height: 100dvh; margin: 0 auto; box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--paper); color: var(--ink); font-family: var(--font-text); overflow: hidden; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+.sn-demo { margin: 0; padding: 6px 24px; border-bottom: 2px solid var(--ink); background: var(--paper); color: var(--ink); text-align: center; font: 500 calc(14px * var(--s))/1.3 var(--font-heading); flex: none; }
 .sn-app.s2 { --s: 1.25; }
 .sn-app.s3 { --s: 1.5; }
 .sn-app :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }

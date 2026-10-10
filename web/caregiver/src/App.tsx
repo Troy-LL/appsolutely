@@ -9,6 +9,7 @@ import { armAlerts, type AlertStatus } from './feed/monitor'
 import type { LinkStatus } from './feed/connect'
 import { audioRunning, startAlarm, stopAlarm } from './data/urgentSound'
 import { AlarmScreen, AlertsBar } from './components/Alarm'
+import { DemoBanner } from './components/DemoBanner'
 import { TopBar } from './components/TopBar'
 import { TAB_SCREENS, TabBar } from './components/TabBar'
 import { answerLocally, ASK_QUESTIONS, intentOf } from './data/askLocal'
@@ -375,6 +376,7 @@ export default function App() {
   const calibrateId = faceId(person?.name ?? personName)
   return (
     <div ref={rootRef} className={`sn-app${scale === 1 ? ' s2' : scale === 2 ? ' s3' : ''}`} lang={lang === 'en' ? 'en' : 'tl'}>
+      <DemoBanner />
       {onTab ? (
         <TopBar t={t} lang={lang} langOpen={langOpen} fake={!USING_HUB} me={ME}
           onToggleLang={() => setLangOpen(!langOpen)} onPickLang={(l) => { setLang(l); setLangOpen(false) }}
