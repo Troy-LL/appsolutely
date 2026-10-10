@@ -18,7 +18,8 @@ export function UrgentCard({ t, entry, onReply }: { t: T; entry: Entry; onReply:
     onReplyRef.current(rec.blob)
   }, [rec.state, rec.blob])
   const h = t.head('urgentHead')
-  const micLabel = rec.state === 'recording' ? t.btn('stopBtn') : t.btn('recordBtn')
+  const recording = rec.state === 'recording'
+  const micLabel = recording ? t.btn('stopBtn') : t.btn('recordBtn')
   return (
     <section className="sn-urgent" aria-label={h.main} role="alert">
       <p className="sn-urgent__head">
@@ -37,8 +38,13 @@ export function UrgentCard({ t, entry, onReply }: { t: T; entry: Entry; onReply:
         <span className="sn-urgent__tag"><i aria-hidden="true">✓</i><span className="pl">{t.two('ipadSame')}</span></span>
       </div>
       <button type="button" className="sn-btn sn-btn--wide sn-btn--big" onClick={() => onReply()}>{t.btn('onMyWay')}</button>
-      <button type="button" className="sn-btn sn-btn--wide" style={{ marginTop: 10 }}
-        onClick={() => (rec.state === 'recording' ? rec.stop() : void rec.start())}>{micLabel}</button>
+      {/* Round record button: a red dot to start; while recording, a stop square on a
+          filled circle with a ring. The label under it says the same as the aria-label. */}
+      <button type="button" className={`sn-recbtn${recording ? ' is-rec' : ''}`} aria-label={micLabel}
+        onClick={() => (recording ? rec.stop() : void rec.start())}>
+        <span className="sn-recbtn__circle" aria-hidden="true"><span className="sn-recbtn__mark" /></span>
+        <span className="sn-recbtn__label">{micLabel}</span>
+      </button>
     </section>
   )
 }
