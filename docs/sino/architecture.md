@@ -110,6 +110,7 @@ Web stack is the repo default in [../../AGENTS.md](../../AGENTS.md): React + Vit
 3. **Questions file:** `{id, question, phrasings[], reply_audio, photo, speaker}`. Troy's seed file is `brain/seed.json`. Donita's loader (D5) reads it, and quick setup appends to the same list.
    - `GET /questions` returns the array.
    - `POST /questions` accepts one object. `reply_audio` and `photo` are file parts (hold to record, and the photo). The hub stores the files and returns the stored object. The hub sets `id` when the client omits it. If `id` already exists, the hub replaces `reply_audio` and `photo` and keeps the question. That is the caregiver's one-tap record-a-reply.
+   - `DELETE /questions/{id}` removes one question the family added from the hub working copy (`hub/data/questions.json`). `id` is 1–64 of `a-z 0-9 -`. An id that is in `brain/seed.json` is refused with 400 `{"error":"built-in questions stay"}` and nothing is written, so a built-in question is not lost (there is no hide/restore). An unknown id is 404 `{"error":"no question with that id"}`. On success the stored object is returned, that question's own `/media/<id>-reply…` and `/media/<id>-photo…` files are deleted, and every screen gets `{"event":"question_removed","id":""}`. The seed file is never written. Additive. TODO: contract gap — post in the team chat.
 4. **`POST /listen`:** returns 202 and no body. What happened arrives on `/ws`.
    - Listen now: `{"mode":"listen_now"}`. The hub captures from its own mic and runs VAD, Whisper, the junk filter, and `decide()`.
    - Typed question: `{"mode":"typed","text":""}`. Skips VAD, Whisper, and the junk filter. Emits `heard` with that `text` as `transcript` and `dropped` false, then `decided`.
@@ -134,7 +135,7 @@ Changing an interface needs a post in the team chat, because every screen depend
 
 ## Running the hub server
 
-`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `POST /listen/audio`, `GET /questions`, `POST /questions`, `GET /safety-words`, `POST /safety-words`, `POST /clips`, `GET /clips/snapshot`, and `/media`, and it calls `decide()` and `answer_about_lola()`. When `web/caregiver/dist` exists it also serves that build at `/caregiver` (`index.html` with `Cache-Control: no-cache`); the phone opens `https://<hub>:8000/caregiver/?feed=hub` so `/ws`, `/questions`, `/media` and `/clips/snapshot` share one origin. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
+`brain/server.py` is the hub process. It serves `/ws`, `POST /listen`, `POST /listen/audio`, `GET /questions`, `POST /questions`, `DELETE /questions/{id}`, `GET /safety-words`, `POST /safety-words`, `POST /clips`, `GET /clips/snapshot`, and `/media`, and it calls `decide()` and `answer_about_lola()`. When `web/caregiver/dist` exists it also serves that build at `/caregiver` (`index.html` with `Cache-Control: no-cache`); the phone opens `https://<hub>:8000/caregiver/?feed=hub` so `/ws`, `/questions`, `/media` and `/clips/snapshot` share one origin. Plain `ws://` unless `CERT` and `KEY` are both set (mkcert files), then `wss://`.
 
 TODO: contract gap — custom safety words. Additive, nothing renamed. The built-in stems stay in `brain/decide.py` (`URGENT_STEMS`). The caregiver card can add a word; it cannot remove a built-in.
 

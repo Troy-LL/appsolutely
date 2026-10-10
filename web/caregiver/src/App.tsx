@@ -2,7 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { AskIntent, ChatMsg, Entry, Lang, MemberColor, Person, Question, Scale, Screen } from './types'
 import { makeT } from './i18n/i18n'
 import { initialLog, logReducer } from './data/log'
-import { loadQuestions, loadSafetyWords, useFeed, USING_HUB } from './data/hub'
+import { deleteQuestion, loadQuestions, loadSafetyWords, useFeed, USING_HUB } from './data/hub'
 import { SAFETY_WORDS } from './data/safetyWords'
 import { readAbout } from './feed/events'
 import { startMonitoring } from './feed/monitor'
@@ -73,6 +73,11 @@ export default function App() {
   const send = useFeed((event) => {
     if (event.event === 'safety_word' && typeof event.word === 'string') {
       rememberWord(event.word)
+      return
+    }
+    if (event.event === 'question_removed' && typeof event.id === 'string') {
+      const id = event.id
+      setQuestions((list) => (list ? list.filter((item) => item.id !== id) : list))
       return
     }
     const about = readAbout(event)
@@ -208,7 +213,17 @@ export default function App() {
       {screen === 'knows' ? (
         <KnowsScreen t={t} questions={questions} loadError={loadError} people={people} todayCount={today.length}
           builtinWords={builtinWords} customWords={customWords} onAdded={rememberWord}
-          onOpenLog={() => go('activity')} />
+          onOpenLog={() => go('activity')}
+          onRemove={async (id) => {
+            const prev = questions
+            setQuestions((list) => (list ? list.filter((item) => item.id !== id) : list))
+            try {
+              await deleteQuestion(id)
+            } catch (err) {
+              setQuestions(prev)
+              throw err
+            }
+          }} />
       ) : null}
 
       {screen === 'record' && recordEntry ? (
