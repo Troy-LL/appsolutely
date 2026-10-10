@@ -261,8 +261,8 @@ None of these are facts yet. Log real results in `docs/NOTES.md` (Model smoke te
 | T5 in `ollama` mode on the hub | gate in [mvp-plan.md](mvp-plan.md#passfail-gate-t5-before-the-330-am-freeze) | waiting on the hub. Stub-mode text results only so far ([../NOTES.md](../NOTES.md#passfail-gate-t5)) |
 | Junk-line filter | drops TV sign-offs and silence, keeps real questions | to verify at smoke test |
 | Hub chime audible across a room (only with `CHIME=1`) | yes | to verify at smoke test |
-| Caregiver iPhone alarm (armed `/caregiver`, Sat ~8:05 AM) | rings on urgent until "Papunta na ako / On my way" (or an `urgent_reply`), at most 2 minutes, while the page is open and awake | not tested yet: to verify on the iPhone |
-| iPad mic (`/lola` listening, Sat ~7:15 AM) | a "Tulong!" said at the iPad reaches the hub and alerts | not tested yet: to verify on the iPad |
+| Caregiver iPhone alarm (armed `/caregiver`, Sat ~8:05 AM) | rings on urgent until "Papunta na ako / On my way" (or an `urgent_reply`), at most 2 minutes, while the page is open and awake | rang on the real iPhone and stopped by "Papunta na ako" (Sat ~8:50 AM, [../NOTES.md](../NOTES.md#decision-log)); still to verify: loudness across a room, silent switch, wake lock over time, 2-minute cap |
+| iPad mic (`/lola` listening, Sat ~7:15 AM) | a "Tulong!" said at the iPad reaches the hub and alerts | passed once on the real iPad (Sat ~8:50 AM): "Tulong!" said at the iPad made the caregiver iPhone ring ([../NOTES.md](../NOTES.md#decision-log)); still to verify: room noise (the iPad sent many clips of team chatter), gate thresholds |
 | Hub cold start with `start.sh` | under 2 min with seed loaded | to verify at smoke test |
 | Hub on battery through the demo | needed only if we show it unplugged | to verify at smoke test |
 | Add-on (a) face match | runs on the hub CPU next to Whisper and Qwen without swapping; if the hub swaps, fall back to `qwen2.5:1.5b` | routes are in; a real YuNet/SFace run is to verify when OpenCV is installed |
