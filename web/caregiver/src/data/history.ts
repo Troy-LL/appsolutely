@@ -1,6 +1,5 @@
-// The activity log keeps the last 7 days. The hub has no route that lists past days,
-// so this phone keeps its own copy in localStorage (only on the real hub feed).
-// On the fake feed the earlier days are sample data, labelled on screen.
+// Phone-only notes (a walk, not a meal) stay on this phone. Decisions, meals, and
+// urgent cards come from GET /log. On the fake feed the earlier days are sample data.
 import type { Entry } from '../types'
 
 const KEY = 'sino.caregiver.log.v1'

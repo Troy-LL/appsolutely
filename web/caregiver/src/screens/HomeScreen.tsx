@@ -53,7 +53,10 @@ export function HomeScreen(p: Props) {
   const hAns = t.head('answeredToday')
   const sala = (
     <>
-      <SalaScene initials={p.people.slice(0, 3).map((x) => x.name[0]?.toUpperCase() ?? '')} />
+      <SalaScene
+        initials={p.people.slice(0, 3).map((x) => x.name[0]?.toUpperCase() ?? '')}
+        photos={p.people.slice(0, 3).map((x) => x.photo ?? '')}
+      />
       <div className={`sn-salabar${ok ? '' : ' is-down'}`}>
         <div>
           <b>{ok ? t.one('salaOn') : t.one('salaDown')}</b>
@@ -107,7 +110,7 @@ export function HomeScreen(p: Props) {
         </Heading>
         <div className="sn-wall">
           {p.people.map((x, i) => (
-            <Frame key={x.name} name={x.name} color={x.color} tilt={TILTS[i % 3]}
+            <Frame key={x.name} name={x.name} color={x.color} photo={x.photo} tilt={TILTS[i % 3]}
               meta={t.one('replies', { n: p.replyCount(x.name) })}
               ariaLabel={t.one('personReplies', { name: x.name })} onClick={() => p.onPerson(x.name)} />
           ))}

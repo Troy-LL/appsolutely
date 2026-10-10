@@ -24,6 +24,7 @@ export interface Question {
   reply_audio: string
   photo: string
   speaker: string
+  by_person?: Record<string, { reply_audio?: string; photo?: string; speaker?: string }>
 }
 
 // Any message from /ws. We only read the events the caregiver screen gets.
@@ -62,6 +63,7 @@ export interface Alarm {
 export interface Person {
   name: string // as Lola says it, e.g. "Joy"
   color: MemberColor
+  photo?: string // /media/... from by_person, or a question photo
   local?: boolean // added on this phone only (not on the hub yet)
 }
 

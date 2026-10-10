@@ -24,9 +24,10 @@ export function CalibrateScreen(props: {
   name: string
   personId: 'troy' | 'joy' | 'donita'
   onBack: () => void
+  onEnrolled?: () => void
   preview?: { step: number; done?: boolean; engine?: 'ok' | 'missing' }
 }): JSX.Element {
-  const { t, name, personId, onBack, preview } = props
+  const { t, name, personId, onBack, onEnrolled, preview } = props
   const previewing = preview !== undefined
   const [livePhase, setLivePhase] = useState<Phase>('loading')
   const [liveStep, setLiveStep] = useState(0)
@@ -37,6 +38,8 @@ export function CalibrateScreen(props: {
   const [arm, setArm] = useState(0)
   const [camOn, setCamOn] = useState(false)
   const replaced = useRef(false)
+  const enrolledRef = useRef(onEnrolled)
+  enrolledRef.current = onEnrolled
   const pauseRef = useRef(false)
   const posting = useRef(false)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -152,6 +155,7 @@ export function CalibrateScreen(props: {
           }
           if (body.frames[0]?.ok) {
             replaced.current = true
+            enrolledRef.current?.()
             thumbsRef.current = [...thumbsRef.current, url]
             setThumbs(thumbsRef.current)
             setBusy(false)
@@ -221,7 +225,10 @@ export function CalibrateScreen(props: {
         return
       }
       const ok = body.frames.filter((frame) => frame.ok).length
-      if (ok > 0) replaced.current = true
+      if (ok > 0) {
+        replaced.current = true
+        enrolledRef.current?.()
+      }
       if (body.frames.length === files.length && ok === files.length && ok > 0) {
         for (const url of thumbsRef.current) revoke(url)
         thumbsRef.current = files.map((file) => URL.createObjectURL(file))

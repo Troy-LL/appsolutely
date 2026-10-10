@@ -7,6 +7,23 @@ export function faceId(name: string): FacePersonId | null {
   return null
 }
 
+export function photoFor(
+  name: string,
+  questions: { speaker?: string; photo?: string; by_person?: Record<string, { photo?: string }> }[] | null,
+): string {
+  const id = faceId(name)
+  if (id && questions) {
+    for (const q of questions) {
+      const photo = q.by_person?.[id]?.photo
+      if (photo) return photo
+    }
+  }
+  for (const q of questions ?? []) {
+    if (q.speaker === name && q.photo) return q.photo
+  }
+  return ''
+}
+
 export interface EnrollFrame {
   ok: boolean
   reason?: string
