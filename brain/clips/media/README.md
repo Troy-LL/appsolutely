@@ -1,6 +1,6 @@
 # Clip media
 
-One file per room: `hagdan.mp4`, `sala.mp4`, `balkonahe.mp4`, and the same for `.mov` and `.webm`. The room id is the filename. Footage stays on the hub and is gitignored.
+One file per room: `stairs.MOV` (Hagdan), `dining.MOV` (Kainan), `balcony.MOV` (Balkonahe). `.mp4` and `.webm` with the same stem count too. The filename is the English stem; the room id is Tagalog. Footage stays on the hub and is gitignored.
 
 iPhone `.mov` files are often HEVC, which pip OpenCV cannot decode. Convert a folder with `brain/clips/convert.sh`:
 

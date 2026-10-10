@@ -17,7 +17,7 @@ interface RoomInfo {
 
 const FALLBACK: RoomInfo[] = [
   { id: 'hagdan', tl: 'Hagdan', en: 'Stairs', file: false, detected: false, clip_offset_s: null, scanned_at: '' },
-  { id: 'sala', tl: 'Sala', en: 'Living room', file: false, detected: false, clip_offset_s: null, scanned_at: '' },
+  { id: 'kainan', tl: 'Kainan', en: 'Dining', file: false, detected: false, clip_offset_s: null, scanned_at: '' },
   { id: 'balkonahe', tl: 'Balkonahe', en: 'Balcony', file: false, detected: false, clip_offset_s: null, scanned_at: '' },
 ]
 

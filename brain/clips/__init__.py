@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from ask import NO_CAMERA_ANSWER
-from clips.rooms import ROOMS, room_ids
+from clips.rooms import ROOMS, file_stems, room_id_for_stem, room_ids
 
 # cv2 is imported on first use. A top-level import can stall on this Mac.
 _MISSING = object()
@@ -156,7 +156,7 @@ def _scan_file(cv, path):
                 jpeg = _jpeg(cv, resized) if resized is not None else None
                 if jpeg:
                     hit = {
-                        "room": path.stem,
+                        "room": room_id_for_stem(path.stem),
                         "clip_offset_s": index / fps,
                         "jpeg_bytes": jpeg,
                     }
@@ -173,7 +173,7 @@ def _scan_file(cv, path):
             _skip(path, "no frames decoded")
             return None
         return {
-            "room": path.stem,
+            "room": room_id_for_stem(path.stem),
             "frames": frames,
             "detections": detections,
             "hit": hit,
@@ -285,9 +285,7 @@ def snapshot_jpeg(room=None):
 def room_catalog(folder=None):
     """The three rooms, whether a file is on disk, and the last detected frame."""
     folder = Path(folder) if folder else media_dir()
-    files = {}
-    for path in _clip_files(folder):
-        files.setdefault(path.stem, path)
+    present = {room_id_for_stem(path.stem) for path in _clip_files(folder)}
     with _scan_lock:
         rows = []
         for spec in ROOMS:
@@ -296,7 +294,7 @@ def room_catalog(folder=None):
                 "id": spec["id"],
                 "tl": spec["tl"],
                 "en": spec["en"],
-                "file": spec["id"] in files,
+                "file": spec["id"] in present,
                 "detected": record is not None,
                 "clip_offset_s": None if record is None else record["clip_offset_s"],
                 "scanned_at": "" if record is None else record["scanned_at"],
@@ -307,9 +305,10 @@ def room_catalog(folder=None):
 def clip_path(room, folder=None):
     if room not in room_ids():
         return None
+    wanted = {stem.lower() for stem in file_stems(room)}
     folder = Path(folder) if folder else media_dir()
     for path in _clip_files(folder):
-        if path.stem == room:
+        if path.stem.lower() in wanted:
             return path
     return None
 

@@ -173,10 +173,10 @@ TODO: contract gap — `play_reply` has no speaker name. Additive field `speaker
 TODO: contract gap — recorded-clip demo, all additive, nothing renamed. Post them in the team chat. Footage stays on the hub (`brain/clips/media/`, gitignored). Frames stay in memory. The snapshot goes to the caregiver only, never to Lola's screen.
 
 - `POST /clips`: optional multipart file `clip` (`.mp4`, `.mov`, `.webm`). Saving a file, or a POST with no file, scans the folder again. The scan also runs at startup, in the background when clips are present, and never when the question is asked.
-- `GET /clips/snapshot`: the latest in-memory JPEG, or 404 when nothing was detected. Optional `?room=` (`hagdan`, `sala`, or `balkonahe`) returns that room's JPEG instead of the winner.
-- `GET /clips/rooms`: `{rooms:[{id,tl,en,file,detected,clip_offset_s,scanned_at}]}` for Hagdan, Sala, and Balkonahe, in that order, even when a file is missing.
+- `GET /clips/snapshot`: the latest in-memory JPEG, or 404 when nothing was detected. Optional `?room=` (`hagdan`, `kainan`, or `balkonahe`) returns that room's JPEG instead of the winner.
+- `GET /clips/rooms`: `{rooms:[{id,tl,en,file,detected,clip_offset_s,scanned_at}]}` for Hagdan, Kainan, and Balkonahe, in that order, even when a file is missing. `stairs.MOV` is Hagdan, `dining.MOV` is Kainan, `balcony.MOV` is Balkonahe.
 - `GET /clips/file/{room}`: that room's video (`video/mp4`, `video/quicktime`, or `video/webm`). Unknown ids (including `kusina`) are 404.
-- `about_lola` gains `snapshot` (`"/clips/snapshot"`) and `label` (`"RECORDED CLIP · DEMO"`) only when the answer comes from a recording. The spoken room is the Tagalog name (Sala, Hagdan, Balkonahe).
+- `about_lola` gains `snapshot` (`"/clips/snapshot"`) and `label` (`"RECORDED CLIP · DEMO"`) only when the answer comes from a recording. The spoken room is the Tagalog name (Hagdan, Kainan, Balkonahe). The files are `stairs.MOV`, `dining.MOV`, and `balcony.MOV`.
 - `clip_card` (caregiver socket only, when nothing was detected): `{"event":"clip_card","text":"Hindi ko sigurado kung nasaan si Lola. Pakitingnan."}`.
 - `clip_scan` (backstage, one per scan): `{"event":"clip_scan","rooms":[],"frames":0,"detections":0,"ms":0}`.
 
