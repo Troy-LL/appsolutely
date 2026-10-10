@@ -8,7 +8,7 @@
 
 https://github.com/user-attachments/assets/f177404b-7fa0-44b6-86a9-62e6333fe82a
 
-<sub>▶ Watch the 64-second demo with sound on.</sub>
+<sub>▶ 64-second demo. Turn the sound on.</sub>
 
 [**Try the live demo**](https://sino-demo.onrender.com) · [**Read the spec**](docs/sino/README.md) · [**See every feature**](docs/sino/features.md)
 
@@ -67,11 +67,11 @@ Everything in that picture runs inside the house, on one Mac acting as the hub. 
 | **Backstage** (`/backstage`) | Mac | Every decision, line by line, with an OFFLINE badge, a health light for each part, and a box to type a test question. |
 
 <p align="center">
-  <img src="web/caregiver/shots/home-red-yellow.png" alt="Caregiver phone with a red urgent card and a yellow meal card" height="320">
+  <img src="web/caregiver/shots/home-readme.png" alt="Caregiver phone home screen with a yellow &quot;no meal logged&quot; card under Lola needs you" height="320">
   &nbsp;&nbsp;
   <img src="web/backstage/proof-hub.png" alt="Backstage log showing a question decided by a rule" height="320">
 </p>
-<p align="center"><sub>Left: the caregiver phone with an urgent card and a "no meal logged" card. Right: backstage, showing a rule decide a known question.</sub></p>
+<p align="center"><sub>Left: the caregiver phone home screen, with a "no meal logged" card waiting for the family. Right: backstage, showing a rule decide a known question.</sub></p>
 
 ## Try it
 
