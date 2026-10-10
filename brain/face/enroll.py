@@ -19,11 +19,39 @@ PEOPLE = ("troy", "joy", "donita")
 MAX_FRAME = 2 * 1024 * 1024
 
 
+def _hub_faces():
+    raw = os.environ.get("HUB_DATA", "").strip()
+    root = Path(raw).expanduser() if raw else FACE_DIR.parent.parent / "hub" / "data"
+    if not root.is_absolute():
+        root = FACE_DIR.parent.parent / root
+    return root / "faces"
+
+
+def _has_photos(root):
+    if not root.is_dir():
+        return False
+    for person in PEOPLE:
+        folder = root / person
+        if not folder.is_dir():
+            continue
+        for path in folder.iterdir():
+            if path.is_file() and path.suffix.lower() in PHOTO_SUFFIXES:
+                return True
+    return False
+
+
 def gallery_path():
     raw = os.environ.get("FACE_GALLERY", "").strip()
     if raw:
-        return Path(raw)
-    return FACE_DIR / "gallery"
+        given = Path(raw).expanduser()
+        if not given.is_absolute():
+            given = FACE_DIR.parent.parent / given
+        return given
+    preferred = _hub_faces()
+    legacy = FACE_DIR / "gallery"
+    if not _has_photos(preferred) and _has_photos(legacy):
+        return legacy
+    return preferred
 
 
 def _folder(person):
@@ -124,9 +152,10 @@ def _one(gallery, person, blob):
             return fail, None
         folder.mkdir(parents=True, exist_ok=True)
         tmp = dest.with_name(dest.name + ".tmp")
-        tmp.write_bytes(encoded.tobytes())
+        crop_bytes = encoded.tobytes()
+        tmp.write_bytes(crop_bytes)
         os.replace(tmp, dest)
-        return {"ok": True}, bytes(blob)
+        return {"ok": True}, crop_bytes
     except Exception:
         return fail, None
 

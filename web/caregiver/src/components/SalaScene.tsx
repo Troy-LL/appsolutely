@@ -2,8 +2,9 @@
 // the Sino box on a side table, and the lamp (amber). Decoration only.
 const INK = '#2b2420', PAPER = '#f4ede0', GREEN = '#2f5e4e', AMBER = '#e9a83a'
 
-export function SalaScene({ initials }: { initials: string[] }) {
+export function SalaScene({ initials, photos = [] }: { initials: string[]; photos?: string[] }) {
   const [a = '', b = '', c = ''] = initials
+  const [pa = '', pb = '', pc = ''] = photos
   return (
     <svg viewBox="0 0 340 150" aria-hidden="true">
       <rect width="340" height="150" fill={PAPER} />
@@ -12,10 +13,13 @@ export function SalaScene({ initials }: { initials: string[] }) {
       <rect x="28" y="30" width="34" height="42" rx="3" fill={PAPER} stroke={GREEN} strokeWidth="5" />
       <rect x="76" y="28" width="44" height="54" rx="3" fill={PAPER} stroke={INK} strokeWidth="6" />
       <rect x="202" y="30" width="32" height="40" rx="3" fill={PAPER} stroke={INK} strokeWidth="5" />
+      {pa ? <image href={pa} x="31" y="33" width="28" height="36" preserveAspectRatio="xMidYMid slice" /> : null}
+      {pb ? <image href={pb} x="80" y="32" width="36" height="46" preserveAspectRatio="xMidYMid slice" /> : null}
+      {pc ? <image href={pc} x="205" y="33" width="26" height="34" preserveAspectRatio="xMidYMid slice" /> : null}
       <g fontFamily="Fredoka, sans-serif" fontWeight="600" fill={INK} textAnchor="middle">
-        <text x="45" y="57" fontSize="15">{a}</text>
-        <text x="98" y="61" fontSize="18">{b}</text>
-        <text x="218" y="56" fontSize="14">{c}</text>
+        {pa ? null : <text x="45" y="57" fontSize="15">{a}</text>}
+        {pb ? null : <text x="98" y="61" fontSize="18">{b}</text>}
+        {pc ? null : <text x="218" y="56" fontSize="14">{c}</text>}
       </g>
       <circle cx="160" cy="50" r="20" fill={PAPER} stroke={INK} strokeWidth="5" />
       <path d="M160 50 V38 M160 50 L168 55" stroke={INK} strokeWidth="3" strokeLinecap="round" />

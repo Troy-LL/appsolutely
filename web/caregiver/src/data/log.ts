@@ -17,6 +17,7 @@ export type LogAction =
   | { type: 'unmarkRead'; id: string }
   | { type: 'replySaved'; id: string; speaker: string }
   | { type: 'load'; entries: Entry[] } // restore what this phone saved earlier
+  | { type: 'hubLog'; entries: Entry[] } // decisions and meals from the hub log
   | { type: 'addNote'; entry: Entry } // an activity the caregiver logged
   | { type: 'removeNote'; id: string }
 
@@ -28,6 +29,10 @@ export function logReducer(state: LogState, action: LogAction): LogState {
       return applyHubEvent(state, action.event, action.at)
     case 'load':
       return { ...state, entries: [...state.entries, ...action.entries.filter((x) => !state.entries.some((y) => y.id === x.id))].sort((a, b) => b.at - a.at) }
+    case 'hubLog': {
+      const notes = state.entries.filter((x) => x.id.startsWith('note-') && !x.sentToHub)
+      return { ...state, entries: [...action.entries, ...notes].sort((a, b) => b.at - a.at) }
+    }
     case 'addNote':
       return { ...state, entries: [action.entry, ...state.entries] }
     case 'removeNote':

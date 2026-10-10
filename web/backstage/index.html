@@ -259,6 +259,23 @@ function onEvent(msg) {
     }
     case "safety_word":
       return showSafetyWord(msg.word);
+    case "log":
+      return onLog(msg.entries);
+  }
+}
+
+function onLog(entries) {
+  if (!Array.isArray(entries) || !entries.length) return;
+  $("recent").replaceChildren();
+  $("older").replaceChildren();
+  committedIds.clear();
+  ignoredCount = 0;
+  $("ignored-tag").textContent = "TV lines ignored: 0";
+  for (let i = 0; i < entries.length; i++) {
+    const row = entries[i];
+    if (!row || typeof row !== "object" || row.event) continue;
+    if (typeof row.transcript !== "string" || !row.action) continue;
+    commit({ transcript: row.transcript, utterance_id: row.utterance_id || ("log-" + i) }, row);
   }
 }
 

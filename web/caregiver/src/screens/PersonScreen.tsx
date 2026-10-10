@@ -26,7 +26,7 @@ export function PersonScreen({ t, person, questions, onBack, onCalibrate }: {
       </div>
       <div className="sn-scroll">
         <div className="sn-person">
-          <Frame name={person.name} color={person.color} size="l" show photo={mine.find((q) => q.photo)?.photo} />
+          <Frame name={person.name} color={person.color} size="l" show photo={person.photo || mine.find((q) => q.photo)?.photo} />
           <p className="sn-person__meta">{t.one('recordedReplies', { n: mine.filter(playable).length })}</p>
           {enrolled && onCalibrate ? (
             <button type="button" className="sn-btn sn-btn--wide" onClick={onCalibrate}>{slash(t, copy.addFace)}</button>

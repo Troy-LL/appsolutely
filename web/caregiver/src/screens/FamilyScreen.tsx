@@ -46,7 +46,7 @@ export function FamilyScreen({ t, people, replyCount, justAdded, onUndoAdd, onPe
           {people.map((x, i) => (
             <div className="sn-hang" key={x.name}>
               <Nail />
-              <Frame name={x.name} color={x.color} size="wall" tilt={TILTS[i % 3]}
+              <Frame name={x.name} color={x.color} size="wall" tilt={TILTS[i % 3]} photo={x.photo}
                 meta={t.one('replies', { n: replyCount(x.name) })}
                 ariaLabel={t.one('personReplies', { name: x.name })} onClick={() => onPerson(x.name)} />
             </div>
