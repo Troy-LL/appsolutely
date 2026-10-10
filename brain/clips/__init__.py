@@ -621,10 +621,9 @@ def clip_path(room, folder=None):
         return None
     wanted = {stem.lower() for stem in file_stems(room)}
     folder = Path(folder) if folder else media_dir()
-    for path in _clip_files(folder):
-        if path.stem.lower() in wanted:
-            return path
-    return None
+    matches = [path for path in _clip_files(folder) if path.stem.lower() in wanted]
+    matches.sort(key=lambda path: (path.suffix.lower() != ".mp4", path.name))
+    return matches[0] if matches else None
 
 
 def room_rows():

@@ -1507,7 +1507,7 @@ if _demo_dir.is_dir():
 
 _landing_dir = WEB_DIR / "landing"
 if _landing_dir.is_dir():
-    app.mount("/", ScreenFiles(directory=_landing_dir, html=True), name="landing")
+    app.mount("/landing", StaticFiles(directory=_landing_dir), name="landing")
 
 
 if __name__ == "__main__":
