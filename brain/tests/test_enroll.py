@@ -30,6 +30,7 @@ os.environ["FACE_GALLERY"] = str(_TMP / "gallery")
 os.environ["HUB_DATA"] = str(_TMP / "hub")
 os.environ["OFFLINE_PROBE"] = "http://127.0.0.1:9"
 os.environ["HUB_URL"] = "http://127.0.0.1:9"
+os.environ["CLIP_MEDIA"] = str(_TMP / "clips")
 os.environ.pop("CERT", None)
 os.environ.pop("KEY", None)
 

@@ -39,6 +39,7 @@ os.environ["SINO_MODEL"] = "stub"
 os.environ["SINO_LOG"] = str(TMP / "decisions.jsonl")
 os.environ["OFFLINE_PROBE"] = "http://127.0.0.1:9"
 os.environ["HUB_URL"] = "http://127.0.0.1:9"  # stub mode: the health light never asks Ollama
+os.environ["CLIP_MEDIA"] = str(TMP / "clips")
 for name in ("CERT", "KEY", "CHIME", "QUIET_DBFS", "WHISPER_HINT", "MIC_DEVICE", "ALWAYS_LISTEN",
              "GATE_MARGIN_DB", "GATE_DBFS", "SILENCE_SECONDS", "MAX_CLIP_SECONDS",
              "REPLY_DEAF_SECONDS", "CHIME_DEAF_SECONDS"):

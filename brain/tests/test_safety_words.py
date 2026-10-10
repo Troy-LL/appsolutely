@@ -26,6 +26,7 @@ os.environ["SINO_SAFETY_WORDS"] = str(TMP / "safety-words.json")
 os.environ["SINO_LOG"] = str(TMP / "decisions.jsonl")
 os.environ["OFFLINE_PROBE"] = "http://127.0.0.1:9"
 os.environ["CAREGIVER_DIST"] = str(TMP / "no-dist")
+os.environ["CLIP_MEDIA"] = str(TMP / "clips")
 os.environ.pop("CERT", None)
 os.environ.pop("KEY", None)
 

@@ -11,6 +11,9 @@ brain/face/gallery/*
 !brain/face/gallery/README.md
 brain/clips/media/*
 !brain/clips/media/README.md
+!brain/clips/media/dining.mp4
+!brain/clips/media/stairs.mp4
+!brain/clips/media/balcony.mp4
 *.jpg
 *.jpeg
 !web/lola/practice.jpg

@@ -170,13 +170,13 @@ TODO: contract gap — meals check (T4m), for Viviene's V4. Post in the team cha
 
 TODO: contract gap — `play_reply` has no speaker name. Additive field `speaker`: the speaker of the reply that actually played, `""` when unknown. A "Sino ka?" face match uses that person's `by_person` entry; `meal-check` uses the chosen variant's `speaker`; otherwise the seed `speaker` for that `reply_id`. Lola's screen shows it as the name on the frame and never invents one.
 
-TODO: contract gap — recorded-clip demo, all additive, nothing renamed. Post them in the team chat. Footage stays on the hub (`brain/clips/media/`, gitignored). Frames stay in memory. The snapshot goes to the caregiver only, never to Lola's screen.
+TODO: contract gap — recorded-clip demo, all additive, nothing renamed. Post them in the team chat. The three demo files `dining.mp4` (Kainan), `stairs.mp4` (Hagdan), and `balcony.mp4` (Balkonahe) are in the clone. Any other file in `brain/clips/media/` stays on the hub and is gitignored. `.mov` and `.webm` with the same stem count too. Frames stay in memory. The snapshot goes to the caregiver only, never to Lola's screen.
 
 - `POST /clips`: optional multipart file `clip` (`.mp4`, `.mov`, `.webm`). Saving a file, or a POST with no file, scans the folder again. The scan also runs at startup, in the background when clips are present, and never when the question is asked.
 - `GET /clips/snapshot`: the latest in-memory JPEG, or 404 when nothing was detected. Optional `?room=` (`hagdan`, `kainan`, or `balkonahe`) returns that room's JPEG instead of the winner.
-- `GET /clips/rooms`: `{rooms:[{id,tl,en,file,detected,clip_offset_s,scanned_at}]}` for Hagdan, Kainan, and Balkonahe, in that order, even when a file is missing. `stairs.MOV` is Hagdan, `dining.MOV` is Kainan, `balcony.MOV` is Balkonahe.
-- `GET /clips/file/{room}`: that room's video (`video/mp4`, `video/quicktime`, or `video/webm`). Unknown ids (including `kusina`) are 404.
-- `about_lola` gains `snapshot` (`"/clips/snapshot"`) and `label` (`"RECORDED CLIP · DEMO"`) only when the answer comes from a recording. The spoken room is the Tagalog name (Hagdan, Kainan, Balkonahe). The files are `stairs.MOV`, `dining.MOV`, and `balcony.MOV`.
+- `GET /clips/rooms`: `{rooms:[{id,tl,en,file,detected,clip_offset_s,scanned_at}]}` for Hagdan, Kainan, and Balkonahe, in that order, even when a file is missing. English stems are `stairs` (Hagdan), `dining` (Kainan), and `balcony` (Balkonahe); the clone ships `stairs.mp4`, `dining.mp4`, and `balcony.mp4`, and `.mov`/`.MOV`/`.webm` with the same stem count too.
+- `GET /clips/file/{room}`: that room's video (`video/mp4`, `video/quicktime`, or `video/webm`). Unknown ids (including `kusina` and `sala`) are 404.
+- `about_lola` gains `snapshot` (`"/clips/snapshot"`) and `label` (`"RECORDED CLIP · DEMO"`) only when the answer comes from a recording. The spoken room is the Tagalog name (Hagdan, Kainan, Balkonahe).
 - `clip_card` (caregiver socket only, when nothing was detected): `{"event":"clip_card","text":"Hindi ko sigurado kung nasaan si Lola. Pakitingnan."}`.
 - `clip_scan` (backstage, one per scan): `{"event":"clip_scan","rooms":[],"frames":0,"detections":0,"ms":0}`.
 
@@ -240,7 +240,7 @@ hub/start.sh stop     # stop only what hub/start.sh started
 - The family sets it up and controls everything. Pitch the caregiver as the user.
 - The mic is always on, so **nothing it hears leaves the house**. No audio is stored by default. Only transcripts and decisions go into the local log, and the family can delete it.
 - No voice samples are collected (voice ID is cut). No CCTV (cut). Family recordings and photos for replies stay on the hub.
-- Face match: troy, joy, and donita enroll from the caregiver phone. Gallery crops stay on the hub, are gitignored, and never leave the LAN. The one "Sino ka?" frame stays in memory. Recorded room clips stay on the hub too. There is no live camera on the caregiver monitor.
+- Face match: troy, joy, and donita enroll from the caregiver phone. Gallery crops stay on the hub, are gitignored, and never leave the LAN. The one "Sino ka?" frame stays in memory. The three demo room clips (`dining.mp4`, `stairs.mp4`, `balcony.mp4`) are in the clone and have no audio. Any other recording in `brain/clips/media/` stays on the hub. There is no live camera on the caregiver monitor.
 - No cloned or synthetic family voices, ever.
 - Not a medical device, not a diagnosis. It always escalates to a human.
 
