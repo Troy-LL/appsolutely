@@ -8,6 +8,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 
 from model import classify
+from scope import current_root
 
 try:
     from rapidfuzz.fuzz import ratio as _rapidfuzz_ratio
@@ -103,6 +104,9 @@ class SafetyWordError(ValueError):
 
 
 def safety_words_path():
+    root = current_root()
+    if root is not None:
+        return root / "safety-words.json"
     override = os.environ.get("SINO_SAFETY_WORDS", "")
     if override:
         return Path(override)
@@ -170,6 +174,12 @@ def _match_key(text):
 
 def load_seed(path=SEED_PATH):
     # The hub's working copy (SINO_SEED, set by brain/server.py) wins when that file exists.
+    if path == SEED_PATH:
+        root = current_root()
+        if root is not None:
+            session_copy = root / "questions.json"
+            if session_copy.is_file():
+                path = session_copy
     override = os.environ.get("SINO_SEED", "")
     if path == SEED_PATH and override and Path(override).is_file():
         path = override
@@ -749,6 +759,9 @@ def remember_phrasing(qid, text):
     heard = " ".join(str(text).split())
     if not qid or not heard or _phrasing_saved(qid, heard):
         return
+    if current_root() is not None:
+        _persist_phrasing(qid, heard)
+        return
     with _PHRASE_LOCK:
         if _phrasing_saved(qid, heard):
             return
@@ -760,10 +773,14 @@ def remember_phrasing(qid, text):
 
 
 def _persist_phrasing(qid, heard):
-    raw = os.environ.get("SINO_SEED", "")
-    if not raw:
-        return
-    path = Path(raw)
+    root = current_root()
+    if root is not None:
+        path = root / "questions.json"
+    else:
+        raw = os.environ.get("SINO_SEED", "")
+        if not raw:
+            return
+        path = Path(raw)
     try:
         if not path.is_file() or path.resolve() == SEED_PATH.resolve():
             return

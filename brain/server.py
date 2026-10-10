@@ -70,6 +70,11 @@ from questions import (  # noqa: E402
     media_dir, save_question, set_by_person_photo_if_empty,
 )
 from family import add_member, read_family, remove_member  # noqa: E402
+from demo_mode import (  # noqa: E402
+    DemoMiddleware, configure, is_demo, photo_cap, register_demo, reject_if_limited,
+    shutdown_sessions,
+)
+from scope import current_hub, current_root, pop_root, push_root  # noqa: E402
 # hub/listen.py (Donita, D4): listen now records the hub mic, runs Whisper and the junk filter.
 from listen import enable_mic, mic_ok, start_listen  # noqa: E402
 # hub/chime.py (Donita, D6): the urgent chime on the hub speaker.
@@ -86,6 +91,9 @@ DEFAULT_PORT = 8000
 
 
 def log_path():
+    root = current_root()
+    if root is not None:
+        return root / "decisions.jsonl"
     raw = os.environ.get("SINO_LOG", "")
     if raw:
         return Path(raw)
@@ -375,7 +383,8 @@ def model_mode():
 
 
 class Hub:
-    def __init__(self):
+    def __init__(self, root=None):
+        self.root = root
         self.clients = {}
         self.queue = None
         self.generation = 0
@@ -406,7 +415,8 @@ class Hub:
             "offline": bool(self._offline),
             "model": model_mode(),
             "last_event_at": self.last_event_at,
-            "simulated": os.environ.get("SINO_MODE", "").strip().lower() == "demo",
+            "mode": "demo" if is_demo() else model_mode(),
+            "simulated": is_demo(),
         }
 
     async def submit(self, text, audio=None):
@@ -416,19 +426,26 @@ class Hub:
     async def worker(self):
         while True:
             gen, text, audio = await self.queue.get()
-            while True:
-                try:
-                    newer = self.queue.get_nowait()
-                except asyncio.QueueEmpty:
-                    break
-                # The throttle drops older lines, but never one with an urgent word (QA D-01).
-                if urgent_words(text):
-                    await self.publish(text, await self._decide(text, audio))
-                gen, text, audio = newer
-            result = await self._decide(text, audio)
-            # A newer line came in while deciding: drop this one, unless it is urgent.
-            if gen != self.generation and result["action"] != "urgent":
-                continue
+            token = push_root(self.root) if self.root is not None else None
+            try:
+                await self._work(gen, text, audio)
+            finally:
+                if token is not None:
+                    pop_root(token)
+
+    async def _work(self, gen, text, audio):
+        while True:
+            try:
+                newer = self.queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+            # The throttle drops older lines, but never one with an urgent word (QA D-01).
+            if urgent_words(text):
+                await self.publish(text, await self._decide(text, audio))
+            gen, text, audio = newer
+        result = await self._decide(text, audio)
+        # A newer line came in while deciding: drop this one, unless it is urgent.
+        if gen == self.generation or result["action"] == "urgent":
             await self.publish(text, result)
 
     async def _decide(self, text, audio=None):
@@ -491,7 +508,10 @@ class Hub:
             decided["last_meal_ts"] = meal["last_meal_ts"]
         matched = None
         if result["action"] == "comfort" and result.get("reply_id") == "sino-ka":
-            matched = await asyncio.to_thread(look_at_camera)
+            if is_demo():
+                matched = seeded_troy()
+            else:
+                matched = await asyncio.to_thread(look_at_camera)
             decided["who"] = matched["who"]
         await self.send_to("backstage", heard)
         action = result["action"]
@@ -536,8 +556,9 @@ class Hub:
             self.lola_reply_got = set()
             self.urgent_transcript = text
             save_urgent_ack(True, text, None)
-            play_chime()  # hub speaker, returns at once (docs/sino/hub-chime.md); never /lola
-            deafen_for_chime()  # always-listening ignores the hub mic while the chime plays
+            if not is_demo():
+                play_chime()  # hub speaker, returns at once (docs/sino/hub-chime.md); never /lola
+                deafen_for_chime()  # always-listening ignores the hub mic while the chime plays
             await self.send_to("caregiver", {"event": "alert", "transcript": text})
         elif action == "caregiver":
             await self.send_to("caregiver", {
@@ -622,10 +643,14 @@ class Hub:
         event = data.get("event")
         if event == "meal_logged":
             if screen == "caregiver":
+                if reject_if_limited("write") is not None:
+                    return
                 append_meal()
             return
         if event == "urgent_reply":
             if screen != "caregiver":
+                return
+            if reject_if_limited("write") is not None:
                 return
             fields = reply_fields(data)
             if fields is None:
@@ -633,6 +658,8 @@ class Hub:
             await self.urgent_reply(fields)
             return
         if event != "ask_about_lola" or screen != "caregiver":
+            return
+        if reject_if_limited("write") is not None:
             return
         question = data.get("question", "")
         if not isinstance(question, str) or not question.strip() or len(question) > 2000:
@@ -668,6 +695,17 @@ class Hub:
 hub = Hub()
 
 
+def live_hub():
+    found = current_hub()
+    return found if found is not None else hub
+
+
+def _session_hub(root):
+    made = Hub(root=root)
+    made.queue = asyncio.Queue()
+    return made
+
+
 @asynccontextmanager
 async def lifespan(_app):
     restore_urgent()
@@ -687,6 +725,7 @@ async def lifespan(_app):
                 await task
             except asyncio.CancelledError:
                 pass
+        await shutdown_sessions()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -694,12 +733,15 @@ app = FastAPI(lifespan=lifespan)
 # Some Python builds have no .m4a mimetype; without it /media would not send an audio type.
 mimetypes.add_type("audio/mp4", ".m4a")
 install_seed_media()
+configure(_session_hub)
+register_demo(app)
+app.add_middleware(DemoMiddleware)
 app.mount("/media", StaticFiles(directory=media_dir()), name="media")
 
 
 @app.get("/health")
 def health():
-    return hub.health_payload()
+    return live_hub().health_payload()
 
 
 _DEMO_SID = uuid.uuid4().hex
@@ -736,6 +778,9 @@ async def _upload(part):
 
 @app.post("/questions")
 async def add_question(request: Request):
+    blocked = reject_if_limited("upload")
+    if blocked is not None:
+        return blocked
     # Multipart form: id, question, speaker, phrasings (repeated); files reply_audio, photo.
     # Optional play_now=1: the caregiver's reply to a yellow card, so Lola's iPad plays it now.
     try:
@@ -756,7 +801,7 @@ async def add_question(request: Request):
     # Quick setup and every other save leave out play_now, so they never make Lola's iPad speak.
     if play_now and saved.get("reply_audio"):
         # Same play_reply shape publish() sends for a comfort reply; Lola's screen already plays it.
-        await hub.send_to("lola", {
+        await live_hub().send_to("lola", {
             "event": "play_reply",
             "reply_id": saved["id"],
             "reply_audio": saved["reply_audio"],
@@ -774,6 +819,9 @@ def get_family():
 
 @app.post("/family")
 async def post_family(request: Request):
+    blocked = reject_if_limited("upload")
+    if blocked is not None:
+        return blocked
     # Multipart: name, color (green|amber|red), optional file photo.
     try:
         async with request.form() as form:
@@ -787,12 +835,15 @@ async def post_family(request: Request):
         return JSONResponse({"error": "bad form"}, status_code=400)
     event = {"event": "family_added", **member}
     for screen in SCREENS:
-        await hub.send_to(screen, event)
+        await live_hub().send_to(screen, event)
     return member
 
 
 @app.delete("/family/{mid}")
 async def delete_family(mid: str):
+    blocked = reject_if_limited("write")
+    if blocked is not None:
+        return blocked
     try:
         removed = remove_member(mid)
     except BadInput as exc:
@@ -801,12 +852,15 @@ async def delete_family(mid: str):
         return JSONResponse({"error": "no family member with that id"}, status_code=404)
     event = {"event": "family_removed", "id": removed.get("id", mid)}
     for screen in SCREENS:
-        await hub.send_to(screen, event)
+        await live_hub().send_to(screen, event)
     return removed
 
 
 @app.delete("/questions/{qid}")
 async def remove_question(qid: str):
+    blocked = reject_if_limited("write")
+    if blocked is not None:
+        return blocked
     try:
         removed = delete_question(qid)
     except BadInput as exc:
@@ -815,7 +869,7 @@ async def remove_question(qid: str):
         return JSONResponse({"error": "no question with that id"}, status_code=404)
     event = {"event": "question_removed", "id": removed.get("id", qid)}
     for screen in SCREENS:
-        await hub.send_to(screen, event)
+        await live_hub().send_to(screen, event)
     return removed
 
 
@@ -826,6 +880,9 @@ def get_safety_words():
 
 @app.post("/safety-words")
 async def post_safety_word(request: Request):
+    blocked = reject_if_limited("write")
+    if blocked is not None:
+        return blocked
     try:
         payload = await request.json()
     except Exception:
@@ -840,8 +897,8 @@ async def post_safety_word(request: Request):
     except SafetyWordError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
     event = {"event": "safety_word", "word": word}
-    await hub.send_to("caregiver", event)
-    await hub.send_to("backstage", event)
+    await live_hub().send_to("caregiver", event)
+    await live_hub().send_to("backstage", event)
     return {"word": word}
 
 
@@ -855,21 +912,29 @@ async def listen(request: Request):
         return Response(status_code=400)
     mode = payload.get("mode")
     if mode == "listen_now":
+        if is_demo():
+            return JSONResponse({"error": "no mic in demo"}, status_code=410)
         # Record, transcribe, and filter in the background; what happened arrives on /ws.
-        start_listen(hub)
+        start_listen(live_hub())
         return Response(status_code=202)
     if mode != "typed":
         return Response(status_code=400)
+    blocked = reject_if_limited("listen")
+    if blocked is not None:
+        return blocked
     text = payload.get("text", "")
     if not isinstance(text, str) or len(text) > 2000:
         return Response(status_code=400)
     if text.strip():
-        await hub.submit(text)
+        await live_hub().submit(text)
     return Response(status_code=202)
 
 
 @app.post("/urgent-reply")
 async def urgent_reply_upload(request: Request):
+    blocked = reject_if_limited("upload")
+    if blocked is not None:
+        return blocked
     try:
         async with request.form() as form:
             text = form.get("text")
@@ -890,7 +955,7 @@ async def urgent_reply_upload(request: Request):
     fields = reply_fields({"text": text, "speaker": speaker, "reply_audio": path})
     if fields is None:
         return JSONResponse({"error": "text or a recording is required"}, status_code=400)
-    payload = await hub.urgent_reply(fields)
+    payload = await live_hub().urgent_reply(fields)
     if payload is None:
         return JSONResponse({"error": "no active alert"}, status_code=409)
     return payload
@@ -899,7 +964,12 @@ async def urgent_reply_upload(request: Request):
 @app.post("/listen/audio")
 async def listen_audio(request: Request):
     # Multipart: audio (file), source (optional). 202 empty, or 400 {"error"}. Results on /ws.
-    return await receive_clip(hub, request)
+    if is_demo():
+        blocked = reject_if_limited("upload")
+        if blocked is not None:
+            return blocked
+        return JSONResponse({"error": "no mic in demo"}, status_code=410)
+    return await receive_clip(live_hub(), request)
 
 
 @app.websocket("/ws")
@@ -910,27 +980,28 @@ async def socket(websocket: WebSocket):
         await websocket.close(code=1008)
         return
     await websocket.accept()
-    hub.clients[websocket] = screen
+    bound = live_hub()
+    bound.clients[websocket] = screen
     if screen == "caregiver" and websocket.query_params.get("monitor") == "1":
-        hub.monitors.add(websocket)
+        bound.monitors.add(websocket)
     try:
-        payload = await asyncio.to_thread(hub.health_payload)
+        payload = await asyncio.to_thread(bound.health_payload)
         await websocket.send_text(json.dumps(payload, ensure_ascii=False))
         if screen in ("caregiver", "backstage"):
             snap = await asyncio.to_thread(_log_snapshot)
             if snap:
                 await websocket.send_text(json.dumps(snap, ensure_ascii=False))
         if screen == "lola":
-            await hub.replay_lola(websocket)
+            await bound.replay_lola(websocket)
         while True:
             raw = await websocket.receive_text()
-            await hub.on_message(websocket, screen, raw)
+            await bound.on_message(websocket, screen, raw)
     except WebSocketDisconnect:
         pass
     finally:
-        hub.clients.pop(websocket, None)
-        hub.lola_reply_got.discard(websocket)
-        hub.monitors.discard(websocket)
+        bound.clients.pop(websocket, None)
+        bound.lola_reply_got.discard(websocket)
+        bound.monitors.discard(websocket)
 
 
 # One webcam frame when "Sino ka?" is comfort. cv2 may be absent; the server still starts.
@@ -1005,6 +1076,28 @@ def _person_entry(who):
             photo = ""
         return audio, photo, _text(person.get("speaker"))
     return None
+
+
+def seeded_troy():
+    person = _person_entry("troy")
+    audio, photo, speaker = "/media/sino-ka-troy-reply.m4a", "", "Troy"
+    if person is not None:
+        found_audio, found_photo, found_speaker = person
+        if found_audio:
+            audio = found_audio
+        if found_photo:
+            photo = found_photo
+        if found_speaker:
+            speaker = found_speaker
+    return {
+        "who": "troy",
+        "seen_who": "troy",
+        "score": 1.0,
+        "audio": audio,
+        "photo": photo,
+        "speaker": speaker,
+        "use_person": True,
+    }
 
 
 def look_at_camera():
@@ -1087,6 +1180,11 @@ def recognize(jpeg):
 
 @app.post("/face/frame")
 async def face_frame(request: Request):
+    if is_demo():
+        blocked = reject_if_limited("upload")
+        if blocked is not None:
+            return blocked
+        return JSONResponse({"error": "no camera in demo"}, status_code=410)
     length = request.headers.get("content-length")
     if length is not None:
         try:
@@ -1102,7 +1200,7 @@ async def face_frame(request: Request):
             return Response("frame too large", status_code=400)
         chunks.append(chunk)
     result = await asyncio.to_thread(recognize, b"".join(chunks))
-    await hub.send_to("backstage", {
+    await live_hub().send_to("backstage", {
         "event": "face_seen",
         "who": result["who"],
         "score": result["score"],
@@ -1121,6 +1219,9 @@ def face_gallery():
 @app.post("/face/enroll/{person}")
 async def face_enroll(person: str, request: Request):
     global _gallery, _gallery_tried
+    blocked = reject_if_limited("upload")
+    if blocked is not None:
+        return blocked
     if person not in ("troy", "joy", "donita"):
         return JSONResponse({"error": "unknown person"}, status_code=400)
     try:
@@ -1129,7 +1230,10 @@ async def face_enroll(person: str, request: Request):
             uploads = [item for item in form.getlist("frames") if isinstance(item, UploadFile)]
             if len(uploads) < 1 or len(uploads) > 5:
                 return JSONResponse({"error": "send 1 to 5 jpegs"}, status_code=400)
-            blobs = [await item.read(MAX_FRAME + 1) for item in uploads]
+            cap = photo_cap() if is_demo() else MAX_FRAME
+            blobs = [await item.read(cap + 1) for item in uploads]
+            if is_demo() and any(len(blob) > cap for blob in blobs):
+                return JSONResponse({"error": "photo too large"}, status_code=413)
     except Exception:
         return JSONResponse({"error": "send 1 to 5 jpegs"}, status_code=400)
     try:
@@ -1157,7 +1261,7 @@ async def face_enroll(person: str, request: Request):
             photo = None
     if isinstance(photo, str) and photo:
         body["photo"] = photo
-        await hub.send_to("caregiver", {"event": "face_photo", "person": person, "photo": photo})
+        await live_hub().send_to("caregiver", {"event": "face_photo", "person": person, "photo": photo})
     return body
 
 
@@ -1175,12 +1279,14 @@ def main():
     # Point load_seed() at the hub's working copy. Done here, not at import, so
     # brain/tests/test_server.py (which imports app) keeps reading brain/seed.json.
     os.environ.setdefault("SINO_SEED", str(ensure_working_copy()))
-    # Only the hub process opens the mic, so test_server.py (mic false, listen now silent) still holds.
-    enable_mic()
-    # Same for the chime: only the hub process makes sound (CHIME=0 keeps it off).
-    enable_chime()
-    # Always-listening: only the hub process, and only with ALWAYS_LISTEN=1 (off by default).
-    enable_always()
+    # Demo never opens the mic, the laptop chime, or always-listening.
+    if not is_demo():
+        # Only the hub process opens the mic, so test_server.py (mic false, listen now silent) still holds.
+        enable_mic()
+        # Same for the chime: only the hub process makes sound (CHIME=0 keeps it off).
+        enable_chime()
+        # Always-listening: only the hub process, and only with ALWAYS_LISTEN=1 (off by default).
+        enable_always()
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", str(DEFAULT_PORT)))
     uvicorn.run(app, host=host, port=port, log_level="info", **_ssl_kwargs())
@@ -1220,6 +1326,8 @@ async def _on_message_clips(self, websocket, screen, raw):
     question = _asked(raw, screen)
     if question is None:
         await _hub_on_message(self, websocket, screen, raw)
+        return
+    if reject_if_limited("write") is not None:
         return
     log = read_log()
     result = await asyncio.to_thread(answer_about_lola, question, log)
@@ -1297,11 +1405,16 @@ async def _save_clip(request):
 
 @app.post("/clips")
 async def post_clips(request: Request):
+    if is_demo():
+        blocked = reject_if_limited("upload")
+        if blocked is not None:
+            return blocked
+        return JSONResponse({"error": "committed media only"}, status_code=410)
     saved = await _save_clip(request)
     if isinstance(saved, JSONResponse):
         return saved
     summary = await asyncio.to_thread(clipwhere.scan)
-    await hub.send_to("backstage", clipwhere.scan_event(summary))
+    await live_hub().send_to("backstage", clipwhere.scan_event(summary))
     return summary
 
 

@@ -23,6 +23,7 @@ ROOT = HERE.parent
 sys.path.insert(0, str(ROOT))
 
 os.environ["SINO_MODEL"] = "stub"
+os.environ.pop("SINO_MODE", None)
 os.environ["SINO_LOG"] = str(HERE / "_test_decisions.jsonl")
 os.environ["OFFLINE_PROBE"] = "http://127.0.0.1:9"
 os.environ["CAREGIVER_DIST"] = str(HERE / "_no_caregiver_dist")
@@ -59,6 +60,8 @@ HEALTH_KEYS = {
     "offline",
     "model",
     "last_event_at",
+    "mode",
+    "simulated",
 }
 PLAY_KEYS = {"event", "reply_id", "reply_audio", "photo", "speaker"}
 LINES = (
@@ -260,6 +263,8 @@ async def _run():
                         raise AssertionError(sorted(health))
                     if health["event"] != "health" or health["model"] != "stub":
                         raise AssertionError(health)
+                    if health["mode"] != "stub" or health["simulated"] is not False:
+                        raise AssertionError(health)
                     if health["offline"] is not True or health["server"] is not True:
                         raise AssertionError(health)
                     if not isinstance(health["whisper"], bool) or not isinstance(health["ollama"], bool):
@@ -319,6 +324,8 @@ async def _run():
                 with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2) as res:
                     payload = json.loads(res.read().decode("utf-8"))
                 if payload["model"] != "stub" or payload["offline"] is not True:
+                    raise AssertionError(payload)
+                if payload["mode"] != "stub" or payload["simulated"] is not False:
                     raise AssertionError(payload)
                 if not payload["last_event_at"]:
                     raise AssertionError(payload["last_event_at"])
