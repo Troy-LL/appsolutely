@@ -6,7 +6,7 @@ import { openFakeFeed } from '../../../fake-feed/index.js'
 import { openCaregiverSocket, type LinkStatus } from '../feed/connect'
 // The real seed file, used for "What Sino knows" while on the fake feed.
 import seed from '../../../../brain/seed.json'
-import type { HubEvent, Question } from '../types'
+import type { HubEvent, MemberColor, Question } from '../types'
 import { SAFETY_WORDS } from './safetyWords'
 
 export const USING_HUB =
@@ -145,6 +145,81 @@ export async function addSafetyWord(word: string): Promise<{ word: string } | 'f
     throw new Error(why)
   }
   return (await res.json()) as { word: string }
+}
+
+export interface FamilyMember {
+  id: string
+  name: string
+  color: MemberColor
+  photo: string
+}
+
+const COLORS: MemberColor[] = ['green', 'amber', 'red']
+
+export function readMember(value: unknown): FamilyMember | null {
+  if (!value || typeof value !== 'object') return null
+  const row = value as Record<string, unknown>
+  const name = typeof row.name === 'string' ? row.name.trim() : ''
+  const id = typeof row.id === 'string' ? row.id : ''
+  if (!name || !id) return null
+  const color = COLORS.includes(row.color as MemberColor) ? (row.color as MemberColor) : 'green'
+  const photo = typeof row.photo === 'string' ? row.photo : ''
+  return { id, name, color, photo }
+}
+
+// GET /family. Fake feed has no hub file, so the wall keeps what this phone added.
+export async function loadFamily(): Promise<FamilyMember[]> {
+  if (!USING_HUB) return []
+  const res = await fetch('/family')
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const body = (await res.json()) as { members?: unknown }
+  if (!Array.isArray(body.members)) return []
+  return body.members.map(readMember).filter((member): member is FamilyMember => member !== null)
+}
+
+function photoExt(file: File): string {
+  const fromName = file.name.split('.').pop()?.toLowerCase() ?? ''
+  if (fromName === 'jpeg' || fromName === 'jpg') return 'jpg'
+  if (fromName === 'png' || fromName === 'webp' || fromName === 'heic') return fromName
+  if (file.type === 'image/png') return 'png'
+  if (file.type === 'image/webp') return 'webp'
+  if (file.type === 'image/heic' || file.type === 'image/heif') return 'heic'
+  return 'jpg'
+}
+
+// POST /family. Multipart name, color, and optional photo. Returns the stored member.
+export async function addFamilyMember(opts: {
+  name: string
+  color: MemberColor
+  photo?: File
+}): Promise<FamilyMember | 'fake'> {
+  if (!USING_HUB) return 'fake'
+  const form = new FormData()
+  form.append('name', opts.name.slice(0, 60))
+  form.append('color', opts.color)
+  if (opts.photo) form.append('photo', opts.photo, `photo.${photoExt(opts.photo)}`)
+  const res = await fetch('/family', { method: 'POST', body: form })
+  if (!res.ok) {
+    let why = `HTTP ${res.status}`
+    try {
+      const body = (await res.json()) as { error?: string }
+      if (body.error) why = body.error
+    } catch {
+      /* keep the status code */
+    }
+    throw new Error(why)
+  }
+  const member = readMember(await res.json())
+  if (!member) throw new Error('bad member')
+  return member
+}
+
+// DELETE /family/{id}. 404 means the frame is already gone.
+export async function removeFamilyMember(id: string): Promise<void> {
+  if (!USING_HUB) return
+  const res = await fetch(`/family/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  if (res.ok || res.status === 404) return
+  throw new Error(`HTTP ${res.status}`)
 }
 
 // POST /urgent-reply. A recorded voice on an urgent card; the hub stores it and tells Lola.

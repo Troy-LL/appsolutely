@@ -82,6 +82,7 @@ export const en: Record<keyof typeof tl, string> = {
   colorAmber: 'Lamp yellow',
   colorRed: 'Roof red',
   localOnly: 'On this phone only for now. Their replies are added in Setup.',
+  savedOnHub: 'Saved on the box in the sala, so a refresh keeps them. Their replies are still added in Setup.',
   account: 'Your account',
   role: "Lola's caregiver",
   home: "Lola's home",

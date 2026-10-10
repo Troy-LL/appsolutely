@@ -1,8 +1,8 @@
 # Caregiver phone (`/caregiver`)
 
-The caregiver's iPhone screen for Sino. Owner: Viviene. Frontend only: it reads the hub's
-existing `/ws`, `GET /questions` and `POST /questions` ([architecture.md](../../docs/sino/architecture.md#the-3-interfaces-locked-in-the-first-15-minutes))
-and adds nothing to the backend. Look and words follow [design-system.md](../../docs/sino/design-system.md).
+The caregiver's iPhone screen for Sino. Owner: Viviene. It reads the hub's
+`/ws`, questions, and family routes ([architecture.md](../../docs/sino/architecture.md#the-3-interfaces-locked-in-the-first-15-minutes)).
+Look and words follow [design-system.md](../../docs/sino/design-system.md).
 
 ## Run it
 
@@ -13,7 +13,7 @@ npm run dev            # fake feed: http://localhost:5173/
 ```
 
 - **Fake feed (default).** Plays `web/fake-feed`'s script, so the screen works with no hub. A "Fake feed" tag shows in the top bar. "What Sino knows" reads `brain/seed.json`. Saving a reply does not send anything.
-- **Real hub.** Start the hub (`brain/server.py`, port 8000), then open `http://localhost:5173/?feed=hub`. Vite proxies `/ws`, `/questions`, `/media` and `/health` to the hub. Point it elsewhere with `HUB=https://<hub-ip>:8000 npm run dev`.
+- **Real hub.** Start the hub (`brain/server.py`, port 8000), then open `http://localhost:5173/?feed=hub`. Vite proxies `/ws`, `/questions`, `/family`, `/media` and `/health` to the hub. Point it elsewhere with `HUB=https://<hub-ip>:8000 npm run dev`.
 - **On the iPhone.** The mic needs HTTPS. Use the hub's mkcert setup (`docs/sino/DONITA-SETUP.md`). TODO: serve `dist/` from the hub at `/caregiver` (backend change, not in this folder).
 - `npm run build` type-checks and writes `dist/`.
 
@@ -32,7 +32,8 @@ npm run dev            # fake feed: http://localhost:5173/
 | (this phone only) | **Day receipt**: today as a torn paper receipt with totals; complete from 9 in the evening. "Print or save" opens the phone's print sheet. |
 | `health` | Sala status bar: green when every part is up, amber naming the part that is down. Account shows each part. |
 | `POST /questions` | Saving a recording: Lola's words become `question` and `phrasings`, your recording `reply_audio`, your name `speaker`. |
-| `GET /questions` | The family wall (one frame per `speaker`) and "What Sino knows". |
+| `GET /questions` | The family wall (one frame per `speaker`) and "What Sino knows". Joy, Troy, and Donita show `by_person.<id>.photo` in the frame when that photo is set. |
+| `GET /family`, `POST /family` | Magdagdag saves the new member on the hub (`hub/data/family.json`). A photo from the gallery or camera is stored under `hub/data/media` and shown in that frame. A refresh or a hub restart keeps both. Other open screens get `family_added`. |
 
 Also: Tagalog / English / Both (`src/i18n/tl.ts`, `en.ts`), text size A / A+ / A++, times in words.
 

@@ -81,6 +81,7 @@ export const tl = {
   colorAmber: 'Dilaw ng lampara',
   colorRed: 'Pula ng bubong',
   localOnly: 'Sa teleponong ito lang muna. Ang mga sagot niya ay idinadagdag sa Setup.',
+  savedOnHub: 'Naitago sa kahon sa sala, kaya nandito pa rin pag na-refresh. Ang mga sagot niya ay idinadagdag pa rin sa Setup.',
   account: 'Ang account mo',
   role: 'Tagapag-alaga ni Lola',
   home: 'Bahay ni Lola',
