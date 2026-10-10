@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sino demo</title>
+  <link rel="icon" href="/lola/favicon.png" type="image/png">
+  <link rel="stylesheet" href="/demo/demo.css">
+</head>
+<body>
+  <p class="banner">Demo mode · seeded data · simulated model</p>
+  <header class="bar">
+    <img class="logo" src="/demo/sino-logo.webp" alt="Sino">
+    <div class="bar-actions">
+      <button type="button" class="btn" id="start-tour">Try it in 60 seconds</button>
+      <button type="button" class="btn btn--quiet" id="reset">Reset demo</button>
+    </div>
+  </header>
+
+  <div class="tour" id="tour" hidden>
+    <p class="tour-kicker" id="tour-kicker"></p>
+    <p class="tour-copy" id="tour-copy"></p>
+    <p class="tour-status" id="tour-status" role="status"></p>
+    <div class="tour-actions">
+      <button type="button" class="btn" id="tour-next">Next</button>
+      <button type="button" class="btn btn--quiet" id="tour-skip">Skip</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <figure class="device" id="frame-lola">
+      <figcaption>Lola's iPad</figcaption>
+      <div class="bezel bezel--ipad">
+        <iframe id="view-lola" title="Lola's screen" src="/lola/?feed=hub&amp;demo=1&amp;mic=off"></iframe>
+      </div>
+    </figure>
+    <figure class="device" id="frame-caregiver">
+      <figcaption>Caregiver phone</figcaption>
+      <div class="bezel bezel--phone">
+        <iframe id="view-caregiver" title="Caregiver phone" src="/caregiver/?feed=hub&amp;demo=1&amp;mic=off"></iframe>
+      </div>
+    </figure>
+    <figure class="device" id="frame-backstage">
+      <figcaption>Backstage</figcaption>
+      <div class="bezel bezel--back">
+        <iframe id="view-backstage" title="Backstage" src="/backstage/?feed=hub&amp;demo=1&amp;mic=off"></iframe>
+      </div>
+    </figure>
+  </div>
+  <script type="module" src="/demo/tour.js"></script>
+</body>
+</html>

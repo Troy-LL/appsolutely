@@ -406,6 +406,7 @@ class Hub:
             "offline": bool(self._offline),
             "model": model_mode(),
             "last_event_at": self.last_event_at,
+            "simulated": os.environ.get("SINO_MODE", "").strip().lower() == "demo",
         }
 
     async def submit(self, text, audio=None):
@@ -699,6 +700,21 @@ app.mount("/media", StaticFiles(directory=media_dir()), name="media")
 @app.get("/health")
 def health():
     return hub.health_payload()
+
+
+_DEMO_SID = uuid.uuid4().hex
+
+
+@app.get("/demo/state")
+def demo_state():
+    return {"sid": _DEMO_SID}
+
+
+@app.post("/demo/reset")
+async def demo_reset():
+    global _DEMO_SID
+    _DEMO_SID = uuid.uuid4().hex
+    return {"sid": _DEMO_SID}
 
 
 @app.get("/questions")
@@ -1367,6 +1383,18 @@ if _backstage_dir.is_dir():
 
 if (WEB_DIR / "fake-feed").is_dir():
     app.mount("/fake-feed", StaticFiles(directory=WEB_DIR / "fake-feed"), name="fake-feed")
+
+_demo_dir = WEB_DIR / "demo"
+if _demo_dir.is_dir():
+    @app.get("/demo", include_in_schema=False)
+    def _demo_slash():
+        return RedirectResponse("/demo/", status_code=307)
+
+    app.mount("/demo", ScreenFiles(directory=_demo_dir, html=True), name="demo")
+
+_landing_dir = WEB_DIR / "landing"
+if _landing_dir.is_dir():
+    app.mount("/", ScreenFiles(directory=_landing_dir, html=True), name="landing")
 
 
 if __name__ == "__main__":

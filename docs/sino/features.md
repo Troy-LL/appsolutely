@@ -131,3 +131,7 @@ Recording replies from family abroad (OFW), learning which voice calms her best,
 - **Caregiver app:** one-handed, one action per card, Taglish labels. Only red makes sound.
 - **Behind-the-scenes screen:** hidden from families; dense is fine.
 - Every screen has empty, loading, result, and error states ([../../AGENTS.md](../../AGENTS.md)).
+
+## Public demo
+
+`/` (`web/landing`) is the door: the Sino mark, one line on what it does, and three ways in (Lola's screen, the caregiver phone, backstage). `/demo/` puts those three screens side by side. "Try it in 60 seconds" (`/demo/?tour=1`) walks five beats on one session: "Nasaan si Nanay?", the television line, the meal, the urgent line and "Papunta na ako", then "Kamusta si Lola?". The banner on each view reads "Demo mode · seeded data · simulated model". No published video URL is written down, so the landing links the GitHub repo only.
