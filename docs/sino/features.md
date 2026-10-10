@@ -8,11 +8,11 @@ Scope rules (Troy, Sat 2:00 AM): the MVP is frozen at **3:30 AM Sat** (moved fro
 
 1. The hub hears Lola, transcribes her, and runs `decide()`.
 2. A known question gets the family's recorded voice and photo on the iPad.
-3. An urgent line gets the hub chime and a red card on the caregiver phone.
+3. An urgent line gets a red card on the caregiver phone, which rings (since Sat ~8:05 AM; the hub chime only with `CHIME=1`).
 4. TV stays silent, and `/backstage` shows every decision.
 5. Quick setup works live with "Nasaan yung aso?".
 
-Always-listening hub mic (Silero VAD) → whisper.cpp → junk-line filter → `decide()` (urgent rules + matcher, Qwen for unclear lines) → iPad plays the family's recorded reply + photo → caregiver log and alerts, urgent chime from the hub → behind-the-scenes screen with the OFFLINE badge. The family adds questions and replies through quick setup.
+Always-listening hub mic (Silero VAD) → whisper.cpp → junk-line filter → `decide()` (urgent rules + matcher, Qwen for unclear lines) → iPad plays the family's recorded reply + photo → caregiver log and alerts, the urgent alarm on the caregiver iPhone → behind-the-scenes screen with the OFFLINE badge. The family adds questions and replies through quick setup.
 
 ### M1. Listening pipeline (Donita)
 
@@ -58,11 +58,12 @@ The family's whole setup, and the live proof that the family wrote the replies:
 - **Green (comforted):** quiet log entry.
 - `/caregiver` only receives alerts while it is open on the hub's local network. There are no push notifications with the internet off (iOS push needs Apple's servers).
 - **Safety words:** the card lists the built-in urgent words. A + chip at the end of that list adds one more (see M2). Built-in words stay.
+- **Urgent alarm (Donita, Sat ~8:05 AM):** the iPhone is the main urgent alarm. One "Turn on alerts" tap arms the page; on `alert` a full-screen red alert rings and repeats until "Papunta na ako / On my way" (or a voice reply) on the red card, at most 2 minutes. An `urgent_reply` from another phone stops it too. The page must stay open and awake. To verify on the iPhone.
 - **Ask Sino about Lola** is a Should item after the freeze (see below), not MVP.
 
 ### M6. Urgent chime (Donita)
 
-On urgent, the hub speaker plays a loud chime so anyone in the house hears it. The caregiver phone's red card is the second channel. Lola's screen never shows red. The `afplay` command and the 1:00 AM test are in [hub-chime.md](hub-chime.md).
+On urgent, the hub speaker can play a loud chime so anyone in the house hears it. **Off by default since Sat ~8:05 AM (Donita):** the caregiver iPhone is the main alarm (M5), and `CHIME=1` turns the laptop chime back on as a backup. Lola's screen never shows red. The `afplay` command and the 1:00 AM test are in [hub-chime.md](hub-chime.md).
 
 ### M7. Behind-the-scenes screen (Viviene)
 

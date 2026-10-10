@@ -1,6 +1,7 @@
 // Hold-free recording for "Record a reply": tap to start, tap to stop.
 // Uses the browser's MediaRecorder. No timer and no cutoff (design system rule 9).
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { setMicInUse } from './urgentSound'
 
 export type RecState = 'idle' | 'recording' | 'done' | 'denied'
 export const BAR_COUNT = 26
@@ -14,6 +15,7 @@ export function useRecorder() {
   const stream = useRef<MediaStream | null>(null)
   const raf = useRef(0)
   const ctx = useRef<AudioContext | null>(null)
+  const holdsMic = useRef(false) // told urgentSound.ts this recorder has the mic
 
   const cleanup = useCallback(() => {
     cancelAnimationFrame(raf.current)
@@ -21,6 +23,10 @@ export function useRecorder() {
     stream.current = null
     ctx.current?.close().catch(() => undefined)
     ctx.current = null
+    if (holdsMic.current) {
+      holdsMic.current = false
+      setMicInUse(false) // alerts may ring on silent again
+    }
   }, [])
 
   useEffect(() => () => cleanup(), [cleanup])
@@ -28,6 +34,10 @@ export function useRecorder() {
 
   const start = useCallback(async () => {
     try {
+      if (!holdsMic.current) {
+        holdsMic.current = true
+        setMicInUse(true) // the iPhone's "playback" sound mode is for the alarm, not the mic
+      }
       const s = await navigator.mediaDevices.getUserMedia({ audio: true })
       stream.current = s
       const chunks: Blob[] = []

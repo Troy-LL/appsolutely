@@ -1,13 +1,14 @@
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
-import type { AskIntent, ChatMsg, Entry, Lang, MemberColor, Person, Question, Scale, Screen } from './types'
+import type { Alarm, AskIntent, ChatMsg, Entry, Lang, MemberColor, Person, Question, Scale, Screen } from './types'
 import { makeT } from './i18n/i18n'
 import { initialLog, logReducer } from './data/log'
 import { deleteQuestion, loadQuestions, loadSafetyWords, postUrgentReply, useFeed, USING_HUB } from './data/hub'
 import { SAFETY_WORDS } from './data/safetyWords'
 import { entriesFromLog, readAbout } from './feed/events'
-import { startMonitoring } from './feed/monitor'
+import { armAlerts, type AlertStatus } from './feed/monitor'
 import type { LinkStatus } from './feed/connect'
-import { useUrgentSound } from './data/urgentSound'
+import { audioRunning, startAlarm, stopAlarm } from './data/urgentSound'
+import { AlarmScreen, AlertsBar } from './components/Alarm'
 import { TopBar } from './components/TopBar'
 import { TAB_SCREENS, TabBar } from './components/TabBar'
 import { answerLocally, ASK_QUESTIONS, intentOf } from './data/askLocal'
@@ -95,7 +96,10 @@ export default function App() {
   const [now, setNow] = useState(Date.now())
   const [log, dispatch] = useReducer(logReducer, initialLog)
   const [link, setLink] = useState<LinkStatus>('open')
-  const [monitoring, setMonitoring] = useState(() => shotName() !== '')
+  // "Turn on alerts" (real hub only) and the full-screen red alarm (components/Alarm.tsx)
+  const [alerts, setAlerts] = useState<AlertStatus | 'arming'>('off')
+  const [alarm, setAlarm] = useState<Alarm | null>(null)
+  // what the live monitor screen shows (feed/live.ts)
   const [live, setLive] = useState<LiveState>(emptyLive)
   const t = useMemo(() => makeT(lang), [lang])
 
@@ -145,6 +149,11 @@ export default function App() {
       answer(about)
       return
     }
+    // Full-screen red alarm. A second alert while it rings only shows the new words
+    // (the newest red card): ringing stays true, so the effect below starts no second alarm.
+    if (event.event === 'alert') setAlarm({ ringing: true, silent: !audioRunning() })
+    // Someone answered (this phone, another phone, or a voice reply): stop ringing here too.
+    if (event.event === 'urgent_reply') endAlarm()
     const at = Date.now()
     setLive((state) => reduceLive(state, event, at))
     dispatch({ type: 'event', event, at })
@@ -160,7 +169,23 @@ export default function App() {
     }).catch(() => undefined)
   }, [])
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 60_000); return () => window.clearInterval(id) }, [])
-  useUrgentSound(log.entries.some((e) => e.kind === 'urgent'))
+  // The alarm rings while alarm.ringing is true: once a second, until someone answers.
+  // After 2 minutes startAlarm stops the sound by itself; the red screen stays up.
+  useEffect(() => {
+    if (!alarm?.ringing) return
+    startAlarm(() => setAlarm((a) => (a ? { ...a, ringing: false } : a)))
+    return stopAlarm
+  }, [alarm?.ringing])
+  // The one stop for the alarm: the sound and the full-screen red. Called by the red
+  // card's "Papunta na ako / On my way" (replyUrgent) and by an urgent_reply from the hub.
+  function endAlarm() {
+    stopAlarm()
+    setAlarm(null)
+  }
+  const turnOnAlerts = async () => {
+    setAlerts('arming')
+    setAlerts(await armAlerts(setAlerts))
+  }
 
   // Phone notes stay on this phone. Decisions and meals are loaded from the hub after that.
   const [notesReady, setNotesReady] = useState(false)
@@ -230,6 +255,7 @@ export default function App() {
   }
 
   const replyUrgent = (audio?: Blob) => {
+    endAlarm()
     const text = lang === 'en' ? 'On my way' : 'Papunta na ako'
     for (const entry of log.entries) {
       if (entry.kind === 'urgent') dispatch({ type: 'markRead', id: entry.id })
@@ -295,6 +321,7 @@ export default function App() {
     return bindHoldRed(el)
   }, [])
   const recordEntry = entries.find((e) => e.id === recordId)
+  const alarmEntry = entries.find((e) => e.kind === 'urgent') // newest first
   const person = people.find((p) => p.name === personName)
   const onTab = TABS.includes(screen) || screen === 'receipt'
 
@@ -309,13 +336,8 @@ export default function App() {
       ) : null}
 
       {link === 'reconnecting' ? <p className="sn-reconnect" role="status">{t.one('reconnecting')}</p> : null}
-      {!monitoring ? (
-        <div className="sn-monitor">
-          <button type="button" className="sn-btn sn-btn--wide" onClick={() => { void startMonitoring(); setMonitoring(true) }}>
-            {t.btn('startMonitor')}
-          </button>
-        </div>
-      ) : null}
+      {/* hidden in screenshot mode (?shot=), like the old "Start monitoring" bar */}
+      {USING_HUB && !shot ? <AlertsBar t={t} status={alerts} onArm={() => void turnOnAlerts()} /> : null}
 
       {screen === 'home' ? (
         <HomeScreen t={t} me={ME} now={now} health={log.health} entries={today} people={people} replyCount={replyCount}
@@ -403,6 +425,8 @@ export default function App() {
       ) : null}
 
       {onTab ? <TabBar t={t} screen={screen} go={go} badge={today.filter((e) => e.kind === 'needs').length} /> : null}
+
+      {alarm && alarmEntry ? <AlarmScreen t={t} alarm={alarm} entry={alarmEntry} onReply={replyUrgent} /> : null}
     </div>
   )
 }

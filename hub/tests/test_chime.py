@@ -1,4 +1,7 @@
-"""Urgent chime (D6): plays only on urgent, only in the hub process, never on /lola.
+"""Urgent chime (D6): plays only on urgent, only in the hub process, only with CHIME=1, never on /lola.
+
+Off by default since Sat ~8:05 AM (the urgent alarm rings on the caregiver iPhone): with
+CHIME unset, urgent still sends `alert` to /caregiver and still starts the hub's deaf window.
 
 No sound is made: chime._start (the afplay call) is replaced by a fake that records the
 command and hands back a fake alarm we can mark "playing" or "done". Typed questions
@@ -38,6 +41,7 @@ import uvicorn  # noqa: E402
 import websockets  # noqa: E402
 
 import server  # noqa: E402
+import always  # noqa: E402  (hub/always.py: the deaf windows)
 import chime  # noqa: E402  (hub/chime.py, put on sys.path by server)
 
 PLAYED = []  # one entry per alarm that would have started
@@ -123,22 +127,28 @@ def _check(name, cond, detail=""):
 def _unit_cases(done):
     chime._start = fake_start
     chime.ENABLED = False
+    os.environ["CHIME"] = "1"
     chime.play_chime()
     _check("off", PLAYED == [], len(PLAYED))
-    _passed(done, "play_chime does nothing before enable_chime")
+    _passed(done, "play_chime does nothing before enable_chime, even with CHIME=1")
 
     chime.enable_chime()
+    os.environ.pop("CHIME")
+    chime.play_chime()
+    _check("default", PLAYED == [], len(PLAYED))
+    _passed(done, "enabled, CHIME unset: off by default")
+
     os.environ["CHIME"] = "0"
     chime.play_chime()
     _check("chime=0", PLAYED == [], len(PLAYED))
     _passed(done, "CHIME=0 keeps it off after enable_chime")
 
-    os.environ.pop("CHIME")
+    os.environ["CHIME"] = "1"
     chime.play_chime()
     _check("on", PLAYED == [EXPECTED], PLAYED)
     _check("on", (chime.TIMES, chime.GAP_SECONDS) == (5, 0), (chime.TIMES, chime.GAP_SECONDS))
     _check("on", "sleep" not in chime.COMMAND[2], chime.COMMAND)
-    _passed(done, "enabled: one alarm = Glass at -v 1, 5 times back to back, no sleep")
+    _passed(done, "CHIME=1: one alarm = Glass at -v 1, 5 times back to back, no sleep")
 
     chime.play_chime()  # a second urgent line while the first alarm is still playing
     _check("overlap", len(PLAYED) == 1, f"{len(PLAYED)} alarms started")
@@ -169,6 +179,22 @@ async def _e2e_cases(port, done):
             await _recv_event(ws, "health", 3)
         lola_seen = []
 
+        # Laptop chime off (the default): /caregiver still gets the alert, no sound, and the
+        # hub still goes deaf after the urgent (the iPad mic may hear the phone's alarm).
+        os.environ.pop("CHIME")
+        now = time.monotonic()
+        _check("chime off", not always.deaf(now - 0.1, now), "deaf before any urgent")
+        _check("chime off", _post_typed(port, "Masakit dibdib ko") == 202)
+        alert, _ = await _recv_event(care, "alert")
+        _check("chime off", alert == {"event": "alert", "transcript": "Masakit dibdib ko"}, alert)
+        now = time.monotonic()
+        _check("chime off", always.deaf(now - 0.1, now), "no deaf window after urgent")
+        await _recv_event(back, "decided")
+        lola_seen += await _drain(lola, 1.0)
+        _check("chime off", PLAYED == [], f"chime ran {len(PLAYED)} times")
+        _passed(done, "laptop chime off: urgent still alerts /caregiver and deafens the hub, no sound")
+
+        os.environ["CHIME"] = "1"
         _check("urgent", _post_typed(port, "Masakit dibdib ko") == 202)
         alert, _ = await _recv_event(care, "alert")
         _check("urgent", alert == {"event": "alert", "transcript": "Masakit dibdib ko"}, alert)
@@ -177,7 +203,7 @@ async def _e2e_cases(port, done):
         _check("urgent", decided["action"] == "urgent", decided["action"])
         lola_seen += await _drain(lola, 1.0)
         _check("urgent", len(PLAYED) == 1, f"chime ran {len(PLAYED)} times")
-        _passed(done, "urgent: chime once, /caregiver gets alert")
+        _passed(done, "CHIME=1 urgent: chime once, /caregiver gets alert")
 
         PLAYED.clear()
         for text, action, ignored in (("Nasaan si Nanay?", "comfort", ""),
@@ -203,7 +229,7 @@ async def _run():
     thread = threading.Thread(target=runner.run, daemon=True)
     thread.start()
     done = []
-    total = 10
+    total = 12
     try:
         _unit_cases(done)
         await _wait_up(port)

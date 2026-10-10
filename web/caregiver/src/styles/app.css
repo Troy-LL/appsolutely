@@ -491,6 +491,20 @@ html, body, #root { margin: 0; height: 100%; background: var(--paper); }
 .sn-ate { width: 100%; margin: 16px 0; }
 .sn-reconnect { margin: 0; padding: 8px 16px; text-align: center; background: var(--paper); color: var(--ink); border-bottom: 2px solid var(--ink); font: 600 calc(14px * var(--s))/1.2 var(--font-heading); }
 .sn-monitor { padding: 12px 24px; border-bottom: 2px solid var(--ink); background: var(--paper); }
+/* The phone as an alarm (components/Alarm.tsx): "Turn on alerts", then a small "Alerts on" line */
+.sn-monitor { display: grid; gap: 8px; }
+.sn-monitor--on { padding-top: 8px; padding-bottom: 8px; gap: 4px; }
+.sn-armed { margin: 0; display: flex; align-items: center; gap: 8px; font: 600 calc(15px * var(--s))/1.2 var(--font-heading); }
+.sn-armed__why, .sn-armed__hint { margin: 0; font-size: calc(14px * var(--s)); line-height: 1.4; }
+/* Full-screen red alert over every screen: the newest red card (components/Cards.tsx),
+   bigger, until "Papunta na ako / On my way" */
+.sn-alarm { position: fixed; inset: 0; z-index: 50; display: flex; overflow-y: auto; box-sizing: border-box; padding: calc(24px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px)); background: var(--red); color: var(--white); }
+.sn-alarm__in { margin: auto; width: 100%; max-width: 382px; display: grid; gap: 16px; }
+.sn-alarm .sn-urgent { margin: 0; padding: 0; border: 0; box-shadow: none; animation: none; }
+.sn-alarm .sn-urgent__head { font-size: calc(30px * var(--s)); }
+.sn-alarm .sn-urgent__quote { font-size: calc(34px * var(--s)); overflow-wrap: anywhere; }
+.sn-alarm .sn-btn--big { min-height: 72px; font-size: calc(22px * var(--s)); }
+.sn-alarm__note { margin: 0; font: 600 calc(16px * var(--s))/1.35 var(--font-heading); }
 .sn-shot { margin: 0 0 10px; }
 .sn-shot img { display: block; width: 100%; height: auto; border: 2px solid var(--ink); border-radius: 6px; background: var(--paper); }
 .sn-shot__label { display: inline-block; margin-top: 8px; padding: 4px 10px; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); color: var(--ink); font: 600 calc(14px * var(--s))/1.2 var(--font-heading); }
@@ -505,7 +519,7 @@ html, body, #root { margin: 0; height: 100%; background: var(--paper); }
 @media print {
   .sn-app { height: auto; max-width: none; overflow: visible; display: block; }
   .sn-scroll { overflow: visible; padding: 0; }
-  .sn-top, .sn-tabs, .sn-noprint, .sn-langpop, .sn-reconnect, .sn-monitor, .sn-sheet, .sn-sheet-bg { display: none !important; }
+  .sn-top, .sn-tabs, .sn-noprint, .sn-langpop, .sn-reconnect, .sn-monitor, .sn-sheet, .sn-sheet-bg, .sn-alarm { display: none !important; }
   .sn-receipt, .sn-tear { max-width: 420px; margin-left: auto; margin-right: auto; }
 }
 
