@@ -13,7 +13,8 @@ const FADE_IN_MS = 300
 const AFTER_CLIP_MS = 1000 // after a family reply finishes, back to the clock this soon
 const HOLD_MS = 8000 // no recording, or the iPad blocked the sound: keep the answer up so a tap can play it
 const BACKOFF_MS = [500, 1000, 2000, 4000, 8000]
-const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA='
+// WebKit rejects a zero-length WAV, so this one-sample clip is what unlocks the element.
+const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA'
 const params = new URLSearchParams(location.search)
 const $ = (sel) => document.querySelector(sel)
 if (params.has('big')) document.documentElement.classList.add('big')
@@ -80,6 +81,19 @@ show('waiting')
 
 const speakers = new Map()
 const hubBase = () => (params.get('hub') ? `${location.protocol}//${params.get('hub')}` : '')
+
+// reply_audio is /media/... . A leading slash stays on this origin, not under /lola/.
+// An http URL on an https page is rewritten: Safari would block it as mixed content.
+function mediaUrl(path) {
+  if (typeof path !== 'string' || !path) return ''
+  if (/^https?:\/\//i.test(path)) {
+    return location.protocol === 'https:' && /^http:/i.test(path) ? `https:${path.slice(4)}` : path
+  }
+  const base = hubBase()
+  if (path.startsWith('/')) return base ? base + path : path
+  return `${base}/${path}`
+}
+
 async function loadSpeakers() {
   try {
     const res = await fetch(`${hubBase()}/questions`)
@@ -95,12 +109,19 @@ let blocked = null
 let hold = null
 let reassuring = false
 let replyKey = ''
+let elementLive = false // true only after this element's play() has resolved for the current clip
+let ctxNode = null
+let primed = false
+let audioCtx = null
+let micStarted = false
+let hearing = false // Simulan started the mic: its AudioContext owns the speakers on iPad
 
-// One audio element for every reply. iPadOS only plays sound from an element that was first
-// played inside a tap, so the Simulan tap unlocks this one and every reply reuses it. A new
-// Audio() made later, outside a tap, can stay silent (the answer showed but no voice played).
+// One audio element for every reply. iPadOS only plays an element that was played inside a tap,
+// so Simulan unlocks this one and every reply reuses it. A new Audio() outside a tap stays silent.
 const player = new Audio()
 player.preload = 'auto'
+player.playsInline = true
+player.setAttribute('playsinline', '')
 player.addEventListener('ended', clipDone)
 player.addEventListener('error', clipDone)
 let clipId = 0 // so a late answer from an older play() can't touch the current clip
@@ -147,26 +168,94 @@ function playReply(msg) {
   startClip(msg)
 }
 
+function stopContext() {
+  const node = ctxNode
+  ctxNode = null
+  if (!node) return
+  node.onended = null // stop() fires onended; this clip is already over
+  try { node.stop() } catch { /* already stopped */ }
+}
+
 function startClip(msg) {
   cancelHold()
+  stopContext()
+  elementLive = false
   blocked = null
   reassuring = msg.event === 'urgent_reply'
   renderAnswer(msg)
   if (!msg.reply_audio) { current = null; afterClip(HOLD_MS); return }
   const id = ++clipId
-  player.src = `${hubBase()}${msg.reply_audio}`
+  const url = mediaUrl(msg.reply_audio)
+  // iPad Safari stays silent on an <audio> element while the mic graph holds the speakers.
+  if (hearing && audioCtx) {
+    playViaContext(url, id).then((ok) => { if (id === clipId && !ok) playElement(url, id) })
+    return
+  }
+  playElement(url, id)
+}
+
+function playElement(url, id) {
+  player.muted = false
+  player.src = url
   player.volume = 0
   current = player
-  player.play().then(() => { if (id === clipId) fadeIn(player) }).catch(() => {
-    if (id !== clipId || current !== player) return
-    current = null
-    blocked = player
-    afterClip(HOLD_MS)
+  player.play().then(() => { if (id === clipId) { elementLive = true; fadeIn(player) } }).catch(() => {
+    if (id !== clipId) return
+    try { player.pause() } catch { /* not playing */ }
+    // Unlock clip already ended, or the element was never primed: the Simulan context plays it.
+    if (!audioCtx || hearing) { giveUpToTap(); return }
+    playViaContext(url, id).then((ok) => { if (id === clipId && !ok) giveUpToTap() })
   })
 }
 
+function giveUpToTap() {
+  current = null
+  blocked = player
+  afterClip(HOLD_MS)
+}
+
+// Context was resumed inside Simulan, so start() here needs no new tap. False if it cannot play.
+async function playViaContext(url, id) {
+  const ctx = audioCtx
+  const token = { paused: false, ended: false }
+  current = token
+  try {
+    if (ctx.state !== 'running') await ctx.resume()
+    if (id !== clipId) return true
+    if (ctx.state !== 'running') { if (current === token) current = null; return false }
+    const res = await fetch(url)
+    if (!res.ok || id !== clipId) { if (current === token) current = null; return id !== clipId }
+    const copy = (await res.arrayBuffer()).slice(0)
+    if (id !== clipId) return true
+    const buf = await ctx.decodeAudioData(copy)
+    if (id !== clipId) return true
+    const gain = ctx.createGain()
+    const t0 = ctx.currentTime
+    gain.gain.setValueAtTime(0, t0)
+    gain.gain.linearRampToValueAtTime(MAX_VOLUME, t0 + FADE_IN_MS / 1000)
+    const src = ctx.createBufferSource()
+    src.buffer = buf
+    src.__clip = url.split('/').pop()
+    src.connect(gain)
+    gain.connect(ctx.destination)
+    src.onended = () => {
+      token.ended = true
+      if (id !== clipId || current !== token) return
+      afterClip(AFTER_CLIP_MS)
+    }
+    ctxNode = src
+    src.start(0)
+    return true
+  } catch {
+    if (current === token) current = null
+    return false
+  }
+}
+
 function clipDone() {
-  if (current !== player && blocked !== player) return // e.g. the silent unlock clip ending
+  if (!elementLive) return // the silent unlock clip, or a clip the context is playing
+  if (current !== player && blocked !== player) return
+  elementLive = false
   blocked = null
   afterClip(AFTER_CLIP_MS)
 }
@@ -177,7 +266,7 @@ function retryBlocked() {
   current = player
   cancelHold()
   const id = clipId
-  player.play().then(() => { if (id === clipId) fadeIn(player) }).catch(() => {
+  player.play().then(() => { if (id === clipId) { elementLive = true; fadeIn(player) } }).catch(() => {
     // A finger tap fires pointerdown before the browser counts it as a tap, so play() can be
     // refused there. Keep the reply blocked so the click from the same tap can play it.
     if (id === clipId && current === player) { blocked = player; afterClip(HOLD_MS) }
@@ -301,25 +390,49 @@ for (const b of langButtons) {
 }
 markLang()
 
-let audioCtx = null
-$('#start-btn').addEventListener('click', () => {
-  $('#start-sheet').classList.add('gone')
-  // Unlock the reply player inside this tap (iPadOS rule) by playing a silent clip on it.
-  if (!current) { player.src = SILENT_WAV; player.play().catch(() => {}) }
+function primeElement() {
+  const src = player.src || ''
+  if (primed || (src && !src.startsWith('data:'))) return
+  player.muted = true
+  player.src = SILENT_WAV
+  const pendingPlay = player.play()
+  if (!pendingPlay) { player.muted = false; return }
+  pendingPlay.then(() => { primed = true; player.muted = false }).catch(() => { player.muted = false })
+}
+
+function primeContext() {
+  const Ctx = window.AudioContext || window.webkitAudioContext
+  if (!Ctx) return
   try {
-    const Ctx = window.AudioContext || window.webkitAudioContext
-    if (Ctx) {
-      audioCtx = audioCtx || new Ctx()
-      audioCtx.resume().catch(() => {})
-    }
-  } catch {}
+    audioCtx = audioCtx || new Ctx()
+    audioCtx.resume().catch(() => {})
+    const rate = audioCtx.sampleRate
+    if (!rate) return
+    const buf = audioCtx.createBuffer(1, Math.max(1, Math.floor(rate / 10)), rate)
+    const src = audioCtx.createBufferSource()
+    src.buffer = buf
+    src.connect(audioCtx.destination)
+    src.start(0) // inside the tap: iOS keeps this context running after the mic prompt
+  } catch { /* no Web Audio: the element and the tap fallback remain */ }
+}
+
+// touchend and click: iPad counts touchend, desktop tests count click. Both are inside the tap.
+function onStart() {
+  $('#start-sheet').classList.add('gone')
+  primeElement()
+  primeContext()
   keepAwake()
+  if (micStarted) return
+  micStarted = true
   // The iPad listens (real hub only, mic.js). The mic prompt must come from this tap.
   // isPlaying: a family reply is playing, so the mic must not send it to the hub.
   if (ON_HUB && params.get('mic') !== 'off') {
+    hearing = true
     startMic({ ctx: audioCtx, hubBase, isPlaying: () => !!current && !current.paused })
   }
-})
+}
+$('#start-btn').addEventListener('touchend', onStart)
+$('#start-btn').addEventListener('click', onStart)
 
 if (IS_FAKE && !ON_HUB) {
   const el = $('#fake-label'); el.textContent = t(STRINGS.fake, lang); el.classList.remove('hidden')
