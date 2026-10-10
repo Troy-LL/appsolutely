@@ -6,9 +6,9 @@
 
 **When someone with dementia asks the same question again, Sino answers in the family's own voice. No internet needed.**
 
-<a href="https://github.com/Troy-LL/appsolutely/blob/main/assets/demo/sino-demo.mp4"><img src="assets/demo/sino-demo-poster.jpg" alt="Watch the Sino demo with sound" width="100%"></a>
+https://github.com/user-attachments/assets/f177404b-7fa0-44b6-86a9-62e6333fe82a
 
-▶ **[Watch the demo with sound](https://github.com/Troy-LL/appsolutely/blob/main/assets/demo/sino-demo.mp4)** (64 seconds)
+<sub>▶ Watch the 64-second demo with sound on.</sub>
 
 [**Try the live demo**](https://sino-demo.onrender.com) · [**Read the spec**](docs/sino/README.md) · [**See every feature**](docs/sino/features.md)
 
