@@ -26,6 +26,7 @@ os.environ["SINO_MODEL"] = "stub"
 os.environ["SINO_LOG"] = str(HERE / "_test_decisions.jsonl")
 os.environ["OFFLINE_PROBE"] = "http://127.0.0.1:9"
 os.environ["CAREGIVER_DIST"] = str(HERE / "_no_caregiver_dist")
+os.environ["CLIP_MEDIA"] = tempfile.mkdtemp(prefix="sino-clips-")
 os.environ.pop("CERT", None)
 os.environ.pop("KEY", None)
 

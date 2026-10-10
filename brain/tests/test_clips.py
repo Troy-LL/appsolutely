@@ -221,15 +221,15 @@ def test_room_names():
         raise AssertionError("missing folder looked like footage")
     with tempfile.TemporaryDirectory() as tmp:
         folder = Path(tmp)
-        (folder / "dining.MOV").write_bytes(b"x")
+        (folder / "dining.mp4").write_bytes(b"x")
         (folder / "stairs.MOV").write_bytes(b"x")
-        (folder / "balcony.MOV").write_bytes(b"x")
+        (folder / "balcony.webm").write_bytes(b"x")
         rows = {row["id"]: row for row in clips.room_catalog(folder)}
         if not rows["kainan"]["file"] or rows["kainan"]["tl"] != "Kainan" or rows["kainan"]["en"] != "Dining":
             raise AssertionError(rows["kainan"])
-        if clips.clip_path("kainan", folder).name != "dining.MOV":
+        if clips.clip_path("kainan", folder).name != "dining.mp4":
             raise AssertionError(clips.clip_path("kainan", folder))
-        if clips.clip_path("hagdan", folder).name != "stairs.MOV" or clips.clip_path("balkonahe", folder).name != "balcony.MOV":
+        if clips.clip_path("hagdan", folder).name != "stairs.MOV" or clips.clip_path("balkonahe", folder).name != "balcony.webm":
             raise AssertionError("stairs or balcony file was not found")
         if clips.clip_path("sala", folder) is not None:
             raise AssertionError("sala is not a room")
@@ -405,6 +405,44 @@ async def test_server_paths():
         media.cleanup()
 
 
+def test_demo_room_clips():
+    clips.detect_people = REAL_DETECT
+    folder = BRAIN / "clips" / "media"
+    missing = [name for name in ("dining.mp4", "stairs.mp4", "balcony.mp4") if not (folder / name).is_file()]
+    if missing:
+        raise AssertionError(missing)
+    summary = clips.scan(folder)
+    seen = clips.last_seen_for_log()
+    if not isinstance(seen, dict) or seen.get("room") != "kainan" or seen.get("source") != "recording":
+        raise AssertionError((seen, summary))
+    rows = {row["id"]: row for row in clips.room_catalog(folder)}
+    if not rows["kainan"]["file"] or not rows["kainan"]["detected"]:
+        raise AssertionError(rows["kainan"])
+    if rows["hagdan"]["detected"] or rows["balkonahe"]["detected"]:
+        raise AssertionError((rows["hagdan"], rows["balkonahe"], summary))
+    if not rows["hagdan"]["file"] or not rows["balkonahe"]["file"]:
+        raise AssertionError("demo file missing from the catalog")
+    answer = _where(_recording_log())["answer"]
+    prefix = "Huling nakita sa recording: Kainan (clip 0:"
+    if not answer.startswith(prefix) or not answer.endswith(")."):
+        raise AssertionError(answer)
+    clock = answer[len(prefix):-2]
+    if len(clock) != 2 or not clock.isdigit():
+        raise AssertionError(answer)
+    jpeg = clips.snapshot_jpeg()
+    if not isinstance(jpeg, bytes) or not jpeg.startswith(b"\xff\xd8"):
+        raise AssertionError("winner snapshot")
+    if clips.snapshot_jpeg("kainan") != jpeg:
+        raise AssertionError("kainan snapshot")
+    if clips.snapshot_jpeg("hagdan") is not None or clips.snapshot_jpeg("balkonahe") is not None:
+        raise AssertionError("empty room served a frame")
+    if clips.clip_path("kainan", folder).name != "dining.mp4":
+        raise AssertionError(clips.clip_path("kainan", folder))
+    if clips.clip_path("hagdan", folder).name != "stairs.mp4" or clips.clip_path("balkonahe", folder).name != "balcony.mp4":
+        raise AssertionError("room file")
+    print(f"demo answer: {answer} detections={summary['detections']} frames={summary['frames']}")
+
+
 def main():
     tests = [
         test_person_room_time_snapshot,
@@ -415,6 +453,7 @@ def main():
         test_one_detection_does_not_count,
         test_room_names,
         test_recording_wording,
+        test_demo_room_clips,
     ]
     passed = 0
     for test in tests:

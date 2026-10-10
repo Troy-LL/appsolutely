@@ -26,6 +26,7 @@ os.environ["SINO_SEED"] = str(TMP / "data" / "questions.json")
 os.environ["SINO_MODEL"] = "stub"
 os.environ["SINO_LOG"] = str(TMP / "decisions.jsonl")
 os.environ["OFFLINE_PROBE"] = "http://127.0.0.1:9"
+os.environ["CLIP_MEDIA"] = str(TMP / "clips")
 os.environ.pop("CERT", None)
 os.environ.pop("KEY", None)
 sys.path.insert(0, str(ROOT / "brain"))
